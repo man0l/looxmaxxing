@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. Quality gate — typecheck + lint.
+  #    npm cache (keyed on package-lock) makes installs
+  #    incremental, the same idea as the Docker layer cache
+  #    (cache-from/to: type=gha) in the web deploy.
+  # ──────────────────────────────────────────────
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - run: npx expo lint
+
+  # ──────────────────────────────────────────────
+  # 2. Release — publish an EAS Update to the production
+  #    channel on every push to main. The channel is the
+  #    moving pointer (like the :latest image tag); the
+  #    commit short-SHA is baked into the update message
+  #    (like the :worker-<sha> tag) so every release is
+  #    traceable. Clients on the production channel auto-pull
+  #    the new bundle — the mobile analog of Watchtower.
+  #    Reuses the same npm cache as the quality job.
+  # ──────────────────────────────────────────────
+  release:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        run: echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Publish EAS Update
+        run: eas update --branch production --message "${{ env.SHA_SHORT }}" --non-interactive
