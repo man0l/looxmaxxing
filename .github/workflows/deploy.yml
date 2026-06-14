@@ -1,45 +1,46 @@
-name: Deploy
+name: Android Release
 
 on:
   push:
     branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   # ──────────────────────────────────────────────
   # 1. Quality gate — typecheck + lint.
-  #    npm cache (keyed on package-lock) makes installs
-  #    incremental, the same idea as the Docker layer cache
-  #    (cache-from/to: type=gha) in the web deploy.
+  #    npm cache (keyed on package-lock) makes installs incremental —
+  #    the mobile analog of the Docker layer cache in the web deploy.
   # ──────────────────────────────────────────────
   quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci
-
       - run: npx tsc --noEmit
-
       - run: npx expo lint
 
   # ──────────────────────────────────────────────
-  # 2. Release — publish an EAS Update to the production
-  #    channel on every push to main. The channel is the
-  #    moving pointer (like the :latest image tag); the
-  #    commit short-SHA is baked into the update message
-  #    (like the :worker-<sha> tag) so every release is
-  #    traceable. Clients on the production channel auto-pull
-  #    the new bundle — the mobile analog of Watchtower.
-  #    Reuses the same npm cache as the quality job.
+  # 2. Release — build a standalone Android APK in the runner (no EAS),
+  #    then publish it as a GitHub Release so the .apk has a direct
+  #    download link you can open on your phone. Each release is tagged
+  #    with the run number and the commit short-SHA (traceable, like the
+  #    :latest + :<sha> image tags in the web deploy).
+  #    Caches: npm deps + Gradle. EXPO_PUBLIC_* secrets are inlined into
+  #    the JS bundle at build time.
   # ──────────────────────────────────────────────
-  release:
+  android:
     needs: quality
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_REVENUECAT_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_KEY }}
+      EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ secrets.EXPO_PUBLIC_FACEBOOK_APP_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,12 +52,36 @@ jobs:
           node-version: 20
           cache: npm
 
-      - uses: expo/expo-github-action@v8
+      - uses: actions/setup-java@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          distribution: temurin
+          java-version: 17
+          cache: gradle
 
       - run: npm ci
 
-      - name: Publish EAS Update
-        run: eas update --branch production --message "${{ env.SHA_SHORT }}" --non-interactive
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: android
+
+      - name: Stage APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk looxmaxxing-${{ env.SHA_SHORT }}.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: looxmaxxing-apk
+          path: looxmaxxing-${{ env.SHA_SHORT }}.apk
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "android-${{ github.run_number }}" \
+            "looxmaxxing-${{ env.SHA_SHORT }}.apk" \
+            --title "Android build ${{ env.SHA_SHORT }}" \
+            --notes "Standalone debug-signed APK from ${{ env.SHA_SHORT }}. Download the .apk on your phone and install it (enable install from unknown sources)." \
+            --latest

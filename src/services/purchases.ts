@@ -9,7 +9,7 @@ import type { PlanId } from '../types/traits';
 
 export const ENTITLEMENT_ID = 'Looksmaxxing Pro';
 
-const REVENUECAT_API_KEY = 'test_EgmRrIDPkPfQYLWrIfpbtVhZQRJ';
+const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
@@ -26,6 +26,10 @@ export async function configurePurchases(): Promise<boolean> {
   const Purchases = getPurchases();
   if (!Purchases) return false;
   if (configured) return true;
+  if (!REVENUECAT_API_KEY) {
+    console.warn('[purchases] EXPO_PUBLIC_REVENUECAT_KEY is not set — skipping configure');
+    return false;
+  }
   try {
     const { LOG_LEVEL } = require('react-native-purchases');
     if (__DEV__) {

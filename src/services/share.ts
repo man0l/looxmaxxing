@@ -6,9 +6,9 @@ export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
 
 export const APP_URL = 'https://looxmaxxing.app';
 
-// Facebook App ID is required for the Instagram Stories deep link. Set the real
-// value in the RevenueCat-style dashboard / app config before shipping.
-const FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID';
+// Facebook App ID is required for the Instagram Stories deep link.
+// Set EXPO_PUBLIC_FACEBOOK_APP_ID in .env / CI secrets.
+const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? '';
 
 export async function captureCard(ref: MutableRefObject<View | null>): Promise<string | null> {
   try {
