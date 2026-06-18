@@ -13,7 +13,7 @@ export function useRescanFlow() {
     setRescanStep('front');
   };
 
-  const onCapture = () => {
+  const onCapture = (_uri?: string) => {
     if (rescanStep === 'front') {
       setRescanStep('profile');
     } else {

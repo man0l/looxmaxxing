@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TRAITS, type PlanId } from '../types/traits';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
@@ -21,9 +22,9 @@ const FALLBACK_BENEFITS = [
 
 export function PaywallScreen() {
   const { concerns } = useOnboarding();
-  const { subscribe, restore, dismissPaywall, offering, purchasing, purchaseError } =
-    useSubscription();
+  const { subscribe, restore, dismissPaywall, offering, purchasing } = useSubscription();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
+  const insets = useSafeAreaInsets();
 
   const plans = (['annual', 'weekly'] as PlanId[]).map((id) => {
     const pkg = offering ? packageForPlan(offering, id) : null;
@@ -52,7 +53,11 @@ export function PaywallScreen() {
   ].slice(0, 3);
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container} bounces={false}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[styles.container, { paddingBottom: 40 + insets.bottom }]}
+      bounces={false}
+    >
       <View style={styles.topRow}>
         <Pressable onPress={dismissPaywall} hitSlop={12}>
           <Text style={styles.maybeLater}>Maybe later</Text>
@@ -110,8 +115,6 @@ export function PaywallScreen() {
       >
         <Text style={styles.ctaText}>{purchasing ? 'Processing…' : 'Unlock my results'}</Text>
       </Pressable>
-
-      {purchaseError && <Text style={styles.error}>{purchaseError}</Text>}
 
       <Text style={styles.terms}>
         Auto-renews until canceled. Cancel anytime in Settings. Billed via your Apple ID.
@@ -240,12 +243,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.onPrimary,
-  },
-  error: {
-    ...typography.caption,
-    color: colors.danger,
-    textAlign: 'center',
-    marginTop: spacing.sm,
   },
   terms: {
     ...typography.caption,

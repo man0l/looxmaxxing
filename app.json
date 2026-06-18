@@ -23,7 +23,19 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-video"
+      "expo-video",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "LooxMaxxing uses your camera to capture the front and profile photos used to generate your trait scores."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LooxMaxxing accesses your photos so you can pick an existing selfie for your scan."
+        }
+      ]
     ]
   }
 }

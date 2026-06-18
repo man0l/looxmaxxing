@@ -77,11 +77,7 @@ export function RatingsScreen() {
       <GuidedCaptureScreen
         step={rescanStep}
         stepLabel="New scan"
-        lightingOk
         onCapture={onCapture}
-        onPickFromGallery={() => {}}
-        onRetake={() => {}}
-        onFlip={() => {}}
       />
     );
   }

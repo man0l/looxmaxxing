@@ -1,147 +1,146 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radii, typography } from '../../theme';
-import {
-  CameraIcon,
-  GalleryIcon,
-  HeadSilhouette,
-  RetakeIcon,
-} from '../../components/icons/OnboardingIcons';
+import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
 const GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
 const BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-optimized.png');
-const INSTRUCTION_VIDEO = require('../../../assets/images/onboarding-for-selfie-taking-asset.mp4');
 
 type CaptureStep = 'front' | 'profile';
 
 interface Props {
   step: CaptureStep;
-  lightingOk: boolean;
-  onCapture: () => void;
-  onPickFromGallery: () => void;
-  onRetake: () => void;
-  onFlip: () => void;
+  lightingOk?: boolean;
+  onCapture: (uri: string) => void;
   stepLabel?: string;
 }
 
-const GoodExample = () => (
-  <View style={styles.exampleImgWrap}>
-    <Image source={GOOD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
-  </View>
-);
-
-const BadExample = () => (
-  <View style={styles.exampleImgWrap}>
-    <Image source={BAD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
-  </View>
-);
-
 export function GuidedCaptureScreen({
   step,
-  lightingOk,
+  lightingOk = true,
   onCapture,
-  onPickFromGallery,
-  onRetake,
-  onFlip,
   stepLabel = 'Step 5 of 6',
 }: Props) {
   const isFront = step === 'front';
-  const player = useVideoPlayer(INSTRUCTION_VIDEO, (p) => {
-    p.loop = true;
-    p.muted = true;
-    p.play();
-  });
+  const cameraRef = useRef<CameraView>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState<CameraType>('front');
+  const [busy, setBusy] = useState(false);
+  const granted = permission?.granted ?? false;
+
+  const handleCapture = async () => {
+    if (!granted) {
+      requestPermission();
+      return;
+    }
+    if (!cameraRef.current || busy) return;
+    setBusy(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+      if (photo?.uri) onCapture(photo.uri);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]?.uri) onCapture(result.assets[0].uri);
+  };
+
+  const toggleFacing = () => setFacing((f) => (f === 'front' ? 'back' : 'front'));
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      bounces={false}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View style={styles.container}>
       <Text style={styles.step}>{stepLabel}</Text>
-      <Text style={styles.title}>
-        {isFront ? 'Front photo first' : 'Now your profile'}
-      </Text>
+      <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
       <Text style={styles.subtitle}>
         {isFront
-          ? "We'll look closely at your jawline and skin."
-          : 'Side angle helps score jawline and cheekbones accurately.'}
+          ? 'Face the camera, fill the oval, even lighting.'
+          : 'Turn to your side — keep your face in the oval.'}
       </Text>
 
       <View style={styles.examplesRow}>
-        <View style={styles.exampleCard}>
-          <GoodExample />
+        <View style={styles.exampleItem}>
+          <Image source={GOOD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
           <View style={styles.exampleLabelGood}>
             <Text style={styles.exampleLabelGoodText}>✓ Like this</Text>
           </View>
         </View>
-        <View style={styles.exampleCard}>
-          <BadExample />
+        <View style={styles.exampleItem}>
+          <Image source={BAD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
           <View style={styles.exampleLabelBad}>
             <Text style={styles.exampleLabelBadText}>✕ Too dark</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.instructionCard}>
-        <VideoView
-          player={player}
-          style={styles.instructionVideo}
-          contentFit="cover"
-          nativeControls={false}
-        />
-        <View style={styles.instructionCaption}>
-          <Text style={styles.instructionCaptionText}>Front, then turn to profile</Text>
-        </View>
-      </View>
-
       <View style={styles.viewport}>
-        <View style={styles.alignmentOval}>
-          <HeadSilhouette size={64} color={colors.textTertiary} />
+        {granted ? (
+          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
+        ) : (
+          <View style={styles.permissionPrompt}>
+            <HeadSilhouette size={56} color={colors.textTertiary} />
+            <Text style={styles.permissionText}>
+              {permission ? 'Allow camera access to take your photo.' : 'Preparing camera…'}
+            </Text>
+            {permission && !permission.granted && (
+              <Pressable style={styles.permissionBtn} onPress={requestPermission}>
+                <Text style={styles.permissionBtnText}>Allow camera</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        <View style={styles.oval} pointerEvents="none" />
+
+        <View style={styles.angleToggle} pointerEvents="none">
+          <Text style={[styles.angleLabel, isFront && styles.angleLabelActive]}>● Front</Text>
+          <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>○ Profile</Text>
         </View>
-        {lightingOk && (
-          <View style={styles.lightingChip}>
+
+        {lightingOk && granted && (
+          <View style={styles.lightingChip} pointerEvents="none">
             <Text style={styles.lightingChipText}>✓ Lighting looks good</Text>
           </View>
         )}
       </View>
 
-      <View style={styles.angleToggle}>
-        <Text style={[styles.angleLabel, isFront && styles.angleLabelActive]}>
-          ● Front
-        </Text>
-        <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>
-          ○ Profile
-        </Text>
-      </View>
-
       <View style={styles.controls}>
-        <Pressable onPress={onPickFromGallery} style={styles.sideBtn}>
-          <GalleryIcon size={22} color={colors.textSecondary} />
+        <Pressable onPress={handleGallery} style={styles.sideBtn}>
+          <GalleryIcon size={24} color={colors.textSecondary} />
         </Pressable>
-        <Pressable onPress={onCapture} style={styles.captureBtn}>
+        <Pressable
+          onPress={handleCapture}
+          style={[styles.captureBtn, busy && styles.captureBtnBusy]}
+          disabled={busy}
+        >
           <CameraIcon size={28} color={colors.onPrimary} />
         </Pressable>
-        <Pressable onPress={onRetake} style={styles.sideBtn}>
-          <RetakeIcon size={22} color={colors.textSecondary} />
+        <Pressable onPress={toggleFacing} style={styles.sideBtn} disabled={!granted}>
+          <RetakeIcon size={24} color={granted ? colors.textSecondary : colors.textTertiary} />
         </Pressable>
       </View>
 
       <Text style={styles.privacy}>
-        Photos are processed to generate your scores. Delete them anytime in
-        Profile.
+        Photos are processed to generate your scores. Delete them anytime in Profile.
       </Text>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: spacing.xl,
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 56,
+    paddingBottom: spacing.lg,
   },
   step: {
     ...typography.caption,
@@ -151,111 +150,120 @@ const styles = StyleSheet.create({
     ...typography.display,
     fontSize: 22,
     color: colors.textPrimary,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   subtitle: {
     ...typography.bodySm,
     color: colors.textSecondary,
+    marginTop: 2,
     marginBottom: spacing.md,
   },
   examplesRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  exampleCard: {
+  exampleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     flex: 1,
     backgroundColor: colors.surfaceInset,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
-    padding: 10,
-    alignItems: 'center',
-  },
-  exampleImgWrap: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
+    padding: 6,
   },
   exampleImg: {
-    width: '100%',
-    height: '100%',
+    width: 44,
+    height: 44,
+    borderRadius: radii.sm,
   },
   exampleLabelGood: {
-    marginTop: 6,
     backgroundColor: colors.tertiary,
     borderRadius: radii.full,
     paddingVertical: 3,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   exampleLabelGoodText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: colors.onTertiary,
   },
   exampleLabelBad: {
-    marginTop: 6,
     backgroundColor: colors.accent,
     borderRadius: radii.full,
     paddingVertical: 3,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   exampleLabelBadText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.onAccent,
   },
-  instructionCard: {
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  instructionVideo: {
-    width: '100%',
-    height: 170,
-  },
-  instructionCaption: {
-    position: 'absolute',
-    bottom: 8,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(21, 16, 11, 0.72)',
-    borderRadius: radii.full,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  instructionCaptionText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
   viewport: {
+    flex: 1,
     backgroundColor: colors.surfaceInset,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.lg,
-    height: 200,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  alignmentOval: {
-    width: 110,
-    height: 145,
+  permissionPrompt: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  permissionText: {
+    ...typography.bodySm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  permissionBtn: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+  },
+  permissionBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.onPrimary,
+  },
+  oval: {
+    position: 'absolute',
+    width: '64%',
+    height: '74%',
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.textTertiary,
-    borderRadius: 55 / 70 * 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.55,
+    borderColor: colors.tertiary,
+    borderRadius: 999,
+    opacity: 0.75,
+  },
+  angleToggle: {
+    position: 'absolute',
+    top: spacing.md,
+    flexDirection: 'row',
+    gap: 14,
+    backgroundColor: 'rgba(21, 16, 11, 0.55)',
+    borderRadius: radii.full,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  angleLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  angleLabelActive: {
+    color: colors.textPrimary,
+    fontWeight: '600',
   },
   lightingChip: {
     position: 'absolute',
-    bottom: 10,
+    bottom: spacing.md,
     backgroundColor: colors.tertiary,
     borderRadius: radii.full,
     paddingVertical: 4,
@@ -266,36 +274,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.onTertiary,
   },
-  angleToggle: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 14,
-    marginVertical: spacing.md,
-  },
-  angleLabel: {
-    fontSize: 12,
-    color: colors.textTertiary,
-  },
-  angleLabelActive: {
-    color: colors.tertiary,
-    fontWeight: '600',
-  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 22,
+    gap: 36,
+    marginTop: spacing.lg,
   },
   captureBtn: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  captureBtnBusy: {
+    opacity: 0.6,
+  },
   sideBtn: {
-    padding: spacing.xs,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   privacy: {
     ...typography.caption,

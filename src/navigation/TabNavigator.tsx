@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
-import { View, StyleSheet, Platform, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { ResultsScreen } from '../screens/ResultsScreen';
@@ -35,9 +36,10 @@ const TAB_CONFIG: { name: TabName; icon: ComponentType<IconProps> }[] = [
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const routeNames = state.routes.map((r) => r.name);
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { height: 76 + insets.bottom, paddingBottom: insets.bottom }]}>
       {TAB_CONFIG.map((tab) => {
         const routeIndex = routeNames.indexOf(tab.name);
         const isFocused = state.index === routeIndex;
@@ -100,8 +102,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    height: 76,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
     alignItems: 'center',
     justifyContent: 'space-around',
   },

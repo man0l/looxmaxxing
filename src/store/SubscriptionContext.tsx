@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import type { PurchasesOffering } from 'react-native-purchases';
 import type { PlanId } from '../types/traits';
+import { useToast } from './ToastContext';
 import {
   addCustomerInfoListener,
   configurePurchases,
@@ -44,6 +45,7 @@ const SubscriptionContext = createContext<SubscriptionValue>({
 });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
   const [subscribed, setSubscribed] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
@@ -84,7 +86,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           setSubscribed(true);
           setPaywallVisible(false);
         } else {
-          setPurchaseError('Plans are unavailable right now. Please try again later.');
+          const message = 'Plans are unavailable right now. Please try again later.';
+          setPurchaseError(message);
+          showToast(message, 'error');
         }
         return;
       }
@@ -94,11 +98,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       if (result.pro) {
         setSubscribed(true);
         setPaywallVisible(false);
+        showToast("You're in — welcome to Pro.", 'success');
       } else if (!result.cancelled && result.error) {
         setPurchaseError(result.error);
+        showToast(result.error, 'error');
       }
     },
-    [offering],
+    [offering, showToast],
   );
 
   const restore = useCallback(async () => {
@@ -109,10 +115,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (result.pro) {
       setSubscribed(true);
       setPaywallVisible(false);
+      showToast('Purchases restored.', 'success');
     } else if (result.error) {
       setPurchaseError(result.error);
+      showToast(result.error, 'error');
+    } else {
+      showToast('No active subscription found to restore.', 'info');
     }
-  }, []);
+  }, [showToast]);
 
   const openPaywall = useCallback(() => {
     setPurchaseError(null);

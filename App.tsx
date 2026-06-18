@@ -2,6 +2,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ToastProvider } from './src/store/ToastContext';
 import { OnboardingProvider } from './src/store/OnboardingContext';
 import { SubscriptionProvider, useSubscription } from './src/store/SubscriptionContext';
 import { PracticeProvider } from './src/store/PracticeContext';
@@ -39,16 +41,20 @@ function Root() {
 
 export default function App() {
   return (
-    <OnboardingProvider>
-      <SubscriptionProvider>
-        <PracticeProvider>
-          <StreakProvider>
-            <ScanProvider>
-              <Root />
-            </ScanProvider>
-          </StreakProvider>
-        </PracticeProvider>
-      </SubscriptionProvider>
-    </OnboardingProvider>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <OnboardingProvider>
+          <SubscriptionProvider>
+            <PracticeProvider>
+              <StreakProvider>
+                <ScanProvider>
+                  <Root />
+                </ScanProvider>
+              </StreakProvider>
+            </PracticeProvider>
+          </SubscriptionProvider>
+        </OnboardingProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }

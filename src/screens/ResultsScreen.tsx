@@ -55,11 +55,7 @@ export function ResultsScreen() {
       <GuidedCaptureScreen
         step={rescanStep}
         stepLabel="New scan"
-        lightingOk
         onCapture={onCapture}
-        onPickFromGallery={() => {}}
-        onRetake={() => {}}
-        onFlip={() => {}}
       />
     );
   }
