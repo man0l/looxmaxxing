@@ -32,7 +32,11 @@ export function ShareSheet({ message, children, onClose }: Props) {
     if (busy) return;
     setBusy(true);
     const uri = await captureCard(cardRef);
-    await shareCard(target, uri ?? '', message);
+    if (!uri) {
+      setBusy(false);
+      return;
+    }
+    await shareCard(target, uri, message);
     setBusy(false);
   };
 

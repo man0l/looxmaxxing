@@ -36,3 +36,9 @@ export function improveScores(prev: TraitScore[]): TraitScore[] {
     percentile: Math.min(98, s.percentile + 3 + ((i * 2 + s.percentile) % 5)),
   }));
 }
+
+export function deltaLabel(beforePercentile: number, afterPercentile: number): string {
+  const diff = (afterPercentile - beforePercentile) / 10;
+  if (diff === 0) return 'No change';
+  return `${diff > 0 ? '+' : ''}${diff.toFixed(1)}`;
+}

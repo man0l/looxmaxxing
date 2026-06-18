@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { MutableRefObject } from 'react';
+import { Linking } from 'react-native';
 import type { View } from 'react-native';
 
 export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
@@ -13,9 +14,10 @@ const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? '';
 export async function captureCard(ref: MutableRefObject<View | null>): Promise<string | null> {
   try {
     const { captureRef } = require('react-native-view-shot');
+    await new Promise((r) => setTimeout(r, 300));
+    if (!ref.current) return null;
     return await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
-  } catch (e) {
-    console.warn('[share] capture failed', e);
+  } catch {
     return null;
   }
 }
@@ -41,31 +43,57 @@ export async function shareCard(
   }
 
   const url = fileUrl(uri);
+
+  const nativeSheet = async () => {
+    await Share.open({ url, message });
+  };
+
+  const webFallback = async (webUrl: string) => {
+    const supported = await Linking.canOpenURL(webUrl);
+    if (supported) await Linking.openURL(webUrl);
+    else await nativeSheet();
+  };
+
   try {
     switch (target) {
       case 'instagram':
-        await Share.shareSingle({
-          social: Social.InstagramStories,
-          appId: FACEBOOK_APP_ID,
-          backgroundImage: url,
-        });
+        try {
+          await Share.shareSingle({
+            social: Social.InstagramStories,
+            appId: FACEBOOK_APP_ID,
+            backgroundImage: url,
+          });
+        } catch {
+          await nativeSheet();
+        }
         return true;
+
       case 'x':
-        await Share.shareSingle({ social: Social.Twitter, url, message });
+        try {
+          await Share.shareSingle({ social: Social.Twitter, url, message });
+        } catch {
+          await webFallback(`https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`);
+        }
         return true;
+
       case 'whatsapp':
-        await Share.shareSingle({ social: Social.Whatsapp, url, message });
+        try {
+          await Share.shareSingle({ social: Social.Whatsapp, url, message });
+        } catch {
+          await webFallback(`https://wa.me/?text=${encodeURIComponent(message)}`);
+        }
         return true;
+
       case 'tiktok':
       case 'more':
       default:
-        await Share.open({ url, message });
+        await nativeSheet();
         return true;
     }
   } catch (e) {
     const err = e as { message?: string };
     if (err.message && /cancel/i.test(err.message)) return false;
-    console.warn('[share] share failed', e);
+    console.warn('[share] share failed:', err.message);
     return false;
   }
 }

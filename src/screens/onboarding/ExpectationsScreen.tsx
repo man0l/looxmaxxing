@@ -32,7 +32,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       </Text>
 
       <View style={styles.chartCard}>
-        <Svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT + 24}`} width="100%">
+        <Svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT + 24}`} width="100%" height={SVG_HEIGHT + 24}>
           {BAR_HEIGHTS.map((h, i) => {
             const scaledH = (h / BAR_HEIGHT_MAX) * SVG_HEIGHT;
             const x = BAR_START_X + i * (BAR_WIDTH + BAR_GAP);
