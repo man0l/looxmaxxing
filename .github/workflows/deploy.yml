@@ -9,6 +9,11 @@ permissions:
   contents: write
 
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Quality gate — typecheck + lint.
+  #    npm cache (keyed on package-lock) makes installs incremental —
+  #    the mobile analog of the Docker layer cache in the web deploy.
+  # ──────────────────────────────────────────────
   quality:
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +26,15 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx expo lint
 
+  # ──────────────────────────────────────────────
+  # 2. Release — build a standalone Android APK in the runner (no EAS),
+  #    then publish it as a GitHub Release so the .apk has a direct
+  #    download link you can open on your phone. Each release is tagged
+  #    with the run number and the commit short-SHA (traceable, like the
+  #    :latest + :<sha> image tags in the web deploy).
+  #    Caches: npm deps + Gradle. EXPO_PUBLIC_* secrets are inlined into
+  #    the JS bundle at build time.
+  # ──────────────────────────────────────────────
   android:
     needs: quality
     runs-on: ubuntu-latest
@@ -43,6 +57,8 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # Gradle cache keyed on the lockfile (native deps derive from it).
+      # Manual cache because android/ doesn't exist until prebuild runs.
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -58,28 +74,25 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
 
-      - name: Export JS bundle
-        run: npx expo export --platform android --output-dir dist
-
-      - name: Build debug APK with bundled JS
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
         working-directory: android
 
       - name: Stage APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk looxmaxxing-debug-${{ env.SHA_SHORT }}.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk looxmaxxing-${{ env.SHA_SHORT }}.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: looxmaxxing-apk
-          path: looxmaxxing-debug-${{ env.SHA_SHORT }}.apk
+          path: looxmaxxing-${{ env.SHA_SHORT }}.apk
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "android-debug-${{ github.run_number }}" \
-            "looxmaxxing-debug-${{ env.SHA_SHORT }}.apk" \
-            --title "Android debug build ${{ env.SHA_SHORT }}" \
-            --notes "Standalone debug APK with bundled JS from ${{ env.SHA_SHORT }}. Download the .apk, install on your phone (enable install from unknown sources). No Metro bundler required." \
+          gh release create "android-${{ github.run_number }}" \
+            "looxmaxxing-${{ env.SHA_SHORT }}.apk" \
+            --title "Android build ${{ env.SHA_SHORT }}" \
+            --notes "Standalone debug-signed APK from ${{ env.SHA_SHORT }}. Download the .apk on your phone and install it (enable install from unknown sources)." \
             --latest
