@@ -7,7 +7,17 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "instagram-stories",
+          "twitter",
+          "whatsapp",
+          "tiktok",
+          "snssdk1233"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,6 +33,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withShareIntentQueries",
       "expo-video",
       [
         "expo-camera",

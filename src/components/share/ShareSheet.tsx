@@ -8,6 +8,7 @@ import {
   TikTokIcon,
   MoreIcon,
 } from '../icons/SocialIcons';
+import { useToast } from '../../store/ToastContext';
 import { colors, spacing, radii, typography } from '../../theme';
 
 interface Props {
@@ -27,17 +28,24 @@ const TARGETS: { target: ShareTarget; label: string; Icon: typeof XIcon }[] = [
 export function ShareSheet({ message, children, onClose }: Props) {
   const cardRef = useRef<View | null>(null);
   const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
 
   const onShare = async (target: ShareTarget) => {
     if (busy) return;
     setBusy(true);
-    const uri = await captureCard(cardRef);
-    if (!uri) {
+    try {
+      const uri = await captureCard(cardRef);
+      if (!uri) {
+        showToast('Couldn’t prepare the image. Please try again.');
+        return;
+      }
+      const outcome = await shareCard(target, uri, message);
+      if (outcome === 'failed') {
+        showToast('Couldn’t open that app.');
+      }
+    } finally {
       setBusy(false);
-      return;
     }
-    await shareCard(target, uri, message);
-    setBusy(false);
   };
 
   return (

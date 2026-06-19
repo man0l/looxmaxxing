@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { MutableRefObject } from 'react';
-import { Linking } from 'react-native';
 import type { View } from 'react-native';
 
 export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
+export type ShareOutcome = 'shared' | 'cancelled' | 'failed';
 
 export const APP_URL = 'https://looxmaxxing.app';
 
@@ -14,10 +14,16 @@ const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? '';
 export async function captureCard(ref: MutableRefObject<View | null>): Promise<string | null> {
   try {
     const { captureRef } = require('react-native-view-shot');
-    await new Promise((r) => setTimeout(r, 300));
-    if (!ref.current) return null;
-    return await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
-  } catch {
+    await new Promise((r) => setTimeout(r, 350));
+    if (!ref.current) {
+      console.warn('[share] capture: card ref not ready');
+      return null;
+    }
+    const uri = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
+    console.log('[share] captured', uri);
+    return uri;
+  } catch (e) {
+    console.warn('[share] capture failed:', (e as Error)?.message);
     return null;
   }
 }
@@ -26,11 +32,16 @@ function fileUrl(uri: string): string {
   return uri.startsWith('file://') || uri.startsWith('http') ? uri : `file://${uri}`;
 }
 
+function isCancel(e: unknown): boolean {
+  const m = (e as { message?: string })?.message ?? '';
+  return /cancel|dismiss|user did not share/i.test(m);
+}
+
 export async function shareCard(
   target: ShareTarget,
   uri: string,
   message: string,
-): Promise<boolean> {
+): Promise<ShareOutcome> {
   let Share: typeof import('react-native-share').default;
   let Social: typeof import('react-native-share').Social;
   try {
@@ -39,61 +50,66 @@ export async function shareCard(
     Social = mod.Social;
   } catch (e) {
     console.warn('[share] react-native-share unavailable', e);
-    return false;
+    return 'failed';
   }
 
   const url = fileUrl(uri);
+  // An explicit mime type is required for several Social handlers (X/Twitter
+  // throws ActivityNotFound without it) and lets Android resolve the target app.
+  const image = { url, type: 'image/png', filename: 'looxmaxxing', failOnCancel: false } as const;
 
-  const nativeSheet = async () => {
-    await Share.open({ url, message });
+  const single = async (opts: Record<string, unknown>) => {
+    await Share.shareSingle(opts as unknown as Parameters<typeof Share.shareSingle>[0]);
   };
 
-  const webFallback = async (webUrl: string) => {
-    const supported = await Linking.canOpenURL(webUrl);
-    if (supported) await Linking.openURL(webUrl);
-    else await nativeSheet();
+  const nativeSheet = async () => {
+    await Share.open({ url, type: 'image/png', message, failOnCancel: false });
   };
 
   try {
     switch (target) {
       case 'instagram':
         try {
-          await Share.shareSingle({
-            social: Social.InstagramStories,
-            appId: FACEBOOK_APP_ID,
-            backgroundImage: url,
-          });
-        } catch {
+          if (FACEBOOK_APP_ID) {
+            await single({
+              social: Social.InstagramStories,
+              appId: FACEBOOK_APP_ID,
+              backgroundImage: url,
+              failOnCancel: false,
+            });
+          } else {
+            await single({ social: Social.Instagram, ...image });
+          }
+        } catch (e) {
+          if (isCancel(e)) return 'cancelled';
+          console.warn('[share] instagram failed -> sheet:', (e as Error)?.message);
           await nativeSheet();
         }
-        return true;
-
-      case 'x':
-        try {
-          await Share.shareSingle({ social: Social.Twitter, url, message });
-        } catch {
-          await webFallback(`https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`);
-        }
-        return true;
+        return 'shared';
 
       case 'whatsapp':
         try {
-          await Share.shareSingle({ social: Social.Whatsapp, url, message });
-        } catch {
-          await webFallback(`https://wa.me/?text=${encodeURIComponent(message)}`);
+          await single({ social: Social.Whatsapp, message, ...image });
+        } catch (e) {
+          if (isCancel(e)) return 'cancelled';
+          console.warn('[share] whatsapp failed -> sheet:', (e as Error)?.message);
+          await nativeSheet();
         }
-        return true;
+        return 'shared';
 
+      case 'x':
       case 'tiktok':
       case 'more':
       default:
+        // react-native-share can't open X or TikTok directly (TwitterShare has no
+        // component class; TikTok has no Social target and rejects static images),
+        // so these route to the system share sheet with the image + text attached.
         await nativeSheet();
-        return true;
+        return 'shared';
     }
   } catch (e) {
-    const err = e as { message?: string };
-    if (err.message && /cancel/i.test(err.message)) return false;
-    console.warn('[share] share failed:', err.message);
-    return false;
+    if (isCancel(e)) return 'cancelled';
+    console.warn('[share] failed:', (e as Error)?.message);
+    return 'failed';
   }
 }

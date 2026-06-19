@@ -2,6 +2,7 @@ import type { MutableRefObject } from 'react';
 import type { View } from 'react-native';
 
 export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
+export type ShareOutcome = 'shared' | 'cancelled' | 'failed';
 
 export const APP_URL = 'https://looxmaxxing.app';
 
@@ -13,15 +14,15 @@ export async function shareCard(
   _target: ShareTarget,
   _uri: string,
   message: string,
-): Promise<boolean> {
+): Promise<ShareOutcome> {
   try {
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator) : undefined;
     if (nav?.share) {
       await nav.share({ text: message, url: APP_URL });
-      return true;
+      return 'shared';
     }
-  } catch {
-    return false;
+  } catch (e) {
+    return /abort|cancel/i.test((e as Error)?.message ?? '') ? 'cancelled' : 'failed';
   }
-  return false;
+  return 'failed';
 }
