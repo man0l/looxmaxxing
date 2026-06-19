@@ -16,7 +16,7 @@ interface ScanValue {
   latest: Scan;
   canRescan: boolean;
   daysUntilRescan: number;
-  rescan: () => void;
+  rescan: (photoUri?: string) => void;
 }
 
 const ScanContext = createContext<ScanValue | null>(null);
@@ -25,13 +25,14 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
   const [scans, setScans] = useState<Scan[]>(seedScans);
   const [mountNow] = useState(() => Date.now());
 
-  const rescan = useCallback(() => {
+  const rescan = useCallback((photoUri?: string) => {
     setScans((prev) => {
       const improved = improveScores(prev[0].scores);
       const next: Scan = {
         id: `scan-${prev.length + 1}`,
         date: new Date().toISOString(),
         scores: improved,
+        photoUri,
       };
       return [next, ...prev];
     });

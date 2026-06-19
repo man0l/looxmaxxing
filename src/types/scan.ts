@@ -4,4 +4,5 @@ export interface Scan {
   id: string;
   date: string;
   scores: TraitScore[];
+  photoUri?: string;
 }

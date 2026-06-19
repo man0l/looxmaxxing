@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useScans } from '../store/ScanContext';
+import { useOnboarding } from '../store/OnboardingContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { CaptureFab } from '../components/CaptureFab';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -33,6 +34,7 @@ function shareRows(scores: TraitScore[]) {
 
 export function RatingsScreen() {
   const { scans } = useScans();
+  const { frontPhoto } = useOnboarding();
   const { canRescan, rescanStep, startRescan, onCapture } = useRescanFlow();
   const [shareScan, setShareScan] = useState<Scan | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -145,6 +147,7 @@ export function RatingsScreen() {
           <ScoreShareCard
             overall={scoreLabel(overallPercentile(shareScan.scores))}
             rows={shareRows(shareScan.scores)}
+            photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
           />
         </ShareSheet>
       )}

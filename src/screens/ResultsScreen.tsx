@@ -18,7 +18,7 @@ import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
 export function ResultsScreen() {
-  const { concerns } = useOnboarding();
+  const { concerns, frontPhoto } = useOnboarding();
   const { subscribed, openPaywall } = useSubscription();
   const streak = useStreak();
   const navigation = useNavigation();
@@ -121,7 +121,11 @@ export function ResultsScreen() {
 
       {showShare && (
         <ShareSheet message="My looxmaxxing scan" onClose={() => setShowShare(false)}>
-          <ScoreShareCard overall={overallScore} rows={shareRows} />
+          <ScoreShareCard
+            overall={overallScore}
+            rows={shareRows}
+            photoUri={latest.photoUri ?? frontPhoto ?? undefined}
+          />
         </ShareSheet>
       )}
     </View>
