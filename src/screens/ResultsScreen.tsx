@@ -14,7 +14,7 @@ import { ScoreShareCard } from '../components/share/ShareCards';
 import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
-import { orderByConcerns, scoreLabel } from '../services/scoring';
+import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -26,7 +26,7 @@ export function ResultsScreen() {
   const [showStreak, setShowStreak] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
-  const { latest, daysUntilRescan } = useScans();
+  const { scans, latest, daysUntilRescan } = useScans();
   const { canRescan, rescanStep, startRescan, onCapture, justRescanned } = useRescanFlow();
   const goToPractice = () => navigation.navigate('Practice' as never);
 
@@ -77,14 +77,24 @@ export function ResultsScreen() {
 
   const allDone = streak.tasksLeftToday === 0 && streak.tasksTotalToday > 0;
 
+  const prevScan = scans[1];
   const orderedScores = orderByConcerns(latest.scores, concerns);
-  const shareRows = orderedScores.map((s) => ({
-    label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
-    percentile: s.percentile,
-  }));
-  const overallScore = scoreLabel(
-    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
-  );
+  const shareRows = orderedScores.map((s) => {
+    const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
+    return {
+      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+      percentile: s.percentile,
+      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+    };
+  });
+  const overallPct = orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length;
+  const overallScore = scoreLabel(overallPct);
+  const overallDelta = prevScan
+    ? deltaLabel(
+        prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
+        overallPct,
+      )
+    : undefined;
 
   return (
     <View style={styles.root}>
@@ -138,6 +148,7 @@ export function ResultsScreen() {
         <ShareSheet message="My looxmaxxing scan" onClose={() => setShowShare(false)}>
           <ScoreShareCard
             overall={overallScore}
+            overallDelta={overallDelta}
             rows={shareRows}
             photoUri={latest.photoUri ?? frontPhoto ?? undefined}
           />

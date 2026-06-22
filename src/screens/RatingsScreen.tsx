@@ -26,11 +26,15 @@ function formatDate(iso: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-function shareRows(scores: TraitScore[]) {
-  return scores.map((s) => ({
-    label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
-    percentile: s.percentile,
-  }));
+function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
+  return scores.map((s) => {
+    const before = prev?.find((p) => p.traitId === s.traitId)?.percentile;
+    return {
+      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+      percentile: s.percentile,
+      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+    };
+  });
 }
 
 export function RatingsScreen() {
@@ -142,15 +146,24 @@ export function RatingsScreen() {
 
       <CaptureFab onPress={canRescan ? startRescan : () => {}} />
 
-      {shareScan && (
-        <ShareSheet message="My looxmaxxing scan" onClose={() => setShareScan(null)}>
-          <ScoreShareCard
-            overall={scoreLabel(overallPercentile(shareScan.scores))}
-            rows={shareRows(shareScan.scores)}
-            photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
-          />
-        </ShareSheet>
-      )}
+      {shareScan &&
+        (() => {
+          const idx = scans.findIndex((s) => s.id === shareScan.id);
+          const prev = idx >= 0 ? scans[idx + 1] : undefined;
+          const curOverall = overallPercentile(shareScan.scores);
+          return (
+            <ShareSheet message="My looxmaxxing scan" onClose={() => setShareScan(null)}>
+              <ScoreShareCard
+                overall={scoreLabel(curOverall)}
+                overallDelta={
+                  prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
+                }
+                rows={shareRows(shareScan.scores, prev?.scores)}
+                photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
+              />
+            </ShareSheet>
+          );
+        })()}
     </View>
   );
 }
