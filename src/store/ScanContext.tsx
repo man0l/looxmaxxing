@@ -1,14 +1,27 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Scan } from '../types/scan';
+import type { TraitScore } from '../types/traits';
 import { getScores, improveScores } from '../services/scoring';
 
 const RESCAN_DAYS = 14;
 const DAY_MS = 86400000;
 
-function seedScans(): Scan[] {
+function dateDaysAgo(days: number): string {
   const d = new Date();
-  d.setDate(d.getDate() - 16);
-  return [{ id: 'scan-1', date: d.toISOString(), scores: getScores() }];
+  d.setDate(d.getDate() - days);
+  return d.toISOString();
+}
+
+function seedScans(): Scan[] {
+  const oldest = getScores();
+  const middle = improveScores(oldest);
+  const latest = improveScores(middle);
+  const history: { id: string; daysAgo: number; scores: TraitScore[] }[] = [
+    { id: 'scan-3', daysAgo: 16, scores: latest },
+    { id: 'scan-2', daysAgo: 30, scores: middle },
+    { id: 'scan-1', daysAgo: 44, scores: oldest },
+  ];
+  return history.map((h) => ({ id: h.id, date: dateDaysAgo(h.daysAgo), scores: h.scores }));
 }
 
 interface ScanValue {

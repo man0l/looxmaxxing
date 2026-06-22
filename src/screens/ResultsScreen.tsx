@@ -7,13 +7,15 @@ import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
 import { TraitGrid } from '../components/TraitGrid';
 import { CaptureFab } from '../components/CaptureFab';
 import { StreakScreen } from './StreakScreen';
+import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
+import { ShareIcon } from '../components/icons/ActionIcons';
 import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
-import { orderByConcerns, scoreLabel } from '../services/scoring';
+import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -24,7 +26,8 @@ export function ResultsScreen() {
   const navigation = useNavigation();
   const [showStreak, setShowStreak] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const { latest, daysUntilRescan } = useScans();
+  const [openTrait, setOpenTrait] = useState<string | null>(null);
+  const { scans, latest, daysUntilRescan } = useScans();
   const { canRescan, rescanStep, startRescan, onCapture, justRescanned } = useRescanFlow();
   const goToPractice = () => navigation.navigate('Practice' as never);
 
@@ -50,6 +53,19 @@ export function ResultsScreen() {
     return <StreakScreen onClose={() => setShowStreak(false)} />;
   }
 
+  if (openTrait) {
+    return (
+      <TraitDetailScreen
+        traitId={openTrait}
+        onClose={() => setOpenTrait(null)}
+        onOpenPlan={() => {
+          setOpenTrait(null);
+          goToPractice();
+        }}
+      />
+    );
+  }
+
   if (rescanStep) {
     return (
       <GuidedCaptureScreen
@@ -62,14 +78,24 @@ export function ResultsScreen() {
 
   const allDone = streak.tasksLeftToday === 0 && streak.tasksTotalToday > 0;
 
+  const prevScan = scans[1];
   const orderedScores = orderByConcerns(latest.scores, concerns);
-  const shareRows = orderedScores.map((s) => ({
-    label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
-    percentile: s.percentile,
-  }));
-  const overallScore = scoreLabel(
-    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
-  );
+  const shareRows = orderedScores.map((s) => {
+    const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
+    return {
+      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+      percentile: s.percentile,
+      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+    };
+  });
+  const overallPct = orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length;
+  const overallScore = scoreLabel(overallPct);
+  const overallDelta = prevScan
+    ? deltaLabel(
+        prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
+        overallPct,
+      )
+    : undefined;
 
   return (
     <View style={styles.root}>
@@ -95,11 +121,11 @@ export function ResultsScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.header}>Your results</Text>
           <Pressable onPress={() => setShowShare(true)} hitSlop={8}>
-            <Text style={styles.shareLink}>Share</Text>
+            <ShareIcon size={22} color={colors.primary} />
           </Pressable>
         </View>
 
-        <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={goToPractice} />
+        <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={setOpenTrait} />
 
         {canRescan ? (
           <Pressable style={styles.rescanCardActive} onPress={startRescan}>
@@ -123,6 +149,7 @@ export function ResultsScreen() {
         <ShareSheet message="My looxmaxxing scan" onClose={() => setShowShare(false)}>
           <ScoreShareCard
             overall={overallScore}
+            overallDelta={overallDelta}
             rows={shareRows}
             photoUri={latest.photoUri ?? frontPhoto ?? undefined}
           />
@@ -162,10 +189,6 @@ const styles = StyleSheet.create({
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
-  },
-  shareLink: {
-    ...typography.label,
-    color: colors.primary,
   },
   streakBanner: {
     flexDirection: 'row',

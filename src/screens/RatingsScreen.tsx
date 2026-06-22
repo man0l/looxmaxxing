@@ -9,8 +9,10 @@ import { RingGauge } from '../components/RingGauge';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
 import { ComparisonScreen } from './ratings/ComparisonScreen';
+import { ScanDetailScreen } from './ratings/ScanDetailScreen';
+import { ShareIcon, CompareIcon } from '../components/icons/ActionIcons';
 import { TRAITS, type TraitScore } from '../types/traits';
-import { topPercentLabel, scoreLabel } from '../services/scoring';
+import { topPercentLabel, scoreLabel, deltaLabel } from '../services/scoring';
 import type { Scan } from '../types/scan';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -25,11 +27,15 @@ function formatDate(iso: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-function shareRows(scores: TraitScore[]) {
-  return scores.map((s) => ({
-    label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
-    percentile: s.percentile,
-  }));
+function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
+  return scores.map((s) => {
+    const before = prev?.find((p) => p.traitId === s.traitId)?.percentile;
+    return {
+      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+      percentile: s.percentile,
+      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+    };
+  });
 }
 
 export function RatingsScreen() {
@@ -37,51 +43,29 @@ export function RatingsScreen() {
   const { frontPhoto } = useOnboarding();
   const { canRescan, rescanStep, startRescan, onCapture } = useRescanFlow();
   const [shareScan, setShareScan] = useState<Scan | null>(null);
-  const [compareMode, setCompareMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
+  const [detailScan, setDetailScan] = useState<Scan | null>(null);
 
-  const toggleCompareMode = () => {
-    setCompareMode((prev) => !prev);
-    setSelectedIds([]);
-  };
-
-  const toggleSelect = (scan: Scan) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(scan.id)) return prev.filter((id) => id !== scan.id);
-      if (prev.length === 2) return prev;
-      const next = [...prev, scan.id];
-      if (next.length === 2) {
-        const picked = scans.filter((s) => next.includes(s.id));
-        const [a, b] = picked.sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime());
-        setComparePair([a, b]);
-        setCompareMode(false);
-      }
-      return next;
-    });
-  };
+  const openCompare = (older: Scan, newer: Scan) => setComparePair([older, newer]);
 
   if (comparePair) {
     return (
       <ComparisonScreen
         before={comparePair[0]}
         after={comparePair[1]}
-        onClose={() => {
-          setComparePair(null);
-          setSelectedIds([]);
-        }}
+        onClose={() => setComparePair(null)}
       />
     );
   }
 
-  if (rescanStep) {
+  if (detailScan) {
     return (
-      <GuidedCaptureScreen
-        step={rescanStep}
-        stepLabel="New scan"
-        onCapture={onCapture}
-      />
+      <ScanDetailScreen scan={detailScan} isFirst onClose={() => setDetailScan(null)} />
     );
+  }
+
+  if (rescanStep) {
+    return <GuidedCaptureScreen step={rescanStep} stepLabel="New scan" onCapture={onCapture} />;
   }
 
   return (
@@ -93,27 +77,29 @@ export function RatingsScreen() {
             <Text style={styles.sub}>Every scan you’ve taken.</Text>
           </View>
           {scans.length >= 2 && (
-            <Pressable onPress={toggleCompareMode} hitSlop={8}>
-              <Text style={styles.compareToggle}>{compareMode ? 'Cancel' : 'Compare'}</Text>
+            <Pressable
+              style={styles.compareBtn}
+              onPress={() => openCompare(scans[1], scans[0])}
+              hitSlop={8}
+            >
+              <CompareIcon size={18} color={colors.primary} />
+              <Text style={styles.compareLabel}>Compare</Text>
             </Pressable>
           )}
         </View>
 
-        {compareMode && (
-          <Text style={styles.compareHint}>
-            {selectedIds.length === 0 ? 'Select two scans to compare.' : 'Select one more scan.'}
-          </Text>
-        )}
-
         <View style={styles.list}>
           {scans.map((scan, i) => {
             const overall = overallPercentile(scan.scores);
-            const selected = selectedIds.includes(scan.id);
+            const prev = scans[i + 1];
+            const delta = prev ? deltaLabel(overallPercentile(prev.scores), overall) : null;
+            const improved = delta != null && delta.startsWith('+');
+            const declined = delta != null && delta.startsWith('-');
             return (
               <Pressable
                 key={scan.id}
-                style={[styles.row, compareMode && selected && styles.rowSelected]}
-                onPress={() => (compareMode ? toggleSelect(scan) : undefined)}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                onPress={prev ? () => openCompare(prev, scan) : () => setDetailScan(scan)}
               >
                 <RingGauge percentile={overall} size={48} centerLabel={scoreLabel(overall)} />
                 <View style={styles.info}>
@@ -125,15 +111,40 @@ export function RatingsScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.overall}>{topPercentLabel(overall)} of men</Text>
+                  <View style={styles.overallRow}>
+                    <Text style={styles.overall}>{topPercentLabel(overall)} of men</Text>
+                    {delta ? (
+                      <View
+                        style={[
+                          styles.deltaChip,
+                          improved && styles.deltaChipUp,
+                          declined && styles.deltaChipDown,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.deltaText,
+                            improved && styles.deltaTextUp,
+                            declined && styles.deltaTextDown,
+                          ]}
+                        >
+                          {improved ? '▲ ' : declined ? '▼ ' : ''}
+                          {delta}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.firstScan}>First scan</Text>
+                    )}
+                  </View>
                 </View>
-                {compareMode ? (
-                  <View style={[styles.checkbox, selected && styles.checkboxChecked]} />
-                ) : (
-                  <Pressable onPress={() => setShareScan(scan)} hitSlop={8}>
-                    <Text style={styles.share}>Share</Text>
-                  </Pressable>
-                )}
+                <Pressable
+                  style={styles.shareBtn}
+                  onPress={() => setShareScan(scan)}
+                  hitSlop={8}
+                >
+                  <ShareIcon size={20} color={colors.primary} />
+                </Pressable>
+                <Text style={styles.chevron}>›</Text>
               </Pressable>
             );
           })}
@@ -142,15 +153,24 @@ export function RatingsScreen() {
 
       <CaptureFab onPress={canRescan ? startRescan : () => {}} />
 
-      {shareScan && (
-        <ShareSheet message="My looxmaxxing scan" onClose={() => setShareScan(null)}>
-          <ScoreShareCard
-            overall={scoreLabel(overallPercentile(shareScan.scores))}
-            rows={shareRows(shareScan.scores)}
-            photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
-          />
-        </ShareSheet>
-      )}
+      {shareScan &&
+        (() => {
+          const idx = scans.findIndex((s) => s.id === shareScan.id);
+          const prev = idx >= 0 ? scans[idx + 1] : undefined;
+          const curOverall = overallPercentile(shareScan.scores);
+          return (
+            <ShareSheet message="My looxmaxxing scan" onClose={() => setShareScan(null)}>
+              <ScoreShareCard
+                overall={scoreLabel(curOverall)}
+                overallDelta={
+                  prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
+                }
+                rows={shareRows(shareScan.scores, prev?.scores)}
+                photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
+              />
+            </ShareSheet>
+          );
+        })()}
     </View>
   );
 }
@@ -161,9 +181,19 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
-  sub: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
-  compareToggle: { ...typography.label, color: colors.primary, marginTop: spacing.xs },
-  compareHint: { ...typography.bodySm, color: colors.textSecondary, marginBottom: spacing.md },
+  sub: {
+    ...typography.bodySm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  compareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  compareLabel: { ...typography.label, color: colors.primary },
   list: { gap: spacing.sm },
   row: {
     flexDirection: 'row',
@@ -175,16 +205,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.lg,
   },
-  rowSelected: { borderColor: colors.primary },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: radii.full,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  info: { flex: 1, gap: 3 },
+  rowPressed: { borderColor: colors.primary, backgroundColor: colors.surfaceRaised },
+  info: { flex: 1, gap: 4 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   date: { ...typography.h3, color: colors.textPrimary },
   latestBadge: {
@@ -194,6 +216,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   latestText: { ...typography.caption, color: colors.tertiary },
+  overallRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   overall: { ...typography.bodySm, color: colors.textSecondary },
-  share: { ...typography.label, color: colors.primary },
+  deltaChip: {
+    borderRadius: radii.sm,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    backgroundColor: colors.surfaceInset,
+  },
+  deltaChipUp: { backgroundColor: 'rgba(239,230,216,0.12)' },
+  deltaChipDown: { backgroundColor: 'rgba(154,146,133,0.12)' },
+  deltaText: { ...typography.caption, fontWeight: '600', color: colors.textSecondary },
+  deltaTextUp: { color: colors.tertiary },
+  deltaTextDown: { color: colors.textSecondary },
+  firstScan: { ...typography.caption, color: colors.textTertiary },
+  shareBtn: { padding: 2 },
+  chevron: { fontSize: 20, color: colors.textTertiary },
 });

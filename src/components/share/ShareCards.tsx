@@ -27,15 +27,25 @@ export function StreakShareCard({ day, weeks }: StreakCardProps) {
 interface ScoreRow {
   label: string;
   percentile: number;
+  delta?: string;
 }
 
 interface ScoreCardProps {
   overall: string;
   rows: ScoreRow[];
   photoUri?: string;
+  overallDelta?: string;
 }
 
-export function ScoreShareCard({ overall, rows, photoUri }: ScoreCardProps) {
+function isUp(delta?: string): boolean {
+  return Boolean(delta && delta.startsWith('+'));
+}
+
+function isDown(delta?: string): boolean {
+  return Boolean(delta && delta.startsWith('-'));
+}
+
+export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.brand}>looxmaxxing</Text>
@@ -49,13 +59,39 @@ export function ScoreShareCard({ overall, rows, photoUri }: ScoreCardProps) {
       ) : null}
       <Text style={styles.scanLabel}>My scan</Text>
       {photoUri ? null : <Text style={styles.bigNumber}>{overall}</Text>}
-      <Text style={styles.bigLabel}>overall</Text>
+      <View style={styles.overallLabelRow}>
+        <Text style={styles.bigLabel}>overall</Text>
+        {overallDelta ? (
+          <Text
+            style={[
+              styles.overallDelta,
+              isUp(overallDelta) && styles.deltaUp,
+              isDown(overallDelta) && styles.deltaDown,
+            ]}
+          >
+            {isUp(overallDelta) ? '▲ ' : isDown(overallDelta) ? '▼ ' : ''}
+            {overallDelta}
+          </Text>
+        ) : null}
+      </View>
       <View style={styles.grid}>
         {rows.map((r) => (
           <View key={r.label} style={styles.gridItem}>
             <RingGauge percentile={r.percentile} size={46} centerLabel={scoreLabel(r.percentile)} />
             <Text style={styles.gridLabel}>{r.label}</Text>
             <Text style={styles.gridTop}>{topPercentLabel(r.percentile)}</Text>
+            {r.delta ? (
+              <Text
+                style={[
+                  styles.gridDelta,
+                  isUp(r.delta) && styles.deltaUp,
+                  isDown(r.delta) && styles.deltaDown,
+                ]}
+              >
+                {isUp(r.delta) ? '▲ ' : isDown(r.delta) ? '▼ ' : ''}
+                {r.delta}
+              </Text>
+            ) : null}
           </View>
         ))}
       </View>
@@ -127,6 +163,28 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  overallLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  overallDelta: {
+    ...typography.label,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  gridDelta: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  deltaUp: {
+    color: colors.tertiary,
+  },
+  deltaDown: {
+    color: colors.textSecondary,
   },
   heatmap: {
     marginTop: spacing.xl,

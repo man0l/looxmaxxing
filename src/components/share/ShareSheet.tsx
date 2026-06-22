@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Animated, PanResponder, ScrollView } from 'react-native';
 import { captureCard, shareCard, type ShareTarget } from '../../services/share';
 import {
   InstagramIcon,
@@ -25,10 +25,42 @@ const TARGETS: { target: ShareTarget; label: string; Icon: typeof XIcon }[] = [
   { target: 'more', label: 'More', Icon: MoreIcon },
 ];
 
+const CLOSE_DISTANCE = 120;
+const CLOSE_VELOCITY = 0.8;
+
 export function ShareSheet({ message, children, onClose }: Props) {
   const cardRef = useRef<View | null>(null);
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const dismiss = () => {
+    Animated.timing(translateY, {
+      toValue: 600,
+      duration: 180,
+      useNativeDriver: false,
+    }).start(onClose);
+  };
+
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > CLOSE_DISTANCE || g.vy > CLOSE_VELOCITY) {
+          dismiss();
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: false,
+            bounciness: 4,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
   const onShare = async (target: ShareTarget) => {
     if (busy) return;
@@ -51,8 +83,19 @@ export function ShareSheet({ message, children, onClose }: Props) {
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.previewWrap}>
+      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <View style={styles.header} {...pan.panHandlers}>
+          <View style={styles.grabber} />
+          <Pressable style={styles.closeButton} onPress={onClose} hitSlop={10}>
+            <Text style={styles.closeX}>✕</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView
+          style={styles.previewScroll}
+          contentContainerStyle={styles.previewWrap}
+          showsVerticalScrollIndicator={false}
+        >
           <View
             collapsable={false}
             ref={(node) => {
@@ -61,7 +104,7 @@ export function ShareSheet({ message, children, onClose }: Props) {
           >
             {children}
           </View>
-        </View>
+        </ScrollView>
 
         <View style={styles.iconRow}>
           {TARGETS.map(({ target, label, Icon }) => (
@@ -78,11 +121,7 @@ export function ShareSheet({ message, children, onClose }: Props) {
             </Pressable>
           ))}
         </View>
-
-        <Pressable onPress={onClose} style={styles.cancel}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -95,6 +134,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     justifyContent: 'flex-end',
+    zIndex: 100,
   },
   backdrop: {
     position: 'absolute',
@@ -105,19 +145,56 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(8, 6, 4, 0.78)',
   },
   sheet: {
+    maxHeight: '92%',
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     borderTopWidth: 1,
     borderColor: colors.border,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: 32,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
+  header: {
+    alignSelf: 'stretch',
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  grabber: {
+    width: 40,
+    height: 5,
+    borderRadius: radii.full,
+    backgroundColor: colors.border,
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceInset,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeX: {
+    ...typography.label,
+    fontSize: 15,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  previewScroll: {
+    alignSelf: 'stretch',
+    flexShrink: 1,
+  },
   previewWrap: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    paddingBottom: spacing.xl,
   },
   iconRow: {
     flexDirection: 'row',
@@ -141,14 +218,6 @@ const styles = StyleSheet.create({
   },
   iconLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
-  },
-  cancel: {
-    marginTop: spacing.xl,
-    paddingVertical: spacing.sm,
-  },
-  cancelText: {
-    ...typography.label,
     color: colors.textSecondary,
   },
 });
