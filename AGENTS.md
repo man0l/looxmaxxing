@@ -142,6 +142,24 @@ Update this section after every work session. Move items from TODO → IN PROGRE
 
 _None yet._
 
+### Mock surfaces & what each needs to go live
+
+Everything user-facing works end-to-end, but **nothing is persisted or server-backed yet**. There is no scoring AI, no render AI, and no real scan/streak/purchase persistence. The mocked surfaces:
+
+| # | Surface | Where | What it fakes | What it needs to go live |
+|---|---------|-------|---------------|--------------------------|
+| 1 | **AI face scoring** | `services/scoring.ts` | `MOCK_PERCENTILES` (fixed per-trait percentiles); `improveScores()` fakes re-scan gains | Real scoring model/service: upload front+profile photos → per-trait percentiles. The app's core value — this is the priority backend. |
+| 2 | **Scan history / persistence** | `store/ScanContext.tsx` (`seedScans()`) | Fabricates 3 scans (44/30/16 days ago) so history/deltas/compare are populated | Persisted scan store (local + server) writing real captures and scores; true 14-day re-scan gating from real timestamps |
+| 3 | **Streak history** | `store/StreakContext.tsx` + `services/streak.ts` (`seedHistory()`) | Streak math is real, but the history it runs on is generated | Real check-in persistence + date rollover; auto-apply streak-freeze on a real broken streak |
+| 4 | **Avatar renders** | `components/AvatarRender.tsx` | Styled SVG silhouette placeholder; style pills don't change the image | A render provider (PRD open-question #4) generating per-trait/per-style images; render-credit metering for the annual upsell |
+
+Real services (not mocked) but not yet live / web-stubbed:
+
+| Service | Status |
+|---------|--------|
+| `services/purchases.ts` (RevenueCat) | Real SDK, **not live** — needs dashboard + App Store Connect products, prod `appl_` key, sandbox test, EAS dev build (tracker item #15). `purchases.web.ts` is a web stub. |
+| `services/share.ts` (view-shot + react-native-share) | Real, **device-only** — needs FB App ID + Info.plist schemes (`docs/SHARING.md`). `share.web.ts` stubs to `navigator.share` for web verification. |
+
 ### Changelog
 
 - **Session 17 (2026-06-22):** Avatars "Preview your potential" (PRD §5.4 — item 27, opens P2 Growth). Rebuilt the placeholder `AvatarsScreen` into a trait-linked gallery: concern-first "Your goals" + "More to explore", each card a consistent placeholder render (`components/AvatarRender.tsx` — warm gradient + head silhouette + trait glyph badge) + headline + "Top X% today". New `screens/avatars/AvatarPreviewScreen.tsx` (large render, selectable style pills that swap the render's style chip, a "styling preview — not a predicted result" disclaimer per the §9 overpromise risk, today's percentile, and "Start <plan> ›" CTA into the mapped Practice plan). New `types/avatars.ts` (per-trait headline/blurb/styles, plan from TRAITS). Trait-linked entry points beyond the tab (§5.4): Results gained a "See your potential" card → Avatars tab; `TraitDetailScreen` gained a "Preview your potential ›" link that deep-links straight to that trait's preview via an `Avatars` `focusTrait` route param (consumed + cleared in a `useEffect`). Verified full flow in browser (375×812): gallery concern ordering, preview pills swap, CTA → Practice, Results entry, and the trait-detail deep-link landing on the right preview. tsc clean, 0 console errors. NOTE: renders are styled placeholders — real AI render provider/credits is backend + PRD open-question 4.
