@@ -7,6 +7,7 @@ import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
 import { TraitGrid } from '../components/TraitGrid';
 import { CaptureFab } from '../components/CaptureFab';
 import { StreakScreen } from './StreakScreen';
+import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
@@ -24,6 +25,7 @@ export function ResultsScreen() {
   const navigation = useNavigation();
   const [showStreak, setShowStreak] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [openTrait, setOpenTrait] = useState<string | null>(null);
   const { latest, daysUntilRescan } = useScans();
   const { canRescan, rescanStep, startRescan, onCapture, justRescanned } = useRescanFlow();
   const goToPractice = () => navigation.navigate('Practice' as never);
@@ -48,6 +50,19 @@ export function ResultsScreen() {
 
   if (showStreak) {
     return <StreakScreen onClose={() => setShowStreak(false)} />;
+  }
+
+  if (openTrait) {
+    return (
+      <TraitDetailScreen
+        traitId={openTrait}
+        onClose={() => setOpenTrait(null)}
+        onOpenPlan={() => {
+          setOpenTrait(null);
+          goToPractice();
+        }}
+      />
+    );
   }
 
   if (rescanStep) {
@@ -99,7 +114,7 @@ export function ResultsScreen() {
           </Pressable>
         </View>
 
-        <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={goToPractice} />
+        <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={setOpenTrait} />
 
         {canRescan ? (
           <Pressable style={styles.rescanCardActive} onPress={startRescan}>
