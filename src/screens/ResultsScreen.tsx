@@ -11,6 +11,7 @@ import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
+import { ShareIcon } from '../components/icons/ActionIcons';
 import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
@@ -120,7 +121,7 @@ export function ResultsScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.header}>Your results</Text>
           <Pressable onPress={() => setShowShare(true)} hitSlop={8}>
-            <Text style={styles.shareLink}>Share</Text>
+            <ShareIcon size={22} color={colors.primary} />
           </Pressable>
         </View>
 
@@ -188,10 +189,6 @@ const styles = StyleSheet.create({
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
-  },
-  shareLink: {
-    ...typography.label,
-    color: colors.primary,
   },
   streakBanner: {
     flexDirection: 'row',
