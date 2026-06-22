@@ -62,6 +62,13 @@ export function ResultsScreen() {
           setOpenTrait(null);
           goToPractice();
         }}
+        onPreview={() => {
+          const traitId = openTrait;
+          setOpenTrait(null);
+          (navigation as unknown as {
+            navigate: (name: string, params?: object) => void;
+          }).navigate('Avatars', { focusTrait: traitId });
+        }}
       />
     );
   }
@@ -126,6 +133,19 @@ export function ResultsScreen() {
         </View>
 
         <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={setOpenTrait} />
+
+        <Pressable
+          style={styles.potentialCard}
+          onPress={() => navigation.navigate('Avatars' as never)}
+        >
+          <View style={styles.potentialInfo}>
+            <Text style={styles.potentialTitle}>See your potential</Text>
+            <Text style={styles.potentialCaption}>
+              Preview where your plan can take each trait.
+            </Text>
+          </View>
+          <Text style={styles.potentialChevron}>›</Text>
+        </Pressable>
 
         {canRescan ? (
           <Pressable style={styles.rescanCardActive} onPress={startRescan}>
@@ -218,6 +238,20 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.primary,
   },
+  potentialCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+  },
+  potentialInfo: { flex: 1, gap: 3 },
+  potentialTitle: { ...typography.h3, color: colors.textPrimary },
+  potentialCaption: { ...typography.bodySm, color: colors.textSecondary },
+  potentialChevron: { fontSize: 20, color: colors.textTertiary },
   unlockBanner: {
     backgroundColor: colors.secondary,
     borderRadius: radii.lg,
