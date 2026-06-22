@@ -121,10 +121,6 @@ export function ShareSheet({ message, children, onClose }: Props) {
             </Pressable>
           ))}
         </View>
-
-        <Pressable onPress={onClose} style={styles.cancel}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
       </Animated.View>
     </View>
   );
@@ -138,6 +134,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     justifyContent: 'flex-end',
+    zIndex: 100,
   },
   backdrop: {
     position: 'absolute',
@@ -221,14 +218,6 @@ const styles = StyleSheet.create({
   },
   iconLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
-  },
-  cancel: {
-    marginTop: spacing.xl,
-    paddingVertical: spacing.sm,
-  },
-  cancelText: {
-    ...typography.label,
     color: colors.textSecondary,
   },
 });
