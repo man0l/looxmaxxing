@@ -89,6 +89,30 @@ looxmaxxing/
 - **Animations:** react-native-reanimated + Lottie for scan-motif animation
 - **Charts:** react-native-svg for ring gauges and streak heatmap
 
+## Architecture — local-first
+
+The app is **local-first**: the phone is the source of truth for everything except the two AI capabilities and purchases. Only **three** things touch the network — AI scan scoring, avatar render, and RevenueCat. Everything else works offline.
+
+**On device (source of truth, offline-capable):**
+- Scan **results** (percentiles), scan history, captured photos, streak check-ins, practice completions, concerns, settings.
+- All derived views are pure functions over local data and need no server: re-scan 14-day gating (local timestamps), deltas, score timelines, before/after comparison, ratings history.
+- Persistence target: AsyncStorage / SQLite / MMKV behind the existing store interfaces (`ScanContext`, `StreakContext`, `PracticeContext`, `OnboardingContext`) — swap the seeded mocks for real on-device storage without changing consumers.
+- Fits the PRD: no community feed / social graph (§6); face-data privacy + delete-my-photos (§2, §5.6) stays a purely local action.
+
+**Backend API (stateless, transient — the only data network calls):**
+- **Scan scoring** — `POST front+profile photos → per-trait percentiles`. Replaces `MOCK_PERCENTILES` in `services/scoring.ts`. The app stores returned scores locally; photos are not needed server-side afterward.
+- **Avatar render** — `POST trait+style → image`, cached on device (PRD open-question #4).
+- **Photo retention = ephemeral.** The scoring backend processes and **discards** photos (no server-side retention), so the privacy label is "face data uploaded transiently for scoring, not retained."
+
+**Purchases — RevenueCat:**
+- Entitlements, restore, and the paywall are RevenueCat's responsibility (`services/purchases.ts` + `SubscriptionContext`). It caches the `Looksmaxxing Pro` entitlement locally and syncs with Apple/RevenueCat servers — read offline, validate online.
+
+**Identity & gating (no accounts/login — consistent with the hard-paywall funnel):**
+- Use the RevenueCat **app user ID** as the anonymous identity for backend calls.
+- The scan-scoring endpoint must do a **server-side entitlement check** (RevenueCat REST API / webhooks) before scoring — the client gate alone can't protect a paid core endpoint from direct calls.
+
+See **Mock surfaces & what each needs to go live** (below the tracker) for the current stand-ins and the migration path.
+
 ---
 
 ## Progress Tracker
