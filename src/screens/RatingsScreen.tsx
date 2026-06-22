@@ -9,6 +9,7 @@ import { RingGauge } from '../components/RingGauge';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
 import { ComparisonScreen } from './ratings/ComparisonScreen';
+import { ScanDetailScreen } from './ratings/ScanDetailScreen';
 import { ShareIcon, CompareIcon } from '../components/icons/ActionIcons';
 import { TRAITS, type TraitScore } from '../types/traits';
 import { topPercentLabel, scoreLabel, deltaLabel } from '../services/scoring';
@@ -43,6 +44,7 @@ export function RatingsScreen() {
   const { canRescan, rescanStep, startRescan, onCapture } = useRescanFlow();
   const [shareScan, setShareScan] = useState<Scan | null>(null);
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
+  const [detailScan, setDetailScan] = useState<Scan | null>(null);
 
   const openCompare = (older: Scan, newer: Scan) => setComparePair([older, newer]);
 
@@ -53,6 +55,12 @@ export function RatingsScreen() {
         after={comparePair[1]}
         onClose={() => setComparePair(null)}
       />
+    );
+  }
+
+  if (detailScan) {
+    return (
+      <ScanDetailScreen scan={detailScan} isFirst onClose={() => setDetailScan(null)} />
     );
   }
 
@@ -87,12 +95,11 @@ export function RatingsScreen() {
             const delta = prev ? deltaLabel(overallPercentile(prev.scores), overall) : null;
             const improved = delta != null && delta.startsWith('+');
             const declined = delta != null && delta.startsWith('-');
-            const canTap = Boolean(prev);
             return (
               <Pressable
                 key={scan.id}
-                style={({ pressed }) => [styles.row, pressed && canTap && styles.rowPressed]}
-                onPress={canTap ? () => openCompare(prev, scan) : undefined}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                onPress={prev ? () => openCompare(prev, scan) : () => setDetailScan(scan)}
               >
                 <RingGauge percentile={overall} size={48} centerLabel={scoreLabel(overall)} />
                 <View style={styles.info}>
@@ -137,7 +144,7 @@ export function RatingsScreen() {
                 >
                   <ShareIcon size={20} color={colors.primary} />
                 </Pressable>
-                {canTap && <Text style={styles.chevron}>›</Text>}
+                <Text style={styles.chevron}>›</Text>
               </Pressable>
             );
           })}
