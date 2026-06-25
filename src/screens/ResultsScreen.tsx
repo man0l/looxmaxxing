@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
@@ -28,7 +28,7 @@ export function ResultsScreen() {
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
   const { scans, latest, daysUntilRescan } = useScans();
-  const { canRescan, rescanStep, startRescan, onCapture, justRescanned } = useRescanFlow();
+  const { canRescan, rescanStep, startRescan, onCapture, justRescanned, scanning } = useRescanFlow();
   const goToPractice = () => navigation.navigate('Practice' as never);
 
   if (!subscribed) {
@@ -175,6 +175,13 @@ export function ResultsScreen() {
           />
         </ShareSheet>
       )}
+
+      {scanning && (
+        <View style={styles.analyzingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.analyzingText}>Analyzing your photos…</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -306,5 +313,20 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  analyzingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8,6,4,0.82)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyzingText: {
+    ...typography.bodySm,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
   },
 });

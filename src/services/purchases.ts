@@ -128,6 +128,16 @@ export async function restorePurchases(): Promise<PurchaseResult> {
   }
 }
 
+export async function getAppUserID(): Promise<string> {
+  const Purchases = getPurchases();
+  if (!Purchases || !configured) return '';
+  try {
+    return await Purchases.getAppUserID();
+  } catch {
+    return '';
+  }
+}
+
 export function addCustomerInfoListener(cb: (info: CustomerInfo) => void): () => void {
   const Purchases = getPurchases();
   if (!Purchases || !configured) return () => {};
