@@ -53,6 +53,10 @@ export async function restorePurchases(): Promise<PurchaseResult> {
   return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
 }
 
+export async function getAppUserID(): Promise<string> {
+  return '';
+}
+
 export function addCustomerInfoListener(_cb: (info: CustomerInfo) => void): () => void {
   return () => {};
 }
