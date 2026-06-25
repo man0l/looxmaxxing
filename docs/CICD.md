@@ -16,6 +16,7 @@ App code reads public config from `EXPO_PUBLIC_*` env vars, inlined into the JS 
 | Var | Used by | Source |
 |---|---|---|
 | `EXPO_PUBLIC_REVENUECAT_KEY` | `src/services/purchases.ts` | `.env` locally, GitHub Actions secret in CI |
+| `EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY` | `src/services/purchases.ts` (`__DEV__` only) | `.env` locally; optional — leave **unset** in CI/release builds |
 | `EXPO_PUBLIC_FACEBOOK_APP_ID` | `src/services/share.ts` (IG Stories) | `.env` locally, GitHub Actions secret in CI |
 
 - **Local:** copy `.env.example` → `.env` and fill in (`.env` is gitignored).

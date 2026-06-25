@@ -9,7 +9,10 @@ import type { PlanId } from '../types/traits';
 
 export const ENTITLEMENT_ID = 'Looksmaxxing Pro';
 
-const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
+const PLATFORM_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
+const TEST_STORE_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY ?? '';
+const REVENUECAT_API_KEY =
+  __DEV__ && TEST_STORE_REVENUECAT_KEY ? TEST_STORE_REVENUECAT_KEY : PLATFORM_REVENUECAT_KEY;
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
@@ -27,7 +30,7 @@ export async function configurePurchases(): Promise<boolean> {
   if (!Purchases) return false;
   if (configured) return true;
   if (!REVENUECAT_API_KEY) {
-    console.warn('[purchases] EXPO_PUBLIC_REVENUECAT_KEY is not set — skipping configure');
+    console.warn('[purchases] no RevenueCat key configured — skipping configure');
     return false;
   }
   try {
