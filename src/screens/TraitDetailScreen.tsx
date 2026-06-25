@@ -10,13 +10,14 @@ interface Props {
   traitId: string;
   onClose: () => void;
   onOpenPlan: () => void;
+  onPreview: () => void;
 }
 
 function percentileFor(scores: { traitId: string; percentile: number }[], traitId: string): number {
   return scores.find((s) => s.traitId === traitId)?.percentile ?? 0;
 }
 
-export function TraitDetailScreen({ traitId, onClose, onOpenPlan }: Props) {
+export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: Props) {
   const { scans } = useScans();
   const trait = TRAITS.find((t) => t.id === traitId);
   const latestPct = percentileFor(scans[0].scores, traitId);
@@ -62,6 +63,10 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan }: Props) {
 
         <Pressable style={styles.cta} onPress={onOpenPlan}>
           <Text style={styles.ctaText}>Open {trait?.plan ?? 'plan'} ›</Text>
+        </Pressable>
+
+        <Pressable style={styles.previewLink} onPress={onPreview}>
+          <Text style={styles.previewLinkText}>Preview your potential ›</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -111,4 +116,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   ctaText: { ...typography.h3, color: colors.primary },
+  previewLink: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+  },
+  previewLinkText: { ...typography.label, color: colors.secondary },
 });
