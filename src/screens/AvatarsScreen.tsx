@@ -35,13 +35,15 @@ export function AvatarsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const [activeTraitId, setActiveTraitId] = useState<string | null>(null);
+  const [lastFocusTrait, setLastFocusTrait] = useState<string | undefined>(undefined);
 
   const focusTrait = (route.params as { focusTrait?: string } | undefined)?.focusTrait;
+  if (focusTrait !== lastFocusTrait) {
+    setLastFocusTrait(focusTrait);
+    if (focusTrait) setActiveTraitId(focusTrait);
+  }
   useEffect(() => {
-    if (focusTrait) {
-      setActiveTraitId(focusTrait);
-      navigation.setParams({ focusTrait: undefined } as never);
-    }
+    if (focusTrait) navigation.setParams({ focusTrait: undefined } as never);
   }, [focusTrait, navigation]);
 
   if (activeTraitId) {

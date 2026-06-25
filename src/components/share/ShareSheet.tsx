@@ -32,7 +32,7 @@ export function ShareSheet({ message, children, onClose }: Props) {
   const cardRef = useRef<View | null>(null);
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
-  const translateY = useRef(new Animated.Value(0)).current;
+  const [translateY] = useState(() => new Animated.Value(0));
 
   const dismiss = () => {
     Animated.timing(translateY, {
@@ -42,7 +42,7 @@ export function ShareSheet({ message, children, onClose }: Props) {
     }).start(onClose);
   };
 
-  const pan = useRef(
+  const [pan] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_, g) => {
@@ -60,7 +60,7 @@ export function ShareSheet({ message, children, onClose }: Props) {
         }
       },
     }),
-  ).current;
+  );
 
   const onShare = async (target: ShareTarget) => {
     if (busy) return;
