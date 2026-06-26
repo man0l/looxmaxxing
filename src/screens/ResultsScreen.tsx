@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
@@ -20,15 +20,15 @@ import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
 export function ResultsScreen() {
-  const { concerns, frontPhoto } = useOnboarding();
+  const { concerns, frontPhoto, profilePhoto } = useOnboarding();
   const { subscribed, openPaywall } = useSubscription();
   const streak = useStreak();
   const navigation = useNavigation();
   const [showStreak, setShowStreak] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
-  const { scans, latest, daysUntilRescan } = useScans();
-  const { canRescan, rescanStep, startRescan, onCapture, justRescanned } = useRescanFlow();
+  const { scans, latest, daysUntilRescan, hasRealScan, scanError, runScan } = useScans();
+  const { canRescan, rescanStep, startRescan, onCapture, justRescanned, scanning } = useRescanFlow();
   const goToPractice = () => navigation.navigate('Practice' as never);
 
   if (!subscribed) {
@@ -45,6 +45,38 @@ export function ResultsScreen() {
           </Pressable>
         </ScrollView>
         <CaptureFab onPress={openPaywall} />
+      </View>
+    );
+  }
+
+  // The first real scan runs right after payment (triggered in App.tsx). Until
+  // it lands, show an analyzing state instead of the mock-seeded results; on
+  // failure, offer a retry so the user is never stuck.
+  if (subscribed && !hasRealScan) {
+    return (
+      <View style={styles.analyzingRoot}>
+        {scanning ? (
+          <>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.analyzingTitle}>Analyzing your photos</Text>
+            <Text style={styles.analyzingSub}>Scoring your traits with AI…</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.analyzingTitle}>Couldn’t finish your scan</Text>
+            <Text style={styles.analyzingSub}>{scanError ?? 'Something went wrong.'}</Text>
+            <Pressable
+              style={styles.retryBtn}
+              onPress={() => {
+                if (frontPhoto && profilePhoto) {
+                  runScan({ frontUri: frontPhoto, profileUri: profilePhoto }).catch(() => {});
+                }
+              }}
+            >
+              <Text style={styles.retryText}>Try again</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     );
   }
@@ -174,6 +206,13 @@ export function ResultsScreen() {
             photoUri={latest.photoUri ?? frontPhoto ?? undefined}
           />
         </ShareSheet>
+      )}
+
+      {scanning && (
+        <View style={styles.analyzingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.analyzingText}>Analyzing your photos…</Text>
+        </View>
       )}
     </View>
   );
@@ -306,5 +345,49 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  analyzingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8,6,4,0.82)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyzingText: {
+    ...typography.bodySm,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+  },
+  analyzingRoot: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  analyzingTitle: {
+    ...typography.h2,
+    color: colors.textPrimary,
+    marginTop: spacing.lg,
+  },
+  analyzingSub: {
+    ...typography.bodySm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  retryText: {
+    color: colors.onPrimary,
+    fontWeight: '600',
   },
 });

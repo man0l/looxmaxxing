@@ -49,13 +49,19 @@ Single entitlement gates everything: **`Looksmaxxing Pro`** (exact string, see `
 
 ## API keys
 
-`src/services/purchases.ts` currently holds the **test key** (`test_…`). Before TestFlight/release, replace it with the production Apple key (`appl_…`) from Project Settings → API Keys. Public SDK keys are safe to ship in the binary. If Android is added, branch on `Platform.OS` and use the `goog_…` key.
+Keys come from env vars (see `.env.example`), selected at runtime in `src/services/purchases.ts`:
+
+- `EXPO_PUBLIC_REVENUECAT_KEY` — platform key (`appl_` iOS / `goog_` Android). Used in release builds, and in dev when no Test Store key is set (exercises the real App Store / Play sandbox).
+- `EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY` — RevenueCat **Test Store** key (Apps & providers → Test Store). When set, `__DEV__` builds configure the SDK with it so purchases are simulated in-app with no Apple/Google account. **Never ship this in a release build** — the `__DEV__` gate keeps it dev-only.
+
+Public SDK keys are safe to ship in the binary. If both iOS and Android platform keys are needed, branch on `Platform.OS` over `EXPO_PUBLIC_REVENUECAT_KEY`.
 
 ## Running it
 
 - **Web (`expo start --web`)**: native module is never loaded. Offerings are `null`, the paywall shows placeholder prices, and `subscribe()` auto-grants Pro **in `__DEV__` only** so the funnel stays testable. Production builds never auto-grant.
 - **Device**: `npx expo run:ios` (or an EAS development build). Expo Go does not include the native module.
-- **Sandbox testing**: sign into a Sandbox Apple ID on device; purchases on the test key show up in the RevenueCat sandbox dashboard.
+- **Test Store (dev builds only)**: with `EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY` set, `__DEV__` builds configure the SDK with the Test Store key. Calling purchase shows an in-app modal to simulate success/failure/cancel — no Apple ID or device needed. Test Store purchases grant `Looksmaxxing Pro` like real ones and appear as sandbox data in the dashboard (enable *View Sandbox Data*).
+- **Sandbox testing**: sign into a Sandbox Apple ID on device; purchases on the platform key show up in the RevenueCat sandbox dashboard.
 
 ## RevenueCat Paywalls & Customer Center
 
