@@ -1,21 +1,40 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastProvider } from './src/store/ToastContext';
-import { OnboardingProvider } from './src/store/OnboardingContext';
+import { OnboardingProvider, useOnboarding } from './src/store/OnboardingContext';
 import { SubscriptionProvider, useSubscription } from './src/store/SubscriptionContext';
 import { PracticeProvider } from './src/store/PracticeContext';
 import { StreakProvider } from './src/store/StreakContext';
-import { ScanProvider } from './src/store/ScanContext';
+import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
 
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
-  const { paywallVisible, openPaywall } = useSubscription();
+  const { paywallVisible, openPaywall, subscribed } = useSubscription();
+  const { frontPhoto, profilePhoto } = useOnboarding();
+  const { runScan, hasRealScan } = useScans();
+  const firstScanTriggered = useRef(false);
+
+  // On successful payment, run the real analysis with the photos captured just
+  // before the paywall, so the first scores the user sees are their own.
+  useEffect(() => {
+    if (
+      subscribed &&
+      onboarded &&
+      !hasRealScan &&
+      !firstScanTriggered.current &&
+      frontPhoto &&
+      profilePhoto
+    ) {
+      firstScanTriggered.current = true;
+      runScan({ frontUri: frontPhoto, profileUri: profilePhoto }).catch(() => {});
+    }
+  }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
 
   return (
     <NavigationContainer>
