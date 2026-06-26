@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { Scan } from '../types/scan';
 import type { TraitScore } from '../types/traits';
 import { getScores, improveScores } from '../services/scoring';
@@ -34,6 +34,7 @@ interface ScanValue {
   rescan: (photoUri?: string) => void;
   scanning: boolean;
   scanError: string | null;
+  hasRealScan: boolean;
   runScan: (photos: { frontUri: string; profileUri: string }) => Promise<void>;
 }
 
@@ -44,6 +45,8 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
   const [mountNow] = useState(() => Date.now());
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [hasRealScan, setHasRealScan] = useState(false);
+  const firstRealScanDone = useRef(false);
 
   const rescan = useCallback((photoUri?: string) => {
     setScans((prev) => {
@@ -69,15 +72,18 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
       try {
         const appUserId = await getAppUserID();
         const result = await submitScan({ appUserId, frontUri, profileUri });
-        setScans((prev) => [
-          {
+        setScans((prev) => {
+          const next: Scan = {
             id: `scan-${prev.length + 1}`,
             date: new Date().toISOString(),
             scores: result.scores,
             photoUri: frontUri,
-          },
-          ...prev,
-        ]);
+          };
+          // First real scan replaces the mock seed history; later scans prepend.
+          return firstRealScanDone.current ? [next, ...prev] : [next];
+        });
+        firstRealScanDone.current = true;
+        setHasRealScan(true);
       } catch (e) {
         setScanError(e instanceof Error ? e.message : 'Scan failed');
         throw e;
@@ -103,9 +109,10 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
       rescan,
       scanning,
       scanError,
+      hasRealScan,
       runScan,
     };
-  }, [scans, rescan, scanning, scanError, runScan, mountNow]);
+  }, [scans, rescan, scanning, scanError, hasRealScan, runScan, mountNow]);
 
   return <ScanContext.Provider value={value}>{children}</ScanContext.Provider>;
 }
