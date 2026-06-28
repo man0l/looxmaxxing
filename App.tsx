@@ -12,6 +12,7 @@ import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { hydrateRenderCache } from './src/services/renderCache';
 import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 
 function Root() {
@@ -23,7 +24,10 @@ function Root() {
   const firstScanTriggered = useRef(false);
 
   useEffect(() => {
-    loadJson<{ onboarded: boolean }>(STORAGE_KEYS.onboarded).then((saved) => {
+    Promise.all([
+      hydrateRenderCache(),
+      loadJson<{ onboarded: boolean }>(STORAGE_KEYS.onboarded),
+    ]).then(([, saved]) => {
       if (saved?.onboarded) setOnboarded(true);
       setAppReady(true);
     });

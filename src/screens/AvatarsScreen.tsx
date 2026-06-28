@@ -7,6 +7,7 @@ import { topPercentLabel } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useScans } from '../store/ScanContext';
 import { AvatarRender } from '../components/AvatarRender';
+import { useCachedRender } from '../hooks/useCachedRender';
 import { AvatarPreviewScreen } from './avatars/AvatarPreviewScreen';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -14,10 +15,11 @@ function PreviewCard({ preview, onPress }: { preview: AvatarPreview; onPress: ()
   const { latest } = useScans();
   const trait = TRAITS.find((t) => t.id === preview.traitId);
   const percentile = latest.scores.find((s) => s.traitId === preview.traitId)?.percentile;
+  const cachedUrl = useCachedRender(preview.traitId, preview.styles[0], { anyStyle: true });
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      <AvatarRender traitId={preview.traitId} size={64} />
+      <AvatarRender traitId={preview.traitId} size={64} imageUrl={cachedUrl} />
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle}>{preview.headline}</Text>
         <Text style={styles.cardMeta}>
