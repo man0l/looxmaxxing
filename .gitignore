@@ -44,3 +44,12 @@ yarn-error.*
 /ios
 /android
 .playwright-mcp
+test-results/
+playwright-report/
+e2e/android-runs/
+e2e/android-ui.xml
+e2e/android-screen.png
+
+agent-tools/
+mcps/
+terminals/
