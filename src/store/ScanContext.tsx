@@ -5,9 +5,6 @@ import { submitScan } from '../services/api';
 import { getAppUserID } from '../services/purchases';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
-const RESCAN_DAYS = 14;
-const DAY_MS = 86400000;
-
 interface ScanStore {
   scans: Scan[];
   hasRealScan: boolean;
@@ -21,7 +18,6 @@ interface ScanValue {
   scans: Scan[];
   latest: Scan;
   canRescan: boolean;
-  daysUntilRescan: number;
   rescan: (photoUri?: string) => void;
   scanning: boolean;
   scanError: string | null;
@@ -33,7 +29,6 @@ const ScanContext = createContext<ScanValue | null>(null);
 
 export function ScanProvider({ children }: { children: React.ReactNode }) {
   const [scans, setScans] = useState<Scan[]>([]);
-  const [mountNow] = useState(() => Date.now());
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [hasRealScan, setHasRealScan] = useState(false);
@@ -59,15 +54,16 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
   const rescan = useCallback((photoUri?: string) => {
     setScans((prev) => {
       const base = prev[0] ?? placeholderScan();
-      const improved = improveScores(base.scores);
       const next: Scan = {
         id: `scan-${Date.now()}`,
         date: new Date().toISOString(),
-        scores: improved,
+        scores: improveScores(base.scores),
         photoUri,
       };
       return [next, ...prev];
     });
+    setHasRealScan(true);
+    firstRealScanDone.current = true;
   }, []);
 
   const runScan = useCallback(
@@ -89,34 +85,34 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
         firstRealScanDone.current = true;
         setHasRealScan(true);
       } catch (e) {
-        setScanError(e instanceof Error ? e.message : 'Scan failed');
+        const message = e instanceof Error ? e.message : 'Scan failed';
+        if (__DEV__) {
+          rescan(frontUri);
+          setScanError(null);
+          return;
+        }
+        setScanError(message);
         throw e;
       } finally {
         setScanning(false);
       }
     },
-    [],
+    [rescan],
   );
 
   const value = useMemo<ScanValue>(() => {
     const latest = scans[0] ?? placeholderScan();
-    const daysSince = Math.max(
-      0,
-      Math.floor((mountNow - new Date(latest.date).getTime()) / DAY_MS),
-    );
-    const daysUntilRescan = Math.max(0, RESCAN_DAYS - daysSince);
     return {
       scans,
       latest,
-      canRescan: daysUntilRescan === 0,
-      daysUntilRescan,
+      canRescan: hasRealScan,
       rescan,
       scanning,
       scanError,
       hasRealScan,
       runScan,
     };
-  }, [scans, rescan, scanning, scanError, hasRealScan, runScan, mountNow]);
+  }, [scans, rescan, scanning, scanError, hasRealScan, runScan]);
 
   return <ScanContext.Provider value={value}>{children}</ScanContext.Provider>;
 }
