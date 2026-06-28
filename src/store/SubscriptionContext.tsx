@@ -9,6 +9,7 @@ import React, {
 import type { PurchasesOffering } from 'react-native-purchases';
 import type { PlanId } from '../types/traits';
 import { useToast } from './ToastContext';
+import { isE2E } from '../config/e2e';
 import {
   addCustomerInfoListener,
   configurePurchases,
@@ -80,11 +81,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const subscribe = useCallback(
     async (plan: PlanId) => {
       setPurchaseError(null);
-      const pkg = offering ? packageForPlan(offering, plan) : null;
+      let activeOffering = offering;
+      if (!activeOffering) {
+        activeOffering = await getCurrentOffering();
+        if (activeOffering) setOffering(activeOffering);
+      }
+      const pkg = activeOffering ? packageForPlan(activeOffering, plan) : null;
       if (!pkg) {
-        if (__DEV__) {
+        if (__DEV__ && !isE2E) {
           setSubscribed(true);
           setPaywallVisible(false);
+          showToast('Dev mode — Pro unlocked (no real purchase).', 'info');
         } else {
           const message = 'Plans are unavailable right now. Please try again later.';
           setPurchaseError(message);
@@ -92,16 +99,27 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         }
         return;
       }
-      setPurchasing(true);
-      const result = await purchasePackage(pkg);
-      setPurchasing(false);
-      if (result.pro) {
+      const existing = await getCustomerInfo();
+      if (isProActive(existing)) {
         setSubscribed(true);
         setPaywallVisible(false);
         showToast("You're in — welcome to Pro.", 'success');
-      } else if (!result.cancelled && result.error) {
-        setPurchaseError(result.error);
-        showToast(result.error, 'error');
+        return;
+      }
+
+      setPurchasing(true);
+      try {
+        const result = await purchasePackage(pkg);
+        if (result.pro) {
+          setSubscribed(true);
+          setPaywallVisible(false);
+          showToast("You're in — welcome to Pro.", 'success');
+        } else if (!result.cancelled && result.error) {
+          setPurchaseError(result.error);
+          showToast(result.error, 'error');
+        }
+      } finally {
+        setPurchasing(false);
       }
     },
     [offering, showToast],
@@ -110,8 +128,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const restore = useCallback(async () => {
     setPurchaseError(null);
     setPurchasing(true);
-    const result = await restorePurchases();
-    setPurchasing(false);
+    let result = { pro: false, cancelled: false, error: null as string | null };
+    try {
+      result = await restorePurchases();
+    } finally {
+      setPurchasing(false);
+    }
     if (result.pro) {
       setSubscribed(true);
       setPaywallVisible(false);

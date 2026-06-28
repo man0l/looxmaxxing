@@ -20,8 +20,6 @@ function Root() {
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
 
-  // On successful payment, run the real analysis with the photos captured just
-  // before the paywall, so the first scores the user sees are their own.
   useEffect(() => {
     if (
       subscribed &&
@@ -45,7 +43,7 @@ function Root() {
         <OnboardingNavigator
           onComplete={() => {
             setOnboarded(true);
-            openPaywall();
+            if (!subscribed) openPaywall();
           }}
         />
       )}
