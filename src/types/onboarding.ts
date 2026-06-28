@@ -41,7 +41,8 @@ export type OnboardingAction =
   | { type: 'SET_FRONT_PHOTO'; payload: string }
   | { type: 'SET_PROFILE_PHOTO'; payload: string }
   | { type: 'CLEAR_PHOTOS' }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'HYDRATE'; payload: OnboardingState };
 
 export function onboardingReducer(
   state: OnboardingState,
@@ -68,5 +69,7 @@ export function onboardingReducer(
       return { ...state, frontPhoto: null, profilePhoto: null };
     case 'RESET':
       return INITIAL_ONBOARDING;
+    case 'HYDRATE':
+      return action.payload;
   }
 }
