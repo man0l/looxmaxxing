@@ -17,12 +17,13 @@ const traitById = (id: string) => TRAITS.find((t) => t.id === id);
 
 const FALLBACK_BENEFITS = [
   'A plan for all 7 scored traits',
-  'Re-scan every 14 days to track your percentile',
+  'Re-scan anytime to track your percentile',
 ];
 
 export function PaywallScreen() {
   const { concerns } = useOnboarding();
   const { subscribe, restore, dismissPaywall, offering, purchasing } = useSubscription();
+  const plansReady = Boolean(offering);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
   const insets = useSafeAreaInsets();
 
@@ -109,11 +110,14 @@ export function PaywallScreen() {
       </View>
 
       <Pressable
+        testID="paywall-unlock"
         onPress={() => subscribe(selectedPlan)}
-        style={[styles.cta, purchasing && styles.ctaDisabled]}
-        disabled={purchasing}
+        style={[styles.cta, (purchasing || !plansReady) && styles.ctaDisabled]}
+        disabled={purchasing || !plansReady}
       >
-        <Text style={styles.ctaText}>{purchasing ? 'Processing…' : 'Unlock my results'}</Text>
+        <Text style={styles.ctaText}>
+          {purchasing ? 'Processing…' : plansReady ? 'Unlock my results' : 'Loading plans…'}
+        </Text>
       </Pressable>
 
       <Text style={styles.terms}>

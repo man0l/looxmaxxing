@@ -63,7 +63,7 @@ function Root() {
         <OnboardingNavigator
           onComplete={() => {
             setOnboarded(true);
-            openPaywall();
+            if (!subscribed) openPaywall();
           }}
         />
       )}
