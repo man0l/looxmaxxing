@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Platform } from 'react-native';
 import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import { isE2E } from '../../config/e2e';
+import { resolveDevTestPhotoUri } from '../../services/photoUri';
 import { colors, spacing, radii, typography } from '../../theme';
 import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
 const GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
 const BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-optimized.png');
+
 
 type CaptureStep = 'front' | 'profile';
 
@@ -54,6 +57,13 @@ export function GuidedCaptureScreen({
   };
 
   const toggleFacing = () => setFacing((f) => (f === 'front' ? 'back' : 'front'));
+
+  const handleE2ePhoto = async () => {
+    const uri = await resolveDevTestPhotoUri(isFront ? 'front' : 'profile');
+    onCapture(uri);
+  };
+
+  const showE2eCapture = (isE2E && Platform.OS === 'web') || __DEV__;
 
   return (
     <View style={styles.container}>
@@ -126,6 +136,12 @@ export function GuidedCaptureScreen({
           <RetakeIcon size={24} color={granted ? colors.textSecondary : colors.textTertiary} />
         </Pressable>
       </View>
+
+      {showE2eCapture && (
+        <Pressable testID="e2e-use-test-photo" style={styles.e2eBtn} onPress={handleE2ePhoto}>
+          <Text style={styles.e2eBtnText}>Use test photo</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.privacy}>
         Photos are processed to generate your scores. Delete them anytime in Profile.
@@ -299,6 +315,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  e2eBtn: {
+    alignSelf: 'center',
+    marginTop: spacing.md,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radii.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  e2eBtnText: {
+    ...typography.label,
+    color: colors.primary,
   },
   privacy: {
     ...typography.caption,

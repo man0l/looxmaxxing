@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { getAvatarPreview } from '../../types/avatars';
 import { TRAITS } from '../../types/traits';
 import { topPercentLabel } from '../../services/scoring';
 import { useScans } from '../../store/ScanContext';
 import { AvatarRender } from '../../components/AvatarRender';
+import { submitRender, ScanApiError } from '../../services/api';
+import { getAppUserID } from '../../services/purchases';
+import { getCachedRender, hydrateRenderCache, setCachedRender } from '../../services/renderCache';
 import { colors, spacing, radii, typography } from '../../theme';
 
 interface Props {
@@ -17,6 +20,64 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   const preview = getAvatarPreview(traitId);
   const { latest } = useScans();
   const [selected, setSelected] = useState(preview?.styles[0]);
+  const [renderUrl, setRenderUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const photoUri = latest.photoUri ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    const style = selected;
+    (async () => {
+      await hydrateRenderCache();
+      if (cancelled) return;
+      const cached = getCachedRender(traitId, style);
+      if (cached) {
+        setRenderUrl(cached);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+      if (!photoUri) {
+        setRenderUrl(null);
+        setLoading(false);
+        setError('Scan first to preview your potential.');
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      setRenderUrl(null);
+      try {
+        const appUserId = await getAppUserID();
+        const r = await submitRender({ appUserId, photoUri, traitId, style });
+        if (cancelled) return;
+        await setCachedRender(traitId, style, r.imageUrl, r.expiresAt);
+        setRenderUrl(r.imageUrl);
+      } catch (e) {
+        if (cancelled) return;
+        if (__DEV__) {
+          const stub = 'https://placehold.co/232x232/3A2A1A/EFE6D8.png?text=Dev+Render';
+          await setCachedRender(traitId, style, stub);
+          setRenderUrl(stub);
+          setError(null);
+          return;
+        }
+        setError(
+          e instanceof ScanApiError && e.status === 429
+            ? 'Too many renders — wait a minute and try again.'
+            : e instanceof Error
+              ? e.message
+              : 'Render failed.',
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [traitId, selected, photoUri, retryNonce]);
 
   if (!preview) return null;
   const trait = TRAITS.find((t) => t.id === traitId);
@@ -35,8 +96,31 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
         <Text style={styles.blurb}>{preview.blurb}</Text>
 
         <View style={styles.renderWrap}>
-          <AvatarRender traitId={traitId} style={selected} size={232} />
+          {renderUrl ? (
+            <Image source={{ uri: renderUrl }} style={styles.renderImg} resizeMode="cover" />
+          ) : (
+            <View>
+              <AvatarRender traitId={traitId} style={selected} size={232} />
+              {loading && (
+                <View style={styles.renderOverlay}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={styles.renderOverlayText}>Rendering…</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
+
+        {error && !renderUrl && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+            {photoUri && (
+              <Pressable style={styles.retryBtn} onPress={() => setRetryNonce((n) => n + 1)}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         <View style={styles.pillRow}>
           {preview.styles.map((s) => {
@@ -89,7 +173,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     alignSelf: 'flex-start',
   },
-  renderWrap: { marginBottom: spacing.xl },
+  renderWrap: { marginBottom: spacing.lg, alignItems: 'center' },
+  renderImg: {
+    width: 232,
+    height: 232,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  renderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(8,6,4,0.5)',
+  },
+  renderOverlayText: {
+    ...typography.caption,
+    color: colors.textPrimary,
+    marginTop: spacing.xs,
+  },
+  errorBox: { alignItems: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.lg },
+  errorText: { ...typography.bodySm, color: colors.textSecondary, textAlign: 'center' },
+  retryBtn: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  retryText: { color: colors.onPrimary, fontWeight: '600' },
   pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -12,16 +12,32 @@ import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { hydrateRenderCache } from './src/services/renderCache';
+import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const { paywallVisible, openPaywall, subscribed } = useSubscription();
   const { frontPhoto, profilePhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
 
-  // On successful payment, run the real analysis with the photos captured just
-  // before the paywall, so the first scores the user sees are their own.
+  useEffect(() => {
+    Promise.all([
+      hydrateRenderCache(),
+      loadJson<{ onboarded: boolean }>(STORAGE_KEYS.onboarded),
+    ]).then(([, saved]) => {
+      if (saved?.onboarded) setOnboarded(true);
+      setAppReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!appReady) return;
+    saveJson(STORAGE_KEYS.onboarded, { onboarded });
+  }, [onboarded, appReady]);
+
   useEffect(() => {
     if (
       subscribed &&
@@ -36,6 +52,8 @@ function Root() {
     }
   }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
 
+  if (!appReady) return null;
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />
@@ -45,7 +63,7 @@ function Root() {
         <OnboardingNavigator
           onComplete={() => {
             setOnboarded(true);
-            openPaywall();
+            if (!subscribed) openPaywall();
           }}
         />
       )}

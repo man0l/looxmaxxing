@@ -21,7 +21,7 @@ export function WelcomeScreen({ onStart }: Props) {
         </Text>
       </View>
 
-      <Pressable onPress={onStart} style={styles.cta}>
+      <Pressable accessibilityLabel="Lets start" onPress={onStart} style={styles.cta}>
         <Text style={styles.ctaText}>Let’s start</Text>
       </Pressable>
     </View>

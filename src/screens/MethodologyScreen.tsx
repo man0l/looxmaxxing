@@ -20,7 +20,7 @@ const SECTIONS = [
   },
   {
     title: 'How to move your scores',
-    body: 'Each trait maps to one workout or routine. Work the plan, keep your streak, and re-rate every 14 days. Structure changes slowly — the percentile is there to show momentum, not to grade you.',
+    body: 'Each trait maps to one workout or routine. Work the plan, keep your streak, and re-rate when you want to check progress. Structure changes slowly — the percentile is there to show momentum, not to grade you.',
   },
 ];
 
