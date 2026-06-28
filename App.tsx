@@ -12,6 +12,7 @@ import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { hydrateRenderCache } from './src/services/renderCache';
 
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
@@ -20,8 +21,10 @@ function Root() {
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
 
-  // On successful payment, run the real analysis with the photos captured just
-  // before the paywall, so the first scores the user sees are their own.
+  useEffect(() => {
+    hydrateRenderCache();
+  }, []);
+
   useEffect(() => {
     if (
       subscribed &&

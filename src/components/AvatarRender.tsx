@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 import { ConcernGlyph } from './icons/OnboardingIcons';
 import { colors, radii, spacing, typography } from '../theme';
@@ -7,9 +7,20 @@ interface Props {
   traitId: string;
   style?: string;
   size?: number;
+  imageUrl?: string | null;
 }
 
-export function AvatarRender({ traitId, style, size = 132 }: Props) {
+export function AvatarRender({ traitId, style, size = 132, imageUrl }: Props) {
+  if (imageUrl) {
+    return (
+      <Image
+        source={{ uri: imageUrl }}
+        style={[styles.frame, { width: size, height: size, borderRadius: radii.lg }]}
+        resizeMode="cover"
+      />
+    );
+  }
+
   const gradId = `grad-${traitId}`;
   return (
     <View style={[styles.frame, { width: size, height: size, borderRadius: radii.lg }]}>
