@@ -1,16 +1,17 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getPlanItem, taskIdsForItem, type PlanItem } from '../types/practice';
 import { useOnboarding } from './OnboardingContext';
 import { usePractice } from './PracticeContext';
 import {
   buildHeatmap,
   currentStreakDay,
+  dateKey,
   longestStreak,
   nextMilestone,
   reachedMilestone,
-  seedHistory,
   type HeatCell,
 } from '../services/streak';
+import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 const HEATMAP_WEEKS = 14;
 
@@ -27,26 +28,70 @@ interface StreakValue {
   useFreeze: () => void;
 }
 
+interface StreakStore {
+  history: Record<string, number>;
+  freezeUsedForMonth: string | null;
+}
+
+function monthKey(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
 const StreakContext = createContext<StreakValue | null>(null);
 
 export function StreakProvider({ children }: { children: React.ReactNode }) {
   const { concerns } = useOnboarding();
   const { isDone } = usePractice();
-  const [history] = useState(seedHistory);
-  const [freezeUsed, setFreezeUsed] = useState(false);
+  const [history, setHistory] = useState<Record<string, number>>({});
+  const [freezeUsedForMonth, setFreezeUsedForMonth] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  const useFreeze = useCallback(() => setFreezeUsed(true), []);
+  useEffect(() => {
+    loadJson<StreakStore>(STORAGE_KEYS.streak).then((saved) => {
+      if (saved) {
+        setHistory(saved.history);
+        setFreezeUsedForMonth(saved.freezeUsedForMonth);
+      }
+      setHydrated(true);
+    });
+  }, []);
+
+  const planItems = useMemo(
+    () => concerns.map(getPlanItem).filter((i): i is PlanItem => i !== undefined),
+    [concerns],
+  );
+  const taskIds = useMemo(() => planItems.flatMap(taskIdsForItem), [planItems]);
+  const tasksTotalToday = taskIds.length;
+  const tasksDoneToday = taskIds.filter(isDone).length;
+  const todayKey = dateKey(new Date());
+
+  useEffect(() => {
+    if (!hydrated) return;
+    setHistory((prev) => {
+      const existing = prev[todayKey];
+      if (tasksDoneToday > 0) {
+        if (existing === tasksDoneToday) return prev;
+        return { ...prev, [todayKey]: tasksDoneToday };
+      }
+      if (existing === undefined) return prev;
+      const next = { ...prev };
+      delete next[todayKey];
+      return next;
+    });
+  }, [tasksDoneToday, todayKey, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveJson(STORAGE_KEYS.streak, { history, freezeUsedForMonth } satisfies StreakStore);
+  }, [history, freezeUsedForMonth, hydrated]);
+
+  const useFreeze = useCallback(() => setFreezeUsedForMonth(monthKey()), []);
 
   const value = useMemo<StreakValue>(() => {
-    const planItems = concerns
-      .map(getPlanItem)
-      .filter((i): i is PlanItem => i !== undefined);
-    const taskIds = planItems.flatMap(taskIdsForItem);
-    const tasksTotalToday = taskIds.length;
-    const tasksDoneToday = taskIds.filter(isDone).length;
     const todayActive = tasksDoneToday > 0;
     const currentDay = currentStreakDay(history);
-
     return {
       currentDay,
       longest: longestStreak(history, todayActive),
@@ -56,10 +101,10 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
       reached: reachedMilestone(currentDay),
       next: nextMilestone(currentDay),
       heatmap: buildHeatmap(history, tasksDoneToday, HEATMAP_WEEKS),
-      freezeAvailable: !freezeUsed,
+      freezeAvailable: freezeUsedForMonth !== monthKey(),
       useFreeze,
     };
-  }, [concerns, isDone, history, freezeUsed, useFreeze]);
+  }, [history, freezeUsedForMonth, useFreeze, tasksDoneToday, tasksTotalToday]);
 
   return <StreakContext.Provider value={value}>{children}</StreakContext.Provider>;
 }

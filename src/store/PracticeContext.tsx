@@ -1,11 +1,18 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getPlanItem, taskIdsForItem } from '../types/practice';
+import { dateKey } from '../services/streak';
+import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 interface PracticeValue {
   isDone: (id: string) => boolean;
   toggle: (id: string) => void;
   doneCountForTrait: (traitId: string) => number;
   totalCountForTrait: (traitId: string) => number;
+}
+
+interface PracticeStore {
+  day: string;
+  completed: Record<string, boolean>;
 }
 
 const PracticeContext = createContext<PracticeValue>({
@@ -17,20 +24,53 @@ const PracticeContext = createContext<PracticeValue>({
 
 export function PracticeProvider({ children }: { children: React.ReactNode }) {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [day, setDay] = useState(() => dateKey(new Date()));
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const today = dateKey(new Date());
+    loadJson<PracticeStore>(STORAGE_KEYS.practice).then((saved) => {
+      if (saved?.day === today) {
+        setCompleted(saved.completed);
+        setDay(today);
+      } else {
+        setCompleted({});
+        setDay(today);
+      }
+      setHydrated(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const today = dateKey(new Date());
+    if (today !== day) {
+      setDay(today);
+      setCompleted({});
+      return;
+    }
+    saveJson(STORAGE_KEYS.practice, { day, completed } satisfies PracticeStore);
+  }, [completed, day, hydrated]);
 
   const isDone = useCallback((id: string) => completed[id] === true, [completed]);
 
-  const toggle = useCallback((id: string) => {
-    setCompleted((prev) => {
-      const next = { ...prev };
-      if (next[id]) {
-        delete next[id];
-      } else {
-        next[id] = true;
+  const toggle = useCallback(
+    (id: string) => {
+      const today = dateKey(new Date());
+      if (today !== day) {
+        setDay(today);
+        setCompleted({ [id]: true });
+        return;
       }
-      return next;
-    });
-  }, []);
+      setCompleted((prev) => {
+        const next = { ...prev };
+        if (next[id]) delete next[id];
+        else next[id] = true;
+        return next;
+      });
+    },
+    [day],
+  );
 
   const totalCountForTrait = useCallback((traitId: string) => {
     const item = getPlanItem(traitId);
