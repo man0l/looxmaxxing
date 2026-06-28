@@ -1,6 +1,14 @@
 import type { TraitScore } from '../types/traits';
+import { isE2eApiStub } from '../config/e2e';
+import { getScores } from './scoring';
+import { resolveCaptureUri } from './photoUri';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+const PHOTO_READ_TIMEOUT_MS = 30_000;
+const API_TIMEOUT_MS = 90_000;
+
+const E2E_RENDER_IMAGE =
+  'https://placehold.co/232x232/3A2A1A/EFE6D8.png?text=E2E+Render';
 
 export interface ScanResult {
   scoredAt: string;
@@ -40,6 +48,25 @@ async function assertOk(res: Response, label: string): Promise<void> {
   throw new ScanApiError(res.status, `${label} failed: ${detail}`);
 }
 
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new ScanApiError(504, `Request timed out after ${timeoutMs / 1000}s`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Uploads a local photo (file:// URI) to a Storage signed PUT URL. No Supabase
 // SDK and no apikey needed — the signed URL authenticates itself.
 async function putPhoto(
@@ -47,12 +74,18 @@ async function putPhoto(
   uri: string,
   contentType: string,
 ): Promise<void> {
-  const blob = await (await fetch(uri)).blob();
-  const res = await fetch(uploadUrl, {
-    method: 'PUT',
-    body: blob,
-    headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
-  });
+  const localUri = await resolveCaptureUri(uri);
+  const readRes = await fetchWithTimeout(localUri, {}, PHOTO_READ_TIMEOUT_MS);
+  const blob = await readRes.blob();
+  const res = await fetchWithTimeout(
+    uploadUrl,
+    {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
+    },
+    API_TIMEOUT_MS,
+  );
   await assertOk(res, 'photo upload');
 }
 
@@ -67,6 +100,15 @@ export async function submitScan(opts: {
   frontContentType?: string;
   profileContentType?: string;
 }): Promise<ScanResult> {
+  if (isE2eApiStub || (__DEV__ && !API_BASE)) {
+    await new Promise((r) => setTimeout(r, 400));
+    return {
+      scoredAt: new Date().toISOString(),
+      provider: isE2eApiStub ? 'e2e' : 'dev-stub',
+      model: 'stub',
+      scores: getScores(),
+    };
+  }
   if (!API_BASE) {
     throw new ScanApiError(0, 'EXPO_PUBLIC_API_BASE_URL is not set');
   }
@@ -76,10 +118,11 @@ export async function submitScan(opts: {
     'X-App-User-Id': opts.appUserId,
   };
 
-  const slotRes = await fetch(`${API_BASE}/v1/scans/uploads`, {
-    method: 'POST',
-    headers,
-  });
+  const slotRes = await fetchWithTimeout(
+    `${API_BASE}/v1/scans/uploads`,
+    { method: 'POST', headers },
+    API_TIMEOUT_MS,
+  );
   await assertOk(slotRes, 'mint upload slots');
   const { scanId, uploads } = (await slotRes.json()) as ScanUploadsResponse;
 
@@ -88,11 +131,98 @@ export async function submitScan(opts: {
     putPhoto(uploads.profile.uploadUrl, opts.profileUri, opts.profileContentType ?? 'image/jpeg'),
   ]);
 
-  const scanRes = await fetch(`${API_BASE}/v1/scans`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ scanId }),
-  });
+  const scanRes = await fetchWithTimeout(
+    `${API_BASE}/v1/scans`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ scanId }),
+    },
+    API_TIMEOUT_MS,
+  );
   await assertOk(scanRes, 'scan');
   return (await scanRes.json()) as ScanResult;
+}
+
+export interface RenderResult {
+  imageUrl: string;
+  expiresAt?: string;
+}
+
+interface RenderUploadResponse {
+  jobId: string;
+  upload: { path: string; uploadUrl: string; token: string | null };
+}
+
+type RenderStatus = 'processing' | 'done' | 'failed';
+interface RenderStatusResponse {
+  jobId: string;
+  status: RenderStatus;
+  imageUrl?: string;
+  expiresAt?: string;
+}
+
+// Direct-to-Storage avatar render (mirrors submitScan): mint a signed upload
+// slot, PUT the reference photo, POST /v1/renders. If the API responds inline
+// (done) the image is ready; if async (processing), poll GET /v1/renders/:jobId
+// until it completes or fails (the Edge Function does the work in the background).
+export async function submitRender(opts: {
+  appUserId: string;
+  photoUri: string;
+  traitId: string;
+  style?: string;
+  contentType?: string;
+}): Promise<RenderResult> {
+  if (isE2eApiStub || (__DEV__ && !API_BASE)) {
+    await new Promise((r) => setTimeout(r, 300));
+    return {
+      imageUrl: E2E_RENDER_IMAGE,
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    };
+  }
+  if (!API_BASE) throw new ScanApiError(0, 'EXPO_PUBLIC_API_BASE_URL is not set');
+  const headers = { 'Content-Type': 'application/json', 'X-App-User-Id': opts.appUserId };
+
+  const slotRes = await fetchWithTimeout(
+    `${API_BASE}/v1/renders/uploads`,
+    { method: 'POST', headers },
+    API_TIMEOUT_MS,
+  );
+  await assertOk(slotRes, 'mint render slot');
+  const { jobId, upload } = (await slotRes.json()) as RenderUploadResponse;
+
+  await putPhoto(upload.uploadUrl, opts.photoUri, opts.contentType ?? 'image/jpeg');
+
+  const startRes = await fetchWithTimeout(
+    `${API_BASE}/v1/renders`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ jobId, traitId: opts.traitId, style: opts.style ?? null }),
+    },
+    API_TIMEOUT_MS,
+  );
+  await assertOk(startRes, 'render');
+  const started = (await startRes.json()) as RenderStatusResponse;
+  if (started.status === 'done' && started.imageUrl) {
+    return { imageUrl: started.imageUrl, expiresAt: started.expiresAt };
+  }
+
+  // Async: poll until done/failed, or time out.
+  const deadline = Date.now() + 120000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 4000));
+    const pollRes = await fetchWithTimeout(
+      `${API_BASE}/v1/renders/${jobId}`,
+      { headers },
+      API_TIMEOUT_MS,
+    );
+    await assertOk(pollRes, 'render status');
+    const poll = (await pollRes.json()) as RenderStatusResponse;
+    if (poll.status === 'done' && poll.imageUrl) {
+      return { imageUrl: poll.imageUrl, expiresAt: poll.expiresAt };
+    }
+    if (poll.status === 'failed') throw new ScanApiError(502, 'Render failed');
+  }
+  throw new ScanApiError(504, 'Render timed out');
 }

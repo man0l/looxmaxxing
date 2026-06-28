@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useScans } from '../store/ScanContext';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
+import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { CaptureFab } from '../components/CaptureFab';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { RingGauge } from '../components/RingGauge';
@@ -42,6 +43,7 @@ export function RatingsScreen() {
   const { scans } = useScans();
   const { frontPhoto } = useOnboarding();
   const { canRescan, rescanStep, startRescan, onCapture } = useRescanFlow();
+  const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const [shareScan, setShareScan] = useState<Scan | null>(null);
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
   const [detailScan, setDetailScan] = useState<Scan | null>(null);
@@ -151,7 +153,7 @@ export function RatingsScreen() {
         </View>
       </ScrollView>
 
-      <CaptureFab onPress={canRescan ? startRescan : () => {}} />
+      <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
       {shareScan &&
         (() => {

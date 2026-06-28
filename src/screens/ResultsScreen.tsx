@@ -15,6 +15,7 @@ import { ShareIcon } from '../components/icons/ActionIcons';
 import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
+import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
@@ -27,8 +28,9 @@ export function ResultsScreen() {
   const [showStreak, setShowStreak] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
-  const { scans, latest, daysUntilRescan, hasRealScan, scanError, runScan } = useScans();
+  const { scans, latest, hasRealScan, scanError, runScan } = useScans();
   const { canRescan, rescanStep, startRescan, onCapture, justRescanned, scanning } = useRescanFlow();
+  const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const goToPractice = () => navigation.navigate('Practice' as never);
 
   if (!subscribed) {
@@ -179,23 +181,16 @@ export function ResultsScreen() {
           <Text style={styles.potentialChevron}>›</Text>
         </Pressable>
 
-        {canRescan ? (
+        {hasRealScan && (
           <Pressable style={styles.rescanCardActive} onPress={startRescan}>
             <Text style={styles.rescanTitleActive}>Re-rate now ›</Text>
             <Text style={styles.rescanCaption}>
-              Your 14-day window is up — capture a new scan to see your progress.
+              Capture a new scan anytime to see how your percentiles moved.
             </Text>
           </Pressable>
-        ) : (
-          <View style={styles.rescanCard}>
-            <Text style={styles.rescanTitle}>Re-rate in {daysUntilRescan} days</Text>
-            <Text style={styles.rescanCaption}>
-              Work your plan, then re-scan — your percentile can move.
-            </Text>
-          </View>
         )}
       </ScrollView>
-      <CaptureFab onPress={canRescan ? startRescan : () => {}} />
+      <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
       {showShare && (
         <ShareSheet message="My looxmaxxing scan" onClose={() => setShowShare(false)}>

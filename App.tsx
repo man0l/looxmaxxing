@@ -12,13 +12,31 @@ import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { hydrateRenderCache } from './src/services/renderCache';
+import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const { paywallVisible, openPaywall, subscribed } = useSubscription();
   const { frontPhoto, profilePhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
+
+  useEffect(() => {
+    Promise.all([
+      hydrateRenderCache(),
+      loadJson<{ onboarded: boolean }>(STORAGE_KEYS.onboarded),
+    ]).then(([, saved]) => {
+      if (saved?.onboarded) setOnboarded(true);
+      setAppReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!appReady) return;
+    saveJson(STORAGE_KEYS.onboarded, { onboarded });
+  }, [onboarded, appReady]);
 
   useEffect(() => {
     if (
@@ -33,6 +51,8 @@ function Root() {
       runScan({ frontUri: frontPhoto, profileUri: profilePhoto }).catch(() => {});
     }
   }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
+
+  if (!appReady) return null;
 
   return (
     <NavigationContainer>
