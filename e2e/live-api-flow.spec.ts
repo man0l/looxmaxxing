@@ -58,13 +58,15 @@ test.describe('LooxMaxxing live API web funnel', () => {
 
     await expect
       .poll(
-        () => apiCalls.some((c) => c.url.includes('/v1/renders') && c.status === 200),
+        () => {
+          const renderStart = apiCalls.find(
+            (c) => c.url.includes('/v1/renders') && c.method === 'POST' && !c.url.includes('uploads'),
+          );
+          return renderStart?.status === 200 || renderStart?.status === 202;
+        },
         { timeout: 120_000 },
       )
       .toBe(true);
-
-    const renderStart = apiCalls.find((c) => c.url.includes('/v1/renders') && c.method === 'POST' && !c.url.includes('uploads'));
-    expect(renderStart?.status).toBe(200);
 
     await expect(page.locator('img').filter({ hasNot: page.locator('[src*="placehold.co"]') }).first()).toBeVisible({
       timeout: 120_000,

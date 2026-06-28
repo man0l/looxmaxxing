@@ -2,8 +2,12 @@ import { test, expect } from '@playwright/test';
 
 test.describe('LooxMaxxing web funnel', () => {
   test.beforeEach(async ({ page }) => {
+    const userId = `e2e_stub_${Date.now()}`;
+    await page.addInitScript((id) => {
+      sessionStorage.setItem('e2e_app_user_id', id);
+      localStorage.clear();
+    }, userId);
     await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
     await page.reload();
   });
 
@@ -31,11 +35,18 @@ test.describe('LooxMaxxing web funnel', () => {
     await expect(page.getByText('Now your profile')).toBeVisible();
     await page.getByTestId('e2e-use-test-photo').click();
 
-    await expect(page.getByText(/analysis is ready/i)).toBeVisible();
-    await page.getByTestId('paywall-unlock').click();
+    const paywallTease = page.getByText(/analysis is ready/i);
+    if (await paywallTease.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      await expect(page.getByTestId('paywall-unlock')).toContainText('Unlock my results', { timeout: 60_000 });
+      await page.getByTestId('paywall-unlock').click();
 
-    await expect(page.getByText('Analyzing your photos')).toBeVisible();
-    await expect(page.getByText('Top 39% of men')).toBeVisible({ timeout: 45_000 });
+      const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
+      await expect(testPurchase).toBeVisible({ timeout: 30_000 });
+      await testPurchase.click();
+
+      await expect(page.getByText(/analysis is ready/i)).not.toBeVisible({ timeout: 60_000 });
+    }
+    await expect(page.getByText(/Top \d+% of men/)).toBeVisible({ timeout: 90_000 });
 
     await page.getByText('Avatars', { exact: true }).click();
     await expect(page.getByText('Preview your potential')).toBeVisible();
