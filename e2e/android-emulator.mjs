@@ -210,6 +210,14 @@ waitForText('analysis is ready', { partial: true });
 tapBy('Unlock my results');
 sleep(2500);
 
+// RevenueCat surfaces a native "Test Store Purchase" dialog on dev builds
+// (no Play Store billing). Dismiss it with the valid-purchase path so the
+// simulated entitlement grants and the scan API's server-side gate unlocks.
+if (waitForTextOptional('TEST VALID PURCHASE', { timeout: 15000 })) {
+  tapBy('TEST VALID PURCHASE');
+  sleep(1500);
+}
+
 try {
   waitForText('Analyzing your photos', { partial: true, timeout: 20000 });
 } catch {
