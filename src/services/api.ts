@@ -48,6 +48,25 @@ async function assertOk(res: Response, label: string): Promise<void> {
   throw new ScanApiError(res.status, `${label} failed: ${detail}`);
 }
 
+function isTransientNetworkError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  const name = e.name;
+  const msg = (e.message ?? '').toLowerCase();
+  // RN's fetch polyfill (whatwg-fetch) emits:
+  //   - DOMException('Aborted', 'AbortError')  on controller.abort() / timeout
+  //   - TypeError('Network request failed')    on connection drop (xhr.onerror)
+  //   - TypeError('Network request timed out') on xhr.ontimeout
+  // All three are transient and worth a retry with a friendlier message.
+  return (
+    name === 'AbortError' ||
+    name === 'TypeError' ||
+    msg.includes('network') ||
+    msg.includes('abort') ||
+    msg.includes('cancel') ||
+    msg.includes('timed out')
+  );
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit = {},
@@ -61,32 +80,64 @@ async function fetchWithTimeout(
     if (e instanceof Error && e.name === 'AbortError') {
       throw new ScanApiError(504, `Request timed out after ${timeoutMs / 1000}s`);
     }
+    if (isTransientNetworkError(e)) {
+      // Wrap whatwg-fetch's raw "Network request failed" / "Network request
+      // timed out" so the UI doesn't surface a low-sounding message.
+      throw new ScanApiError(0, 'Network connection failed. Check your internet and try again.');
+    }
     throw e;
   } finally {
     clearTimeout(timer);
   }
 }
 
+// One automatic retry for transient network failures (connection drops,
+// aborts, timeouts). Photo uploads and scan scoring both go through this so a
+// single OkHttp hiccup doesn't kick the user to the "Couldn't finish your
+// scan" screen — they only see errors that persist across two attempts.
+async function withTransientRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (e instanceof ScanApiError && (e.status === 0 || e.status === 504 || e.status >= 500)) {
+      return fn();
+    }
+    if (isTransientNetworkError(e)) {
+      return fn();
+    }
+    throw e;
+  }
+}
+
 // Uploads a local photo (file:// URI) to a Storage signed PUT URL. No Supabase
-// SDK and no apikey needed — the signed URL authenticates itself.
+// SDK and no apikey needed — the signed URL authenticates itself. Retries once
+// on transient network failures so a single dropped connection doesn't surface
+// as a hard scan failure.
 async function putPhoto(
   uploadUrl: string,
   uri: string,
   contentType: string,
 ): Promise<void> {
-  const localUri = await resolveCaptureUri(uri);
-  const readRes = await fetchWithTimeout(localUri, {}, PHOTO_READ_TIMEOUT_MS);
-  const blob = await readRes.blob();
-  const res = await fetchWithTimeout(
-    uploadUrl,
-    {
-      method: 'PUT',
-      body: blob,
-      headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
-    },
-    API_TIMEOUT_MS,
-  );
-  await assertOk(res, 'photo upload');
+  await withTransientRetry(async () => {
+    const localUri = await resolveCaptureUri(uri);
+    const readRes = await fetchWithTimeout(localUri, {}, PHOTO_READ_TIMEOUT_MS);
+    // The Blob polyfill on RN Android can't convert ArrayBuffer-backed responses
+    // for some sources (e.g. dev Metro assets throw
+    // "Creating blobs from 'ArrayBuffer' and 'ArrayBufferView' are not supported").
+    // Read raw bytes via arrayBuffer() — fetch accepts an ArrayBuffer body
+    // natively, and Supabase Storage accepts binary PUTs.
+    const bytes = await readRes.arrayBuffer();
+    const res = await fetchWithTimeout(
+      uploadUrl,
+      {
+        method: 'PUT',
+        body: bytes,
+        headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
+      },
+      API_TIMEOUT_MS,
+    );
+    await assertOk(res, 'photo upload');
+  });
 }
 
 // Direct-to-Storage scan flow (avoids the serverless request-body limit):
