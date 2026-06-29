@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, ActivityIndicator, Platform } from 'react-native';
 import { getAvatarPreview } from '../../types/avatars';
 import { TRAITS } from '../../types/traits';
 import { topPercentLabel } from '../../services/scoring';
@@ -56,7 +56,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
         setRenderUrl(r.imageUrl);
       } catch (e) {
         if (cancelled) return;
-        if (__DEV__) {
+        if (__DEV__ && Platform.OS === 'web') {
           const stub = 'https://placehold.co/232x232/3A2A1A/EFE6D8.png?text=Dev+Render';
           await setCachedRender(traitId, style, stub);
           setRenderUrl(stub);
