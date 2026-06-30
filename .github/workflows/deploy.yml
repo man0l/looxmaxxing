@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   quality:
@@ -100,3 +101,9 @@ jobs:
             --title "Android build ${{ env.SHA_SHORT }} (v${{ env.ANDROID_VERSION_CODE }})" \
             --notes "Play Store bundle (versionCode ${{ env.ANDROID_VERSION_CODE }}) + ProGuard mapping. Upload .aab to Internal testing, attach mapping.txt as deobfuscation file, and add testers before rollout." \
             --latest
+
+      - name: Prune old Android artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEEP_ARTIFACTS: "2"
+        run: bash scripts/prune-android-artifacts.sh
