@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Image, Platform } from 'react-native';
 import { isE2E } from '../config/e2e';
 
 const FRONT_TEST = require('../../assets/images/onboarding-flow-image1-optimized.png');
@@ -22,7 +22,6 @@ function webAssetUri(asset: number): string {
 }
 
 function nativeAssetUri(asset: number): string {
-  const { Image } = require('react-native') as typeof import('react-native');
   const resolved = Image.resolveAssetSource(asset);
   return resolved?.uri ?? '';
 }

@@ -3,7 +3,7 @@ import { useScans } from '../store/ScanContext';
 import { useToast } from '../store/ToastContext';
 
 export function useCaptureFabPress(startRescan: () => void) {
-  const { canRescan, hasRealScan } = useScans();
+  const { canRescan } = useScans();
   const { showToast } = useToast();
 
   const onCaptureFabPress = useCallback(() => {
@@ -12,7 +12,7 @@ export function useCaptureFabPress(startRescan: () => void) {
       return;
     }
     showToast('Complete your first scan to unlock re-rating.', 'info');
-  }, [canRescan, hasRealScan, startRescan, showToast]);
+  }, [canRescan, startRescan, showToast]);
 
   return { onCaptureFabPress, canRescan };
 }
