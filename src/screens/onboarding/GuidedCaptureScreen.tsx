@@ -4,6 +4,7 @@ import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { isE2E } from '../../config/e2e';
 import { resolveDevTestPhotoUri } from '../../services/photoUri';
+import { useLightingOk } from '../../hooks/useLightingOk';
 import { colors, spacing, radii, typography } from '../../theme';
 import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
@@ -15,14 +16,12 @@ type CaptureStep = 'front' | 'profile';
 
 interface Props {
   step: CaptureStep;
-  lightingOk?: boolean;
   onCapture: (uri: string) => void;
   stepLabel?: string;
 }
 
 export function GuidedCaptureScreen({
   step,
-  lightingOk = true,
   onCapture,
   stepLabel = 'Step 5 of 6',
 }: Props) {
@@ -32,6 +31,10 @@ export function GuidedCaptureScreen({
   const [facing, setFacing] = useState<CameraType>('front');
   const [busy, setBusy] = useState(false);
   const granted = permission?.granted ?? false;
+  // Live ambient-light sensor. Returns true/false once a reading is available,
+  // or null when no sensor exists (web, no light sensor, etc.) — in that case
+  // we just don't render the chip.
+  const lightingLive = useLightingOk(granted);
 
   const handleCapture = async () => {
     if (!granted) {
@@ -114,9 +117,16 @@ export function GuidedCaptureScreen({
           <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>○ Profile</Text>
         </View>
 
-        {lightingOk && granted && (
+        {granted && lightingLive === true && (
           <View style={styles.lightingChip} pointerEvents="none">
             <Text style={styles.lightingChipText}>✓ Lighting looks good</Text>
+          </View>
+        )}
+        {granted && lightingLive === false && (
+          <View style={[styles.lightingChip, styles.lightingChipWarn]} pointerEvents="none">
+            <Text style={[styles.lightingChipText, styles.lightingChipWarnText]}>
+              ✕ Too dark — find brighter light
+            </Text>
           </View>
         )}
       </View>
@@ -289,6 +299,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.onTertiary,
+  },
+  lightingChipWarn: {
+    backgroundColor: colors.accent,
+  },
+  lightingChipWarnText: {
+    color: colors.onAccent,
   },
   controls: {
     flexDirection: 'row',
