@@ -45,9 +45,11 @@ export function PracticeProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     const today = dateKey(new Date());
     if (today !== day) {
-      setDay(today);
-      setCompleted({});
-      return;
+      const timer = setTimeout(() => {
+        setDay(today);
+        setCompleted({});
+      }, 0);
+      return () => clearTimeout(timer);
     }
     saveJson(STORAGE_KEYS.practice, { day, completed } satisfies PracticeStore);
   }, [completed, day, hydrated]);

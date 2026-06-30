@@ -69,17 +69,20 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    setHistory((prev) => {
-      const existing = prev[todayKey];
-      if (tasksDoneToday > 0) {
-        if (existing === tasksDoneToday) return prev;
-        return { ...prev, [todayKey]: tasksDoneToday };
-      }
-      if (existing === undefined) return prev;
-      const next = { ...prev };
-      delete next[todayKey];
-      return next;
-    });
+    const timer = setTimeout(() => {
+      setHistory((prev) => {
+        const existing = prev[todayKey];
+        if (tasksDoneToday > 0) {
+          if (existing === tasksDoneToday) return prev;
+          return { ...prev, [todayKey]: tasksDoneToday };
+        }
+        if (existing === undefined) return prev;
+        const next = { ...prev };
+        delete next[todayKey];
+        return next;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [tasksDoneToday, todayKey, hydrated]);
 
   useEffect(() => {
