@@ -25,7 +25,7 @@ jobs:
 
   android:
     needs: quality
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feat/live-lighting-chip'))
     runs-on: ubuntu-latest
     env:
       EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
@@ -98,10 +98,5 @@ jobs:
             "looxmaxxing-${{ env.SHA_SHORT }}.aab" \
             "mapping-${{ env.SHA_SHORT }}.txt" \
             --title "Android build ${{ env.SHA_SHORT }} (v${{ env.ANDROID_VERSION_CODE }})" \
-            --notes "Play Store bundle (versionCode ${{ env.ANDROID_VERSION_CODE }}) + ProGuard mapping.
-
-Upload to Play Console:
-1. Internal testing → Edit release → upload the .aab
-2. On the same bundle row → upload mapping-${{ env.SHA_SHORT }}.txt as the deobfuscation file
-3. Testers tab → add an email list with your testers before rolling out" \
+            --notes "Play Store bundle (versionCode ${{ env.ANDROID_VERSION_CODE }}) + ProGuard mapping. Upload .aab to Internal testing, attach mapping.txt as deobfuscation file, and add testers before rollout." \
             --latest
