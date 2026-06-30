@@ -1,5 +1,4 @@
-import type { ConfigPlugin } from '@expo/config-plugins';
-import { withAndroidManifest } from '@expo/config-plugins';
+const { withAndroidManifest } = require('@expo/config-plugins');
 
 const SHARE_PACKAGES = [
   'com.instagram.android',
@@ -8,24 +7,12 @@ const SHARE_PACKAGES = [
   'com.zhiliaoapp.musically',
 ];
 
-type QueryIntent = {
-  action?: { $: { 'android:name': string } }[];
-  data?: unknown[];
-};
-
-type QueryBlock = {
-  package?: { $: { 'android:name': string } }[];
-  intent?: QueryIntent[];
-};
-
-const withShareIntentQueries: ConfigPlugin = (config) =>
+const withShareIntentQueries = (config) =>
   withAndroidManifest(config, (cfg) => {
-    const manifest = cfg.modResults.manifest as Record<string, unknown> & {
-      queries?: QueryBlock[];
-    };
+    const manifest = cfg.modResults.manifest;
 
     const queries = (manifest.queries ??= []);
-    const block: QueryBlock = queries[0] ?? {};
+    const block = queries[0] ?? {};
     if (queries.length === 0) queries.push(block);
 
     const existingPackages = block.package ?? [];
@@ -54,4 +41,4 @@ const withShareIntentQueries: ConfigPlugin = (config) =>
     return cfg;
   });
 
-export default withShareIntentQueries;
+module.exports = withShareIntentQueries;

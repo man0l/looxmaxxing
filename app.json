@@ -27,14 +27,29 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.looxmaxxing"
+      "package": "com.balkanbit.looxmaxxing",
+      "versionCode": 3,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "./plugins/withShareIntentQueries",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
       "expo-video",
+      "expo-sensors",
       [
         "expo-camera",
         {
@@ -47,6 +62,12 @@
           "photosPermission": "LooxMaxxing accesses your photos so you can pick an existing selfie for your scan."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4b533d40-0092-4fe1-98b9-6fd270e1745b"
+      }
+    },
+    "owner": "man0l"
   }
 }
