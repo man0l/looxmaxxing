@@ -1,5 +1,9 @@
 name: Android Release
 
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, master]
