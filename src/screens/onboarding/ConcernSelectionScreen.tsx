@@ -16,7 +16,7 @@ export function ConcernSelectionScreen({ selected, onToggle, onContinue }: Props
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 2 of 6</Text>
+      <Text style={styles.step}>Step 2 of 5</Text>
       <Text style={styles.title}>What would you like to work on?</Text>
       <Text style={styles.subtitle}>Most guys pick 2–3. This shapes your plan.</Text>
 

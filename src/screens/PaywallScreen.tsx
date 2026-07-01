@@ -1,62 +1,59 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TRAITS, type PlanId } from '../types/traits';
+import type { PlanId } from '../types/traits';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
 import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
 import { packageForPlan, perWeekLabel } from '../services/purchases';
 import { colors, spacing, radii, typography } from '../theme';
 
-const FALLBACK_PLANS: Record<PlanId, { price: string; framing: string }> = {
-  annual: { price: '$39.99/yr', framing: 'just $0.77 per week' },
-  weekly: { price: '$6.99/wk', framing: 'billed every week' },
+const FALLBACK_PLANS: Record<PlanId, { price: string; perWeek: string | null }> = {
+  annual: { price: '$49.99/year', perWeek: '$0.96/week' },
+  weekly: { price: '$4.99', perWeek: null },
 };
 
-const traitById = (id: string) => TRAITS.find((t) => t.id === id);
-
-const FALLBACK_BENEFITS = [
-  'A plan for all 7 scored traits',
-  'Re-scan anytime to track your percentile',
-];
+function savedPerYear(weeklyPkg: ReturnType<typeof packageForPlan>, annualPkg: ReturnType<typeof packageForPlan>): string | null {
+  if (!weeklyPkg || !annualPkg) return null;
+  const weeklyPrice = weeklyPkg.product.price;
+  const annualPrice = annualPkg.product.price;
+  const saved = Math.round(weeklyPrice * 52 - annualPrice);
+  if (saved <= 0) return null;
+  return `Save $${saved}/year`;
+}
 
 export function PaywallScreen() {
-  const { concerns } = useOnboarding();
+  const { concerns, frontPhoto } = useOnboarding();
   const { subscribe, restore, dismissPaywall, offering, purchasing } = useSubscription();
   const plansReady = Boolean(offering);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
   const insets = useSafeAreaInsets();
 
-  const plans = (['annual', 'weekly'] as PlanId[]).map((id) => {
-    const pkg = offering ? packageForPlan(offering, id) : null;
-    if (!pkg) {
-      return { id, title: id === 'annual' ? 'Annual' : 'Weekly', ...FALLBACK_PLANS[id] };
-    }
-    const suffix = id === 'annual' ? '/yr' : '/wk';
-    const weekly = id === 'annual' ? perWeekLabel(pkg) : null;
-    return {
-      id,
-      title: id === 'annual' ? 'Annual' : 'Weekly',
-      price: `${pkg.product.priceString}${suffix}`,
-      framing: weekly ? `just ${weekly} per week` : FALLBACK_PLANS[id].framing,
-    };
-  });
+  const annualPkg = offering ? packageForPlan(offering, 'annual') : null;
+  const weeklyPkg = offering ? packageForPlan(offering, 'weekly') : null;
 
-  const teaseNoun = traitById(concerns[0] ?? 'jawline')?.teaseNoun ?? 'jawline';
-  const benefits = [
-    ...concerns
-      .map((id) => {
-        const trait = traitById(id);
-        return trait ? `${trait.label} score + ${trait.plan.toLowerCase()}` : null;
-      })
-      .filter((b): b is string => b !== null),
-    ...FALLBACK_BENEFITS,
-  ].slice(0, 3);
+  const annualPerWeek = annualPkg ? perWeekLabel(annualPkg) : FALLBACK_PLANS.annual.perWeek;
+  const savingsBadge = savedPerYear(weeklyPkg, annualPkg) ?? 'Save $469/year';
+
+  const plans: { id: PlanId; title: string; price: string; sub: string | null }[] = [
+    {
+      id: 'annual',
+      title: 'Yearly',
+      price: annualPkg ? `${annualPkg.product.priceString}/year` : FALLBACK_PLANS.annual.price,
+      sub: annualPerWeek ? `${annualPerWeek}/week` : null,
+    },
+    {
+      id: 'weekly',
+      title: 'Weekly',
+      price: weeklyPkg ? weeklyPkg.product.priceString : FALLBACK_PLANS.weekly.price,
+      sub: null,
+    },
+  ];
 
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={[styles.container, { paddingBottom: 40 + insets.bottom }]}
+      contentContainerStyle={[styles.container, { paddingBottom: 32 + insets.bottom }]}
       bounces={false}
     >
       <View style={styles.topRow}>
@@ -65,23 +62,20 @@ export function PaywallScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.title}>
-        Your <Text style={styles.titleAccent}>{teaseNoun}</Text> analysis is ready
-      </Text>
+      <Text style={styles.title}>Get Pro</Text>
       <Text style={styles.subtitle}>
-        Unlock to see where you stand — and the plan to move it.
+        Unlock your full potential with AI-powered facial analysis and personalized insights.
       </Text>
+
+      {frontPhoto ? (
+        <View style={styles.photoWrap}>
+          <Image source={{ uri: frontPhoto }} style={styles.photo} />
+        </View>
+      ) : null}
+
+      <Text style={styles.unlockLabel}>Subscribe to unlock your full scan results</Text>
 
       <BlurredTraitGrid concerns={concerns} />
-
-      <View style={styles.benefits}>
-        {benefits.map((b) => (
-          <View key={b} style={styles.benefitRow}>
-            <Text style={styles.benefitCheck}>✓</Text>
-            <Text style={styles.benefitText}>{b}</Text>
-          </View>
-        ))}
-      </View>
 
       <View style={styles.plans}>
         {plans.map((plan) => {
@@ -92,18 +86,22 @@ export function PaywallScreen() {
               onPress={() => setSelectedPlan(plan.id)}
               style={[styles.planCard, isSelected && styles.planCardSelected]}
             >
+              {plan.id === 'annual' && isSelected && (
+                <View style={styles.savingsBadge}>
+                  <Text style={styles.savingsBadgeText}>{savingsBadge}</Text>
+                </View>
+              )}
               <View style={styles.planInfo}>
-                <Text style={styles.planTitle}>{plan.title}</Text>
-                <Text style={styles.planFraming}>{plan.framing}</Text>
+                <Text style={[styles.planTitle, isSelected && styles.planTitleSelected]}>
+                  {plan.title}
+                </Text>
+                {plan.sub ? (
+                  <Text style={styles.planSub}>{plan.sub}</Text>
+                ) : null}
               </View>
-              <View style={styles.planRight}>
-                {plan.id === 'annual' && (
-                  <View style={styles.bestValue}>
-                    <Text style={styles.bestValueText}>Best value</Text>
-                  </View>
-                )}
-                <Text style={styles.planPrice}>{plan.price}</Text>
-              </View>
+              <Text style={[styles.planPrice, isSelected && styles.planPriceSelected]}>
+                {plan.price}
+              </Text>
             </Pressable>
           );
         })}
@@ -116,16 +114,23 @@ export function PaywallScreen() {
         disabled={purchasing || !plansReady}
       >
         <Text style={styles.ctaText}>
-          {purchasing ? 'Processing…' : plansReady ? 'Unlock my results' : 'Loading plans…'}
+          {purchasing ? 'Processing…' : plansReady ? 'Continue' : 'Loading plans…'}
         </Text>
       </Pressable>
 
-      <Text style={styles.terms}>
-        Auto-renews until canceled. Cancel anytime in Settings. Billed via your Apple ID.
-      </Text>
-      <Pressable onPress={restore} hitSlop={8} disabled={purchasing}>
-        <Text style={styles.restore}>Restore purchases</Text>
-      </Pressable>
+      <View style={styles.footer}>
+        <Pressable onPress={() => {}} hitSlop={8}>
+          <Text style={styles.footerLink}>Terms</Text>
+        </Pressable>
+        <Text style={styles.footerDot}>•</Text>
+        <Pressable onPress={() => {}} hitSlop={8}>
+          <Text style={styles.footerLink}>Privacy</Text>
+        </Pressable>
+        <Text style={styles.footerDot}>•</Text>
+        <Pressable onPress={restore} hitSlop={8} disabled={purchasing}>
+          <Text style={styles.footerLink}>Restore Purchases</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -138,13 +143,12 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
-    paddingTop: 56,
-    paddingBottom: 40,
+    paddingTop: 52,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   maybeLater: {
     ...typography.label,
@@ -152,36 +156,35 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.display,
-    fontSize: 24,
-    lineHeight: 29,
+    fontSize: 28,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
-  },
-  titleAccent: {
-    color: colors.tertiary,
   },
   subtitle: {
     ...typography.bodySm,
     color: colors.textSecondary,
+    lineHeight: 20,
     marginBottom: spacing.lg,
   },
-  benefits: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
+  photoWrap: {
+    alignSelf: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.tertiary,
+    marginBottom: spacing.md,
   },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  photo: {
+    width: '100%',
+    height: '100%',
   },
-  benefitCheck: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.tertiary,
-  },
-  benefitText: {
+  unlockLabel: {
     ...typography.bodySm,
-    color: colors.textPrimary,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   plans: {
     marginTop: spacing.lg,
@@ -192,72 +195,83 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radii.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+    position: 'relative',
+    overflow: 'visible',
   },
   planCardSelected: {
     borderColor: colors.tertiary,
     backgroundColor: colors.surface,
   },
+  savingsBadge: {
+    position: 'absolute',
+    top: -12,
+    right: spacing.lg,
+    backgroundColor: colors.secondary,
+    borderRadius: radii.full,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+  },
+  savingsBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.onSecondary,
+  },
   planInfo: {
     gap: 2,
   },
   planTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-  },
-  planFraming: {
-    ...typography.caption,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.textSecondary,
   },
-  planRight: {
-    alignItems: 'flex-end',
-    gap: 4,
+  planTitleSelected: {
+    color: colors.textPrimary,
   },
-  bestValue: {
-    backgroundColor: colors.secondary,
-    borderRadius: radii.sm,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-  },
-  bestValueText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.onSecondary,
+  planSub: {
+    ...typography.caption,
+    color: colors.textTertiary,
   },
   planPrice: {
-    ...typography.stat,
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  planPriceSelected: {
     color: colors.textPrimary,
   },
   cta: {
     backgroundColor: colors.primary,
     borderRadius: radii.full,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
   },
   ctaDisabled: {
     opacity: 0.6,
   },
   ctaText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.onPrimary,
   },
-  terms: {
-    ...typography.caption,
-    color: colors.textTertiary,
-    textAlign: 'center',
-    marginTop: spacing.md,
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  restore: {
+  footerLink: {
     ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
+  },
+  footerDot: {
+    ...typography.caption,
+    color: colors.textTertiary,
   },
 });

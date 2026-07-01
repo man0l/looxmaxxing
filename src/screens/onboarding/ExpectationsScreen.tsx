@@ -25,7 +25,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 4 of 6</Text>
+      <Text style={styles.step}>Step 4 of 5</Text>
       <Text style={styles.title}>Most guys land between 4 and 7</Text>
       <Text style={styles.subtitle}>
         You’ll get percentiles, not verdicts — and every trait comes with a plan.

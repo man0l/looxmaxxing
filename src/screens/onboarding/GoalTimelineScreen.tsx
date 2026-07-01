@@ -1,57 +1,44 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import type { AgeRange } from '../../types/onboarding';
+import type { GoalTimeline } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
 
-const AGE_RANGES: { value: AgeRange; label: string }[] = [
-  { value: 'under17', label: 'Under 17' },
-  { value: '18-24', label: '18–24' },
-  { value: '25-34', label: '25–34' },
-  { value: '35-44', label: '35–44' },
-  { value: '45+', label: '45+' },
+const OPTIONS: { value: GoalTimeline; label: string }[] = [
+  { value: '2_weeks', label: 'In 2 weeks' },
+  { value: '1_month', label: 'In 1 month' },
+  { value: '3_months', label: 'In 3 months' },
+  { value: 'just_know', label: 'Just want to know where I stand' },
 ];
 
 interface Props {
-  selected: AgeRange | null;
-  onSelect: (age: AgeRange) => void;
+  selected: GoalTimeline | null;
+  onSelect: (v: GoalTimeline) => void;
   onContinue: () => void;
-  onUnder17: () => void;
 }
 
-export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Props) {
-  const handleSelect = (age: AgeRange) => {
-    onSelect(age);
-    if (age === 'under17') {
-      onUnder17();
-      return;
-    }
-  };
-
+export function GoalTimelineScreen({ selected, onSelect, onContinue }: Props) {
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 1 of 5</Text>
-      <Text style={styles.title}>How old are you?</Text>
-      <Text style={styles.subtitle}>Used only to calibrate your plan.</Text>
+      <Text style={styles.step}>Step 5 of 5</Text>
+      <Text style={styles.title}>When do you want to see your first results?</Text>
+      <Text style={styles.subtitle}>We'll set your re-scan reminder accordingly.</Text>
 
       <View style={styles.options}>
-        {AGE_RANGES.map((range) => {
-          const isActive = selected === range.value;
+        {OPTIONS.map((opt) => {
+          const isActive = selected === opt.value;
           return (
             <Pressable
-              key={range.value}
-              onPress={() => handleSelect(range.value)}
-              style={[
-                styles.pill,
-                isActive ? styles.pillActive : styles.pillDefault,
-              ]}
+              key={opt.value}
+              onPress={() => onSelect(opt.value)}
+              style={[styles.pill, isActive ? styles.pillActive : styles.pillDefault]}
             >
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
-                {range.label}
+                {opt.label}
               </Text>
-              {isActive && <Text style={styles.checkmark}>✓</Text>}
+              {isActive && <Text style={styles.check}>✓</Text>}
             </Pressable>
           );
         })}
@@ -86,6 +73,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
+    lineHeight: 30,
   },
   subtitle: {
     ...typography.bodySm,
@@ -94,10 +82,11 @@ const styles = StyleSheet.create({
   },
   options: {
     gap: spacing.sm,
+    flex: 1,
   },
   pill: {
     borderRadius: radii.full,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -121,7 +110,7 @@ const styles = StyleSheet.create({
     color: colors.onTertiary,
     fontWeight: '600',
   },
-  checkmark: {
+  check: {
     fontSize: 16,
     color: colors.onTertiary,
   },
