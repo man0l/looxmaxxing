@@ -43,9 +43,9 @@ export function RatingScreen({ onContinue }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Give us a rating</Text>
+        <Text style={styles.title}>You&apos;re in good company</Text>
         <Text style={styles.subtitle}>
-          See what other people say about us — then help the next guy find LooxMaxxing.
+          See what other guys are saying — then help the next one find LooxMaxxing.
         </Text>
 
         <ScrollView
