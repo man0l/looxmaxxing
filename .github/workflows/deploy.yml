@@ -102,6 +102,15 @@ jobs:
             --notes "Play Store bundle (versionCode ${{ env.ANDROID_VERSION_CODE }}) + ProGuard mapping. Upload .aab to Internal testing, attach mapping.txt as deobfuscation file, and add testers before rollout." \
             --latest
 
+      - name: Submit to Play Store internal track
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.balkanbit.looxmaxxing
+          releaseFiles: looxmaxxing-${{ env.SHA_SHORT }}.aab
+          track: internal
+          mappingFile: mapping-${{ env.SHA_SHORT }}.txt
+
       - name: Prune old Android artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
