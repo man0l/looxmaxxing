@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { colors, spacing, typography } from '../../theme';
+import { HeadSilhouette } from '../../components/icons/OnboardingIcons';
 
 const STEPS = [
   'Detecting facial features',
@@ -11,25 +12,62 @@ const STEPS = [
   'Finalizing results',
 ];
 
+const STEP_DURATION = 950;
+const FINAL_PAUSE = 1000;
+const WELL_SIZE = 96;
+const SCAN_TRAVEL = WELL_SIZE - 16;
+
 interface Props {
   onComplete: () => void;
 }
 
 export function AnalyzingScreen({ onComplete }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [scanY] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (activeIndex >= STEPS.length - 1) {
-      const t = setTimeout(onComplete, 800);
+      const t = setTimeout(onComplete, FINAL_PAUSE);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setActiveIndex((i) => i + 1), 700);
+    const t = setTimeout(() => setActiveIndex((i) => i + 1), STEP_DURATION);
     return () => clearTimeout(t);
   }, [activeIndex, onComplete]);
 
+  useEffect(() => {
+    const sweep = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanY, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.delay(200),
+        Animated.timing(scanY, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.delay(200),
+      ]),
+    );
+    sweep.start();
+    return () => sweep.stop();
+  }, [scanY]);
+
+  const translateY = scanY.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-SCAN_TRAVEL / 2, SCAN_TRAVEL / 2],
+  });
+
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>🙂</Text>
+      <View style={styles.well}>
+        <HeadSilhouette size={56} color={colors.textTertiary} />
+        <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
+      </View>
       <Text style={styles.title}>Analyzing Your Face</Text>
 
       <View style={styles.steps}>
@@ -61,15 +99,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     gap: spacing.xxl,
   },
-  emoji: {
-    fontSize: 48,
+  well: {
+    width: WELL_SIZE,
+    height: WELL_SIZE,
+    borderRadius: WELL_SIZE / 2,
     backgroundColor: colors.surface,
-    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
-    width: 88,
-    height: 88,
-    textAlign: 'center',
-    lineHeight: 88,
+  },
+  scanLine: {
+    position: 'absolute',
+    width: '72%',
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.primary,
   },
   title: {
     ...typography.display,
