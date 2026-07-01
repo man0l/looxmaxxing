@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { GoalTimeline } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
 const OPTIONS: { value: GoalTimeline; label: string }[] = [
   { value: '2_weeks', label: 'In 2 weeks' },
@@ -22,9 +23,9 @@ export function GoalTimelineScreen({ selected, onSelect, onContinue }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 5 of 5</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 6 of 10</Text>}
       <Text style={styles.title}>When do you want to see your first results?</Text>
-      <Text style={styles.subtitle}>We'll set your re-scan reminder accordingly.</Text>
+      <Text style={styles.subtitle}>We&apos;ll set your re-scan reminder accordingly.</Text>
 
       <View style={styles.options}>
         {OPTIONS.map((opt) => {

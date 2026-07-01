@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { AgeRange } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
 const AGE_RANGES: { value: AgeRange; label: string }[] = [
   { value: 'under17', label: 'Under 17' },
@@ -32,7 +33,7 @@ export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Pro
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 1 of 5</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 2 of 10</Text>}
       <Text style={styles.title}>How old are you?</Text>
       <Text style={styles.subtitle}>Used only to calibrate your plan.</Text>
 

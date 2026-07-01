@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { CONCERNS } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 import { ConcernGlyph } from '../../components/icons/OnboardingIcons';
 
 interface Props {
@@ -16,7 +17,7 @@ export function ConcernSelectionScreen({ selected, onToggle, onContinue }: Props
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 2 of 5</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 3 of 10</Text>}
       <Text style={styles.title}>What would you like to work on?</Text>
       <Text style={styles.subtitle}>Most guys pick 2–3. This shapes your plan.</Text>
 

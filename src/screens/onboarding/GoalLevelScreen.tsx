@@ -1,12 +1,13 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { GoalLevel } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
 const OPTIONS: { value: GoalLevel; label: string }[] = [
-  { value: 'mtn', label: 'MTN (Mid-Tier Normie)' },
-  { value: 'htn', label: 'HTN (High-Tier Normie)' },
-  { value: 'chadlite', label: 'Chadlite — Strong Jawline' },
-  { value: 'chad', label: 'Chad — Top 1%' },
+  { value: 'mtn', label: 'A noticeable step up' },
+  { value: 'htn', label: 'Top 30% of men' },
+  { value: 'chadlite', label: 'Top 10% of men' },
+  { value: 'chad', label: 'Top 1% of men' },
 ];
 
 interface Props {
@@ -22,7 +23,8 @@ export function GoalLevelScreen({ selected, onSelect, onContinue }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Which level do you hope to reach?</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 7 of 10</Text>}
+      <Text style={styles.title}>How far do you want to go?</Text>
       <Text style={styles.subtitle}>This sets the target for your personalized plan.</Text>
 
       <View style={styles.options}>
@@ -63,6 +65,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
+  },
+  step: {
+    ...typography.caption,
+    color: colors.textTertiary,
   },
   title: {
     ...typography.display,

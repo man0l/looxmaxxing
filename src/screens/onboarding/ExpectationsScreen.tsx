@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
 interface Props {
   onGotIt: () => void;
@@ -25,7 +26,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 4 of 5</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 5 of 10</Text>}
       <Text style={styles.title}>Most guys land between 4 and 7</Text>
       <Text style={styles.subtitle}>
         You’ll get percentiles, not verdicts — and every trait comes with a plan.

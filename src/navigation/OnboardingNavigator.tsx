@@ -12,7 +12,6 @@ import { ExpectationsScreen } from '../screens/onboarding/ExpectationsScreen';
 import { GoalTimelineScreen } from '../screens/onboarding/GoalTimelineScreen';
 import { GoalLevelScreen } from '../screens/onboarding/GoalLevelScreen';
 import { CommitmentScreen } from '../screens/onboarding/CommitmentScreen';
-import { CaptureInstructionsScreen } from '../screens/onboarding/CaptureInstructionsScreen';
 import { GuidedCaptureScreen } from '../screens/onboarding/GuidedCaptureScreen';
 import { AnalyzingScreen } from '../screens/onboarding/AnalyzingScreen';
 import { RatingScreen } from '../screens/onboarding/RatingScreen';
@@ -26,7 +25,6 @@ type Step =
   | 'goal_timeline'
   | 'goal_level'
   | 'commitment'
-  | 'instructions'
   | 'capture'
   | 'analyzing'
   | 'rating';
@@ -103,10 +101,7 @@ export function OnboardingNavigator({ onComplete }: Props) {
         );
 
       case 'commitment':
-        return <CommitmentScreen onContinue={() => goTo('instructions')} />;
-
-      case 'instructions':
-        return <CaptureInstructionsScreen onContinue={() => goTo('capture')} />;
+        return <CommitmentScreen onContinue={() => goTo('capture')} />;
 
       case 'capture': {
         const captureStep = state.frontPhoto ? 'profile' : 'front';
