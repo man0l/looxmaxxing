@@ -6,10 +6,13 @@ import { isE2E } from '../../config/e2e';
 import { resolveDevTestPhotoUri } from '../../services/photoUri';
 import { useLightingOk } from '../../hooks/useLightingOk';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
-const GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
-const BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-optimized.png');
+const FRONT_GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
+const FRONT_BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-optimized.png');
+const PROFILE_GOOD_EXAMPLE = require('../../../assets/images/onboarding-profile-example-optimized.png');
+const PROFILE_BAD_EXAMPLE = require('../../../assets/images/profile-bad-example-optimized.png');
 
 
 type CaptureStep = 'front' | 'profile';
@@ -23,7 +26,11 @@ interface Props {
 export function GuidedCaptureScreen({
   step,
   onCapture,
-  stepLabel = 'Step 5 of 6',
+  stepLabel = SHOW_ONBOARDING_STEPS
+    ? step === 'front'
+      ? 'Step 9 of 10'
+      : 'Step 10 of 10'
+    : undefined,
 }: Props) {
   const isFront = step === 'front';
   const cameraRef = useRef<CameraView>(null);
@@ -67,10 +74,12 @@ export function GuidedCaptureScreen({
   };
 
   const showE2eCapture = (isE2E && Platform.OS === 'web') || __DEV__;
+  const goodExample = isFront ? FRONT_GOOD_EXAMPLE : PROFILE_GOOD_EXAMPLE;
+  const badExample = isFront ? FRONT_BAD_EXAMPLE : PROFILE_BAD_EXAMPLE;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.step}>{stepLabel}</Text>
+      {stepLabel && <Text style={styles.step}>{stepLabel}</Text>}
       <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
       <Text style={styles.subtitle}>
         {isFront
@@ -80,13 +89,13 @@ export function GuidedCaptureScreen({
 
       <View style={styles.examplesRow}>
         <View style={styles.exampleItem}>
-          <Image source={GOOD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
+          <Image source={goodExample} style={styles.exampleImg} resizeMode="cover" />
           <View style={styles.exampleLabelGood}>
             <Text style={styles.exampleLabelGoodText}>✓ Like this</Text>
           </View>
         </View>
         <View style={styles.exampleItem}>
-          <Image source={BAD_EXAMPLE} style={styles.exampleImg} resizeMode="cover" />
+          <Image source={badExample} style={styles.exampleImg} resizeMode="cover" />
           <View style={styles.exampleLabelBad}>
             <Text style={styles.exampleLabelBadText}>✕ Too dark</Text>
           </View>

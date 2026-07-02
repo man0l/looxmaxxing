@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
 import { colors, spacing, radii, typography } from '../../theme';
+import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
 const HERO_IMAGE = require('../../../assets/images/onboarding-face-scan-image1-hero.jpg');
 
@@ -10,6 +11,7 @@ interface Props {
 export function WelcomeScreen({ onStart }: Props) {
   return (
     <View style={styles.container}>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 1 of 10</Text>}
       <View style={styles.hero}>
         <View style={styles.heroImageContainer}>
           <Image source={HERO_IMAGE} style={styles.heroImage} resizeMode="cover" />
@@ -36,6 +38,10 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 40,
     justifyContent: 'center',
+  },
+  step: {
+    ...typography.caption,
+    color: colors.textTertiary,
   },
   hero: {
     alignItems: 'center',

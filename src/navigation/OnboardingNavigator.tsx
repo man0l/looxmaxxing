@@ -4,21 +4,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
-import { AgeGateScreen } from '../screens/onboarding/AgeGateScreen';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
+import { AgeGateScreen } from '../screens/onboarding/AgeGateScreen';
 import { ConcernSelectionScreen } from '../screens/onboarding/ConcernSelectionScreen';
-import { DepthQuestionScreen } from '../screens/onboarding/DepthQuestionScreen';
+import { ObstacleScreen } from '../screens/onboarding/ObstacleScreen';
 import { ExpectationsScreen } from '../screens/onboarding/ExpectationsScreen';
+import { GoalTimelineScreen } from '../screens/onboarding/GoalTimelineScreen';
+import { GoalLevelScreen } from '../screens/onboarding/GoalLevelScreen';
+import { CommitmentScreen } from '../screens/onboarding/CommitmentScreen';
 import { GuidedCaptureScreen } from '../screens/onboarding/GuidedCaptureScreen';
+import { AnalyzingScreen } from '../screens/onboarding/AnalyzingScreen';
+import { RatingScreen } from '../screens/onboarding/RatingScreen';
+import { ShareMotivationScreen } from '../screens/onboarding/ShareMotivationScreen';
 
-type Step = 'age' | 'welcome' | 'concerns' | 'depth' | 'expectations' | 'capture';
+type Step =
+  | 'welcome'
+  | 'age'
+  | 'concerns'
+  | 'obstacle'
+  | 'expectations'
+  | 'goal_timeline'
+  | 'goal_level'
+  | 'commitment'
+  | 'capture'
+  | 'analyzing'
+  | 'rating'
+  | 'share';
 
 interface Props {
   onComplete: () => void;
 }
 
 export function OnboardingNavigator({ onComplete }: Props) {
-  const [step, setStep] = useState<Step>('age');
+  const [step, setStep] = useState<Step>('welcome');
   const state = useOnboarding();
   const dispatch = useOnboardingDispatch();
   const insets = useSafeAreaInsets();
@@ -26,71 +44,96 @@ export function OnboardingNavigator({ onComplete }: Props) {
   const goTo = useCallback((next: Step) => setStep(next), []);
 
   const renderStep = () => {
-    if (step === 'age') {
-      return (
-        <AgeGateScreen
-          selected={state.ageRange}
-          onSelect={(age) => {
-            dispatch({ type: 'SET_AGE', payload: age });
-            if (age === 'under17') return;
-          }}
-          onContinue={() => {
-            if (state.ageRange && state.ageRange !== 'under17') goTo('welcome');
-          }}
-          onUnder17={() => {}}
-        />
-      );
-    }
+    switch (step) {
+      case 'welcome':
+        return <WelcomeScreen onStart={() => goTo('age')} />;
 
-    if (step === 'welcome') {
-      return <WelcomeScreen onStart={() => goTo('concerns')} />;
-    }
+      case 'age':
+        return (
+          <AgeGateScreen
+            selected={state.ageRange}
+            onSelect={(age) => {
+              dispatch({ type: 'SET_AGE', payload: age });
+              if (age === 'under17') return;
+            }}
+            onContinue={() => {
+              if (state.ageRange && state.ageRange !== 'under17') goTo('concerns');
+            }}
+            onUnder17={() => {}}
+          />
+        );
 
-    if (step === 'concerns') {
-      return (
-        <ConcernSelectionScreen
-          selected={state.concerns}
-          onToggle={(id) => dispatch({ type: 'TOGGLE_CONCERN', payload: id })}
-          onContinue={() => goTo('depth')}
-        />
-      );
-    }
+      case 'concerns':
+        return (
+          <ConcernSelectionScreen
+            selected={state.concerns}
+            onToggle={(id) => dispatch({ type: 'TOGGLE_CONCERN', payload: id })}
+            onContinue={() => goTo('obstacle')}
+          />
+        );
 
-    if (step === 'depth') {
-      const topConcern = state.concerns[0] || 'jawline';
-      return (
-        <DepthQuestionScreen
-          concernId={topConcern}
-          selected={state.depthAnswer}
-          onSelect={(a) => dispatch({ type: 'SET_DEPTH', payload: a })}
-          onContinue={() => goTo('expectations')}
-          onSkip={() => goTo('expectations')}
-        />
-      );
-    }
+      case 'obstacle':
+        return (
+          <ObstacleScreen
+            selected={state.obstacle}
+            onSelect={(v) => dispatch({ type: 'SET_OBSTACLE', payload: v })}
+            onContinue={() => goTo('expectations')}
+          />
+        );
 
-    if (step === 'expectations') {
-      return <ExpectationsScreen onGotIt={() => goTo('capture')} />;
-    }
+      case 'expectations':
+        return <ExpectationsScreen onGotIt={() => goTo('goal_timeline')} />;
 
-    if (step === 'capture') {
-      const captureStep = state.frontPhoto ? 'profile' : 'front';
-      return (
-        <GuidedCaptureScreen
-          step={captureStep}
-          onCapture={(uri) => {
-            if (captureStep === 'front') {
-              dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
-            } else {
-              dispatch({ type: 'SET_PROFILE_PHOTO', payload: uri });
-              onComplete();
-            }
-          }}
-        />
-      );
-    }
+      case 'goal_timeline':
+        return (
+          <GoalTimelineScreen
+            selected={state.goalTimeline}
+            onSelect={(v) => dispatch({ type: 'SET_GOAL_TIMELINE', payload: v })}
+            onContinue={() => goTo('goal_level')}
+          />
+        );
 
-    return null;
+      case 'goal_level':
+        return (
+          <GoalLevelScreen
+            selected={state.goalLevel}
+            onSelect={(v) => dispatch({ type: 'SET_GOAL_LEVEL', payload: v })}
+            onContinue={() => goTo('commitment')}
+          />
+        );
+
+      case 'commitment':
+        return <CommitmentScreen onContinue={() => goTo('capture')} />;
+
+      case 'capture': {
+        const captureStep = state.frontPhoto ? 'profile' : 'front';
+        return (
+          <GuidedCaptureScreen
+            step={captureStep}
+            onCapture={(uri) => {
+              if (captureStep === 'front') {
+                dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
+              } else {
+                dispatch({ type: 'SET_PROFILE_PHOTO', payload: uri });
+                goTo('analyzing');
+              }
+            }}
+          />
+        );
+      }
+
+      case 'analyzing':
+        return <AnalyzingScreen onComplete={() => goTo('rating')} />;
+
+      case 'rating':
+        return <RatingScreen onContinue={() => goTo('share')} />;
+
+      case 'share':
+        return <ShareMotivationScreen onContinue={onComplete} />;
+
+      default:
+        return null;
+    }
   };
 
   return <View style={[styles.root, { paddingBottom: insets.bottom }]}>{renderStep()}</View>;

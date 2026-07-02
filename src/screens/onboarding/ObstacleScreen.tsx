@@ -1,58 +1,45 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import type { AgeRange } from '../../types/onboarding';
+import type { ObstacleAnswer } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
 import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 
-const AGE_RANGES: { value: AgeRange; label: string }[] = [
-  { value: 'under17', label: 'Under 17' },
-  { value: '18-24', label: '18–24' },
-  { value: '25-34', label: '25–34' },
-  { value: '35-44', label: '35–44' },
-  { value: '45+', label: '45+' },
+const OPTIONS: { value: ObstacleAnswer; label: string }[] = [
+  { value: 'no_direction', label: "Didn't know where to start" },
+  { value: 'no_routine', label: 'No consistent routine' },
+  { value: 'didnt_work', label: "Tried things that didn't work" },
+  { value: 'just_discovered', label: 'Just discovered this matters' },
 ];
 
 interface Props {
-  selected: AgeRange | null;
-  onSelect: (age: AgeRange) => void;
+  selected: ObstacleAnswer | null;
+  onSelect: (v: ObstacleAnswer) => void;
   onContinue: () => void;
-  onUnder17: () => void;
 }
 
-export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Props) {
-  const handleSelect = (age: AgeRange) => {
-    onSelect(age);
-    if (age === 'under17') {
-      onUnder17();
-      return;
-    }
-  };
-
+export function ObstacleScreen({ selected, onSelect, onContinue }: Props) {
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 2 of 10</Text>}
-      <Text style={styles.title}>How old are you?</Text>
-      <Text style={styles.subtitle}>Used only to calibrate your plan.</Text>
+      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 4 of 10</Text>}
+      <Text style={styles.title}>{"What's held you back\nfrom improving?"}</Text>
+      <Text style={styles.subtitle}>We&apos;ll tailor your plan around it.</Text>
 
       <View style={styles.options}>
-        {AGE_RANGES.map((range) => {
-          const isActive = selected === range.value;
+        {OPTIONS.map((opt) => {
+          const isActive = selected === opt.value;
           return (
             <Pressable
-              key={range.value}
-              onPress={() => handleSelect(range.value)}
-              style={[
-                styles.pill,
-                isActive ? styles.pillActive : styles.pillDefault,
-              ]}
+              key={opt.value}
+              onPress={() => onSelect(opt.value)}
+              style={[styles.pill, isActive ? styles.pillActive : styles.pillDefault]}
             >
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
-                {range.label}
+                {opt.label}
               </Text>
-              {isActive && <Text style={styles.checkmark}>✓</Text>}
+              {isActive && <Text style={styles.check}>✓</Text>}
             </Pressable>
           );
         })}
@@ -87,6 +74,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
+    lineHeight: 30,
   },
   subtitle: {
     ...typography.bodySm,
@@ -95,10 +83,11 @@ const styles = StyleSheet.create({
   },
   options: {
     gap: spacing.sm,
+    flex: 1,
   },
   pill: {
     borderRadius: radii.full,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -122,7 +111,7 @@ const styles = StyleSheet.create({
     color: colors.onTertiary,
     fontWeight: '600',
   },
-  checkmark: {
+  check: {
     fontSize: 16,
     color: colors.onTertiary,
   },
