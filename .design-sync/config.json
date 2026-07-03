@@ -1,0 +1,19 @@
+{
+  "projectId": "6553f052-55ee-4e3f-b56a-6727c0479a9b",
+  "shape": "package",
+  "pkg": "looxmaxxing",
+  "globalName": "LooxMaxxing",
+  "entry": "./dist/index.js",
+  "buildCmd": "node .design-sync/build-dist.mjs",
+  "tsconfig": "tsconfig.json",
+  "guidelinesGlob": ["docs/DESIGN.md", "docs/PRD.md"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "componentSrcMap": {
+    "SafeAreaProvider": null,
+    "ToastProvider": null
+  },
+  "provider": {
+    "component": "SafeAreaProvider",
+    "inner": { "component": "ToastProvider" }
+  }
+}

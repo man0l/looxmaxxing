@@ -58,3 +58,11 @@ e2e/android-screen.png
 agent-tools/
 mcps/
 terminals/
+
+# design-sync
+.ds-sync/
+ds-bundle/
+dist/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
