@@ -65,7 +65,7 @@ export function StreakScreen({ onClose }: Props) {
 
       {showShare && (
         <ShareSheet
-          message={`Day ${streak.currentDay} streak on looxmaxxing`}
+          message={`Day ${streak.currentDay} streak on axend`}
           onClose={() => setShowShare(false)}
         >
           <StreakShareCard day={streak.currentDay} weeks={streak.heatmap} />

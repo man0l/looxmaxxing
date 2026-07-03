@@ -15,7 +15,7 @@ const TESTIMONIALS = [
   {
     stars: 5,
     title: 'This app changed my life',
-    body: "I've been using LooxMaxxing for 3 months now and the transformation is insane. My jawline is so much more defined and my face looks way more structured. The daily routines are actually manageable and the AI keeps track of everything. Best investment I've made in myself.",
+    body: "I've been using Axend for 3 months now and the transformation is insane. My jawline is so much more defined and my face looks way more structured. The daily routines are actually manageable and the AI keeps track of everything. Best investment I've made in myself.",
     handle: '@billyboy44',
   },
   {
@@ -45,7 +45,7 @@ export function RatingScreen({ onContinue }: Props) {
       <View style={styles.content}>
         <Text style={styles.title}>You&apos;re in good company</Text>
         <Text style={styles.subtitle}>
-          See what other guys are saying — then help the next one find LooxMaxxing.
+          See what other guys are saying — then help the next one find Axend.
         </Text>
 
         <ScrollView

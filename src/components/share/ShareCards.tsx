@@ -13,7 +13,7 @@ interface StreakCardProps {
 export function StreakShareCard({ day, weeks }: StreakCardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.brand}>looxmaxxing</Text>
+      <Text style={styles.brand}>axend</Text>
       <Text style={styles.bigNumber}>{day}</Text>
       <Text style={styles.bigLabel}>day streak</Text>
       <View style={styles.heatmap}>
@@ -48,7 +48,7 @@ function isDown(delta?: string): boolean {
 export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreCardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.brand}>looxmaxxing</Text>
+      <Text style={styles.brand}>axend</Text>
       {photoUri ? (
         <View style={styles.photoRing}>
           <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />

@@ -193,7 +193,7 @@ export function ResultsScreen() {
       <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
       {showShare && (
-        <ShareSheet message="My looxmaxxing scan" onClose={() => setShowShare(false)}>
+        <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
           <ScoreShareCard
             overall={overallScore}
             overallDelta={overallDelta}

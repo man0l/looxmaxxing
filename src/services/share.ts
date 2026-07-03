@@ -56,7 +56,7 @@ export async function shareCard(
   const url = fileUrl(uri);
   // An explicit mime type is required for several Social handlers (X/Twitter
   // throws ActivityNotFound without it) and lets Android resolve the target app.
-  const image = { url, type: 'image/png', filename: 'looxmaxxing', failOnCancel: false } as const;
+  const image = { url, type: 'image/png', filename: 'axend', failOnCancel: false } as const;
 
   const single = async (opts: Record<string, unknown>) => {
     await Share.shareSingle(opts as unknown as Parameters<typeof Share.shareSingle>[0]);

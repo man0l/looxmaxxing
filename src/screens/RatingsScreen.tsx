@@ -161,7 +161,7 @@ export function RatingsScreen() {
           const prev = idx >= 0 ? scans[idx + 1] : undefined;
           const curOverall = overallPercentile(shareScan.scores);
           return (
-            <ShareSheet message="My looxmaxxing scan" onClose={() => setShareScan(null)}>
+            <ShareSheet message="My axend scan" onClose={() => setShareScan(null)}>
               <ScoreShareCard
                 overall={scoreLabel(curOverall)}
                 overallDelta={
