@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/legal';
 import type { PlanId } from '../types/traits';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
@@ -24,8 +25,10 @@ function savedPerYear(weeklyPkg: ReturnType<typeof packageForPlan>, annualPkg: R
 
 export function PaywallScreen() {
   const { concerns, frontPhoto } = useOnboarding();
-  const { subscribe, restore, dismissPaywall, offering, purchasing } = useSubscription();
+  const { subscribe, restore, dismissPaywall, offering, offeringError, reloadOffering, purchasing } =
+    useSubscription();
   const plansReady = Boolean(offering);
+  const plansFailed = !plansReady && Boolean(offeringError);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
   const insets = useSafeAreaInsets();
 
@@ -109,21 +112,29 @@ export function PaywallScreen() {
 
       <Pressable
         testID="paywall-unlock"
-        onPress={() => subscribe(selectedPlan)}
-        style={[styles.cta, (purchasing || !plansReady) && styles.ctaDisabled]}
-        disabled={purchasing || !plansReady}
+        onPress={() => (plansReady ? subscribe(selectedPlan) : reloadOffering())}
+        style={[styles.cta, (purchasing || (!plansReady && !plansFailed)) && styles.ctaDisabled]}
+        disabled={purchasing || (!plansReady && !plansFailed)}
       >
         <Text style={styles.ctaText}>
-          {purchasing ? 'Processing…' : plansReady ? 'Continue' : 'Loading plans…'}
+          {purchasing
+            ? 'Processing…'
+            : plansReady
+              ? 'Continue'
+              : plansFailed
+                ? 'Retry loading plans'
+                : 'Loading plans…'}
         </Text>
       </Pressable>
 
+      {plansFailed ? <Text style={styles.plansError}>{offeringError}</Text> : null}
+
       <View style={styles.footer}>
-        <Pressable onPress={() => {}} hitSlop={8}>
+        <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
           <Text style={styles.footerLink}>Terms</Text>
         </Pressable>
         <Text style={styles.footerDot}>•</Text>
-        <Pressable onPress={() => {}} hitSlop={8}>
+        <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} hitSlop={8}>
           <Text style={styles.footerLink}>Privacy</Text>
         </Pressable>
         <Text style={styles.footerDot}>•</Text>
@@ -258,6 +269,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.onPrimary,
+  },
+  plansError: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   footer: {
     flexDirection: 'row',

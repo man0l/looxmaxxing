@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
+import { PRIVACY_POLICY_URL } from '../config/legal';
 import { useSubscription } from '../store/SubscriptionContext';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
@@ -77,7 +78,11 @@ export function ProfileScreen() {
             disabled={!hasPhotos}
             first
           />
-          <Row label="Privacy policy" tone="action" onPress={() => {}} />
+          <Row
+            label="Privacy policy"
+            tone="action"
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          />
         </View>
       </ScrollView>
 

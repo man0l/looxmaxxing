@@ -27,8 +27,10 @@ interface SubscriptionValue {
   purchasing: boolean;
   purchaseError: string | null;
   offering: PurchasesOffering | null;
+  offeringError: string | null;
   subscribe: (plan: PlanId) => Promise<void>;
   restore: () => Promise<void>;
+  reloadOffering: () => Promise<void>;
   openPaywall: () => void;
   dismissPaywall: () => void;
 }
@@ -39,8 +41,10 @@ const SubscriptionContext = createContext<SubscriptionValue>({
   purchasing: false,
   purchaseError: null,
   offering: null,
+  offeringError: null,
   subscribe: async () => {},
   restore: async () => {},
+  reloadOffering: async () => {},
   openPaywall: () => {},
   dismissPaywall: () => {},
 });
@@ -52,6 +56,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
+  const [offeringError, setOfferingError] = useState<string | null>(null);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -60,13 +65,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     (async () => {
       const ok = await configurePurchases();
       if (!ok || cancelled) return;
-      const [info, currentOffering] = await Promise.all([
+      const [info, offeringResult] = await Promise.all([
         getCustomerInfo(),
         getCurrentOffering(),
       ]);
       if (cancelled) return;
       setSubscribed(isProActive(info));
-      setOffering(currentOffering);
+      setOffering(offeringResult.offering);
+      if (offeringResult.error) {
+        setOfferingError(offeringResult.error);
+        showToast(offeringResult.error, 'error');
+      }
       unsubscribe = addCustomerInfoListener((updated) => {
         setSubscribed(isProActive(updated));
       });
@@ -76,14 +85,24 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       cancelled = true;
       unsubscribe?.();
     };
-  }, []);
+  }, [showToast]);
+
+  const reloadOffering = useCallback(async () => {
+    setOfferingError(null);
+    const result = await getCurrentOffering();
+    setOffering(result.offering);
+    if (result.error) {
+      setOfferingError(result.error);
+      showToast(result.error, 'error');
+    }
+  }, [showToast]);
 
   const subscribe = useCallback(
     async (plan: PlanId) => {
       setPurchaseError(null);
       let activeOffering = offering;
       if (!activeOffering) {
-        activeOffering = await getCurrentOffering();
+        activeOffering = (await getCurrentOffering()).offering;
         if (activeOffering) setOffering(activeOffering);
       }
       const pkg = activeOffering ? packageForPlan(activeOffering, plan) : null;
@@ -159,8 +178,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       purchasing,
       purchaseError,
       offering,
+      offeringError,
       subscribe,
       restore,
+      reloadOffering,
       openPaywall,
       dismissPaywall,
     }),
@@ -170,8 +191,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       purchasing,
       purchaseError,
       offering,
+      offeringError,
       subscribe,
       restore,
+      reloadOffering,
       openPaywall,
       dismissPaywall,
     ],

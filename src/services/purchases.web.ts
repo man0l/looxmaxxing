@@ -128,14 +128,28 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   }
 }
 
-export async function getCurrentOffering(): Promise<PurchasesOffering | null> {
-  if (!configured) return null;
+export interface OfferingResult {
+  offering: PurchasesOffering | null;
+  error: string | null;
+}
+
+export async function getCurrentOffering(): Promise<OfferingResult> {
+  if (!configured) return { offering: null, error: null };
   try {
     const offerings = await Purchases.getSharedInstance().getOfferings();
-    return offerings.current ? shimOffering(offerings.current) : null;
+    if (!offerings.current) {
+      return {
+        offering: null,
+        error: 'No subscription plans are available for this store yet.',
+      };
+    }
+    return { offering: shimOffering(offerings.current), error: null };
   } catch (e) {
     console.warn('[purchases.web] getOfferings failed', e);
-    return null;
+    return {
+      offering: null,
+      error: "Couldn't load subscription plans. Check your connection and try again.",
+    };
   }
 }
 

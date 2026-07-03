@@ -61,15 +61,29 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   }
 }
 
-export async function getCurrentOffering(): Promise<PurchasesOffering | null> {
+export interface OfferingResult {
+  offering: PurchasesOffering | null;
+  error: string | null;
+}
+
+export async function getCurrentOffering(): Promise<OfferingResult> {
   const Purchases = getPurchases();
-  if (!Purchases || !configured) return null;
+  if (!Purchases || !configured) return { offering: null, error: null };
   try {
     const offerings = await Purchases.getOfferings();
-    return offerings.current;
+    if (!offerings.current) {
+      return {
+        offering: null,
+        error: 'No subscription plans are available for this store yet.',
+      };
+    }
+    return { offering: offerings.current, error: null };
   } catch (e) {
     console.warn('[purchases] getOfferings failed', e);
-    return null;
+    return {
+      offering: null,
+      error: "Couldn't load subscription plans. Check your connection and try again.",
+    };
   }
 }
 

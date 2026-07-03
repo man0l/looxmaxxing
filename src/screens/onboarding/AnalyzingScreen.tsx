@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { colors, spacing, typography } from '../../theme';
+import { useOnboarding } from '../../store/OnboardingContext';
 import { HeadSilhouette } from '../../components/icons/OnboardingIcons';
 
 const STEPS = [
@@ -14,7 +15,7 @@ const STEPS = [
 
 const STEP_DURATION = 950;
 const FINAL_PAUSE = 1000;
-const WELL_SIZE = 96;
+const WELL_SIZE = 120;
 const SCAN_TRAVEL = WELL_SIZE - 16;
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function AnalyzingScreen({ onComplete }: Props) {
+  const { frontPhoto } = useOnboarding();
   const [activeIndex, setActiveIndex] = useState(0);
   const [scanY] = useState(() => new Animated.Value(0));
 
@@ -65,7 +67,11 @@ export function AnalyzingScreen({ onComplete }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.well}>
-        <HeadSilhouette size={56} color={colors.textTertiary} />
+        {frontPhoto ? (
+          <Image source={{ uri: frontPhoto }} style={styles.photo} />
+        ) : (
+          <HeadSilhouette size={56} color={colors.textTertiary} />
+        )}
         <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
       </View>
       <Text style={styles.title}>Analyzing Your Face</Text>
@@ -109,6 +115,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
   },
   scanLine: {
     position: 'absolute',
