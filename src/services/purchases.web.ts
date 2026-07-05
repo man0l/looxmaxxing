@@ -210,7 +210,7 @@ export async function restorePurchases(): Promise<PurchaseResult> {
     if (isProActive(asCustomerInfo(info))) {
       return { pro: true, cancelled: false, error: null };
     }
-    return { pro: false, cancelled: false, error: 'No active subscription found to restore.' };
+    return { pro: false, cancelled: false, error: 'No active subscription found for this account.' };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Restore failed. Please try again.';
     console.warn('[purchases.web] restore failed', e);

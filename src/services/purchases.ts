@@ -137,7 +137,11 @@ export async function restorePurchases(): Promise<PurchaseResult> {
     if (isProActive(customerInfo)) {
       return { pro: true, cancelled: false, error: null };
     }
-    return { pro: false, cancelled: false, error: 'No active subscription found for this Apple ID.' };
+    return {
+      pro: false,
+      cancelled: false,
+      error: `No active subscription found for this ${Platform.OS === 'ios' ? 'Apple ID' : 'account'}.`,
+    };
   } catch (e) {
     const err = e as { message?: string };
     console.warn('[purchases] restore failed', e);
