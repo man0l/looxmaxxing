@@ -217,6 +217,19 @@ interface RenderStatusResponse {
 // slot, PUT the reference photo, POST /v1/renders. If the API responds inline
 // (done) the image is ready; if async (processing), poll GET /v1/renders/:jobId
 // until it completes or fails (the Edge Function does the work in the background).
+export async function invalidateEntitlementCache(appUserId: string): Promise<void> {
+  if (!API_BASE || !appUserId) return;
+  try {
+    await fetchWithTimeout(
+      `${API_BASE}/v1/entitlement/invalidate`,
+      { method: 'POST', headers: { 'X-App-User-Id': appUserId } },
+      10_000,
+    );
+  } catch {
+    // best-effort — failure is silent, the TTL will expire on its own
+  }
+}
+
 export async function submitRender(opts: {
   appUserId: string;
   photoUri: string;
