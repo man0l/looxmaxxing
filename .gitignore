@@ -40,6 +40,7 @@ yarn-error.*
 # EAS / signing (never commit)
 credentials.json
 credentials/
+ios-certs/
 
 # typescript
 *.tsbuildinfo
