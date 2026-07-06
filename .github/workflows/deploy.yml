@@ -124,7 +124,7 @@ jobs:
   ios:
     needs: quality
     if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
@@ -146,30 +146,46 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build iOS locally (EAS manages credentials)
+      - name: Build iOS on EAS cloud
         run: |
           eas build \
             --platform ios \
             --profile production \
-            --local \
             --non-interactive \
-            --output $RUNNER_TEMP/looxmaxxing.ipa
+            --wait \
+            --json \
+            2>/dev/null | tee /tmp/eas-build.json
+          echo "ARTIFACT_URL=$(jq -r '.artifacts.buildUrl' /tmp/eas-build.json)" \
+            >> $GITHUB_ENV
 
-      - name: Upload to TestFlight
+      - name: Download IPA
+        run: curl -L -o looxmaxxing-${{ env.SHA_SHORT }}.ipa "$ARTIFACT_URL"
+
+      - name: Prepare ASC key for submission
         env:
           APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_ISSUER_ID: ${{ secrets.APPLE_API_KEY_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APPLE_API_KEY_BASE64" | base64 --decode \
-            -o ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$RUNNER_TEMP/looxmaxxing.ipa" \
-            --apiKey "${{ secrets.APPLE_API_KEY_ID }}" \
-            --apiIssuer "${{ secrets.APPLE_API_KEY_ISSUER_ID }}"
+          echo "$APPLE_API_KEY_BASE64" | base64 -d > AuthKey.p8
+          jq --arg keyId "$APPLE_API_KEY_ID" \
+             --arg issuerId "$APPLE_API_KEY_ISSUER_ID" \
+             --arg teamId "$APPLE_TEAM_ID" \
+             '.submit.production.ios = {
+               "ascApiKeyPath": "./AuthKey.p8",
+               "ascApiKeyId": $keyId,
+               "ascApiKeyIssuerId": $issuerId,
+               "appleTeamId": $teamId
+             }' eas.json > eas.json.tmp && mv eas.json.tmp eas.json
 
-      - name: Stage IPA
-        run: cp $RUNNER_TEMP/looxmaxxing.ipa looxmaxxing-${{ env.SHA_SHORT }}.ipa
+      - name: Submit to TestFlight
+        run: |
+          eas submit \
+            --platform ios \
+            --path looxmaxxing-${{ env.SHA_SHORT }}.ipa \
+            --profile production \
+            --non-interactive
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
