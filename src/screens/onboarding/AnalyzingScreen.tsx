@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { colors, spacing, typography } from '../../theme';
 import { useOnboarding } from '../../store/OnboardingContext';
 import { HeadSilhouette } from '../../components/icons/OnboardingIcons';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const STEPS = [
   'Detecting facial features',
@@ -66,6 +67,7 @@ export function AnalyzingScreen({ onComplete }: Props) {
 
   return (
     <View style={styles.container}>
+      <OnboardingProgressBar current={10} />
       <View style={styles.well}>
         {frontPhoto ? (
           <Image source={{ uri: frontPhoto }} style={styles.photo} />
@@ -99,10 +101,11 @@ export function AnalyzingScreen({ onComplete }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingTop: 56,
     gap: spacing.xxl,
   },
   well: {

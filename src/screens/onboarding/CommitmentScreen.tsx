@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 interface Props {
   onContinue: () => void;
@@ -9,7 +9,7 @@ interface Props {
 export function CommitmentScreen({ onContinue }: Props) {
   return (
     <View style={styles.container}>
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 8 of 10</Text>}
+      <OnboardingProgressBar current={8} />
       <View style={styles.content}>
         <Text style={styles.headline}>
           {'Show up daily and your score moves'}
@@ -29,15 +29,11 @@ export function CommitmentScreen({ onContinue }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
-    paddingTop: 80,
+    paddingTop: 60,
     paddingBottom: 40,
     justifyContent: 'space-between',
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   content: {
     flex: 1,

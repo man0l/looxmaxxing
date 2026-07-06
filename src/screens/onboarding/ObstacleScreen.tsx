@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { ObstacleAnswer } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const OPTIONS: { value: ObstacleAnswer; label: string }[] = [
   { value: 'no_direction', label: "Didn't know where to start" },
@@ -23,7 +23,7 @@ export function ObstacleScreen({ selected, onSelect, onContinue }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 4 of 10</Text>}
+      <OnboardingProgressBar current={4} />
       <Text style={styles.title}>{"What's held you back\nfrom improving?"}</Text>
       <Text style={styles.subtitle}>We&apos;ll tailor your plan around it.</Text>
 
@@ -59,14 +59,10 @@ export function ObstacleScreen({ selected, onSelect, onContinue }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   title: {
     ...typography.display,

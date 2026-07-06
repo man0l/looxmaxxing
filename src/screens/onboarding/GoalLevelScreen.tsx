@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { GoalLevel } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const OPTIONS: { value: GoalLevel; label: string }[] = [
   { value: 'mtn', label: 'A noticeable step up' },
@@ -23,7 +23,7 @@ export function GoalLevelScreen({ selected, onSelect, onContinue }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 7 of 10</Text>}
+      <OnboardingProgressBar current={7} />
       <Text style={styles.title}>How far do you want to go?</Text>
       <Text style={styles.subtitle}>This sets the target for your personalized plan.</Text>
 
@@ -61,14 +61,10 @@ export function GoalLevelScreen({ selected, onSelect, onContinue }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   title: {
     ...typography.display,

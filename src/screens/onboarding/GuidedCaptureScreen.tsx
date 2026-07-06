@@ -6,7 +6,7 @@ import { isE2E } from '../../config/e2e';
 import { resolveDevTestPhotoUri } from '../../services/photoUri';
 import { useLightingOk } from '../../hooks/useLightingOk';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
 const FRONT_GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
@@ -21,16 +21,14 @@ interface Props {
   step: CaptureStep;
   onCapture: (uri: string) => void;
   stepLabel?: string;
+  onboardingStep?: number;
 }
 
 export function GuidedCaptureScreen({
   step,
   onCapture,
-  stepLabel = SHOW_ONBOARDING_STEPS
-    ? step === 'front'
-      ? 'Step 9 of 10'
-      : 'Step 10 of 10'
-    : undefined,
+  stepLabel,
+  onboardingStep,
 }: Props) {
   const isFront = step === 'front';
   const cameraRef = useRef<CameraView>(null);
@@ -79,7 +77,8 @@ export function GuidedCaptureScreen({
 
   return (
     <View style={styles.container}>
-      {stepLabel && <Text style={styles.step}>{stepLabel}</Text>}
+      {onboardingStep != null && <OnboardingProgressBar current={onboardingStep} />}
+      {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
       <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
       <Text style={styles.subtitle}>
         {isFront
@@ -172,7 +171,7 @@ export function GuidedCaptureScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 56,
     paddingBottom: spacing.lg,

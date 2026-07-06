@@ -1,23 +1,23 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 interface Props {
   onGotIt: () => void;
 }
 
-const BAR_HEIGHTS = [8, 18, 42, 78, 100, 64, 30, 12, 5];
-const BAR_HEIGHT_MAX = 100;
-const SVG_HEIGHT = 90;
-const SVG_WIDTH = 240;
-const BAR_WIDTH = 16;
-const BAR_GAP = 10;
-const TOTAL_BARS_WIDTH = BAR_HEIGHTS.length * BAR_WIDTH + (BAR_HEIGHTS.length - 1) * BAR_GAP;
-const BAR_START_X = (SVG_WIDTH - TOTAL_BARS_WIDTH) / 2;
-
-const IN_RANGE_START = 2;
-const IN_RANGE_END = 6;
+const BARS = [
+  { height: 8, inRange: false },
+  { height: 18, inRange: false },
+  { height: 42, inRange: false },
+  { height: 78, inRange: true },
+  { height: 100, inRange: true },
+  { height: 64, inRange: true },
+  { height: 30, inRange: true },
+  { height: 12, inRange: false },
+  { height: 5, inRange: false },
+];
+const MAX_H = 72;
 
 export function ExpectationsScreen({ onGotIt }: Props) {
   return (
@@ -26,31 +26,28 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 5 of 10</Text>}
+      <OnboardingProgressBar current={5} />
       <Text style={styles.title}>Most guys land between 4 and 7</Text>
       <Text style={styles.subtitle}>
-        You’ll get percentiles, not verdicts — and every trait comes with a plan.
+        You&apos;ll get percentiles, not verdicts — and every trait comes with a plan.
       </Text>
 
       <View style={styles.chartCard}>
-        <Svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT + 24}`} width="100%" height={SVG_HEIGHT + 24}>
-          {BAR_HEIGHTS.map((h, i) => {
-            const scaledH = (h / BAR_HEIGHT_MAX) * SVG_HEIGHT;
-            const x = BAR_START_X + i * (BAR_WIDTH + BAR_GAP);
-            const inRange = i >= IN_RANGE_START && i <= IN_RANGE_END;
-            return (
-              <Rect
-                key={i}
-                x={x}
-                y={SVG_HEIGHT - scaledH}
-                width={BAR_WIDTH}
-                height={scaledH}
-                rx={4}
-                fill={inRange ? colors.tertiary : colors.surfaceRaised}
+        <View style={styles.barsRow}>
+          {BARS.map((bar, i) => (
+            <View key={i} style={styles.barWrapper}>
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    height: Math.round((bar.height / 100) * MAX_H),
+                    backgroundColor: bar.inRange ? colors.tertiary : colors.surfaceRaised,
+                  },
+                ]}
               />
-            );
-          })}
-        </Svg>
+            </View>
+          ))}
+        </View>
         <View style={styles.chartLabels}>
           <Text style={styles.chartLabelEdge}>1</Text>
           <Text style={styles.chartLabelCenter}>4–7 · most men</Text>
@@ -61,8 +58,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       <View style={styles.tip}>
         <Text style={styles.tipIcon}>↗</Text>
         <Text style={styles.tipText}>
-          A 5.7 means room to climb — re-rate every two weeks and watch the
-          percentile move.
+          A 5.7 means room to climb — re-rate every two weeks and watch the percentile move.
         </Text>
       </View>
 
@@ -78,20 +74,15 @@ export function ExpectationsScreen({ onGotIt }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   title: {
     ...typography.display,
     fontSize: 22,
     color: colors.textPrimary,
-    marginTop: spacing.md,
     marginBottom: spacing.xs,
     lineHeight: 26,
   },
@@ -107,6 +98,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     padding: spacing.lg,
+  },
+  barsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    height: MAX_H,
+  },
+  barWrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    height: MAX_H,
+  },
+  bar: {
+    borderRadius: 999,
+    width: '100%',
   },
   chartLabels: {
     flexDirection: 'row',

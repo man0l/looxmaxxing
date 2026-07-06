@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { CONCERNS } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
-import { SHOW_ONBOARDING_STEPS } from '../../config/onboardingSteps';
 import { ConcernGlyph } from '../../components/icons/OnboardingIcons';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 interface Props {
   selected: string[];
@@ -17,7 +17,7 @@ export function ConcernSelectionScreen({ selected, onToggle, onContinue }: Props
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      {SHOW_ONBOARDING_STEPS && <Text style={styles.step}>Step 3 of 10</Text>}
+      <OnboardingProgressBar current={3} />
       <Text style={styles.title}>What would you like to work on?</Text>
       <Text style={styles.subtitle}>Most guys pick 2–3. This shapes your plan.</Text>
 
@@ -60,14 +60,10 @@ export function ConcernSelectionScreen({ selected, onToggle, onContinue }: Props
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   title: {
     ...typography.display,
