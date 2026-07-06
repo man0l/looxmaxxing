@@ -15,11 +15,13 @@ import {
   configurePurchases,
   getCurrentOffering,
   getCustomerInfo,
+  getAppUserID,
   isProActive,
   packageForPlan,
   purchasePackage,
   restorePurchases,
 } from '../services/purchases';
+import { invalidateEntitlementCache } from '../services/api';
 
 interface SubscriptionValue {
   subscribed: boolean;
@@ -130,12 +132,26 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       try {
         const result = await purchasePackage(pkg);
         if (result.pro) {
+          getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
           setSubscribed(true);
           setPaywallVisible(false);
           showToast("You're in — welcome to Pro.", 'success');
-        } else if (!result.cancelled && result.error) {
+        } else if (result.cancelled) {
+          // silent — user tapped back
+        } else if (result.error) {
           setPurchaseError(result.error);
           showToast(result.error, 'error');
+        } else {
+          // Payment went through but entitlement not yet reflected — fetch fresh info
+          getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
+          const refreshed = await getCustomerInfo();
+          if (isProActive(refreshed)) {
+            setSubscribed(true);
+            setPaywallVisible(false);
+            showToast("You're in — welcome to Pro.", 'success');
+          } else {
+            showToast('Payment received — verifying your subscription…', 'info');
+          }
         }
       } finally {
         setPurchasing(false);
