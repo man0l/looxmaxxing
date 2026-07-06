@@ -9,18 +9,24 @@ import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
 import { packageForPlan, perWeekLabel } from '../services/purchases';
 import { colors, spacing, radii, typography } from '../theme';
 
-const FALLBACK_PLANS: Record<PlanId, { price: string; perWeek: string | null }> = {
-  annual: { price: '$49.99/year', perWeek: '$0.96/week' },
-  weekly: { price: '$4.99', perWeek: null },
+const CONCERN_LABELS: Record<string, string> = {
+  jawline: 'Jawline',
+  cheekbones: 'Cheekbones',
+  skin: 'Skin',
+  hair: 'Hair',
+  masculinity: 'Masculinity',
+  smile: 'Smile',
+  eyes: 'Eyes',
 };
 
-function savedPerYear(weeklyPkg: ReturnType<typeof packageForPlan>, annualPkg: ReturnType<typeof packageForPlan>): string | null {
+function savedPerYear(
+  weeklyPkg: ReturnType<typeof packageForPlan>,
+  annualPkg: ReturnType<typeof packageForPlan>,
+): string | null {
   if (!weeklyPkg || !annualPkg) return null;
-  const weeklyPrice = weeklyPkg.product.price;
-  const annualPrice = annualPkg.product.price;
-  const saved = Math.round(weeklyPrice * 52 - annualPrice);
+  const saved = Math.round(weeklyPkg.product.price * 52 - annualPkg.product.price);
   if (saved <= 0) return null;
-  return `Save $${saved}/year`;
+  return `Save $${saved}`;
 }
 
 export function PaywallScreen() {
@@ -35,23 +41,15 @@ export function PaywallScreen() {
   const annualPkg = offering ? packageForPlan(offering, 'annual') : null;
   const weeklyPkg = offering ? packageForPlan(offering, 'weekly') : null;
 
-  const annualPerWeek = annualPkg ? perWeekLabel(annualPkg) : FALLBACK_PLANS.annual.perWeek;
-  const savingsBadge = savedPerYear(weeklyPkg, annualPkg) ?? 'Save $469/year';
+  const annualPerWeek = annualPkg ? perWeekLabel(annualPkg) : '$0.96/week';
+  const annualTotal = annualPkg ? annualPkg.product.priceString : '$49.99/year';
+  const weeklyPrice = weeklyPkg ? weeklyPkg.product.priceString : '$4.99';
+  const savings = savedPerYear(weeklyPkg, annualPkg) ?? 'Save $469';
 
-  const plans: { id: PlanId; title: string; price: string; sub: string | null }[] = [
-    {
-      id: 'annual',
-      title: 'Yearly',
-      price: annualPkg ? `${annualPkg.product.priceString}/year` : FALLBACK_PLANS.annual.price,
-      sub: annualPerWeek ? `${annualPerWeek}/week` : null,
-    },
-    {
-      id: 'weekly',
-      title: 'Weekly',
-      price: weeklyPkg ? weeklyPkg.product.priceString : FALLBACK_PLANS.weekly.price,
-      sub: null,
-    },
-  ];
+  const topConcern = concerns[0] ?? 'jawline';
+  const topConcernLabel = CONCERN_LABELS[topConcern] ?? 'Jawline';
+  const visibleChips = concerns.slice(0, 3).map((c) => CONCERN_LABELS[c] ?? c);
+  const extraCount = Math.max(0, concerns.length - 3);
 
   return (
     <ScrollView
@@ -65,49 +63,77 @@ export function PaywallScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.title}>Get Pro</Text>
-      <Text style={styles.subtitle}>
-        Unlock your full potential with AI-powered facial analysis and personalized insights.
-      </Text>
-
       {frontPhoto ? (
         <View style={styles.photoWrap}>
           <Image source={{ uri: frontPhoto }} style={styles.photo} />
+          <View style={styles.photoHalo} />
         </View>
       ) : null}
 
-      <Text style={styles.unlockLabel}>Subscribe to unlock your full scan results</Text>
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>Analysis complete</Text>
+      </View>
+
+      <Text style={styles.title}>Your {topConcernLabel.toLowerCase()} analysis is ready</Text>
+
+      {visibleChips.length > 0 && (
+        <View style={styles.chipRow}>
+          {visibleChips.map((label) => (
+            <View key={label} style={styles.chip}>
+              <Text style={styles.chipText}>{label}</Text>
+            </View>
+          ))}
+          {extraCount > 0 && (
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>+{extraCount} more traits</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      <Text style={styles.unlockLabel}>
+        Scored against other men — unlock to see where you stand and the plan for every trait.
+      </Text>
 
       <BlurredTraitGrid concerns={concerns} />
 
       <View style={styles.plans}>
-        {plans.map((plan) => {
-          const isSelected = selectedPlan === plan.id;
-          return (
-            <Pressable
-              key={plan.id}
-              onPress={() => setSelectedPlan(plan.id)}
-              style={[styles.planCard, isSelected && styles.planCardSelected]}
-            >
-              {plan.id === 'annual' && isSelected && (
-                <View style={styles.savingsBadge}>
-                  <Text style={styles.savingsBadgeText}>{savingsBadge}</Text>
-                </View>
-              )}
-              <View style={styles.planInfo}>
-                <Text style={[styles.planTitle, isSelected && styles.planTitleSelected]}>
-                  {plan.title}
-                </Text>
-                {plan.sub ? (
-                  <Text style={styles.planSub}>{plan.sub}</Text>
-                ) : null}
-              </View>
-              <Text style={[styles.planPrice, isSelected && styles.planPriceSelected]}>
-                {plan.price}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <Pressable
+          onPress={() => setSelectedPlan('annual')}
+          style={[styles.planCard, styles.planCardAnnual, selectedPlan === 'annual' && styles.planCardSelected]}
+        >
+          <View style={styles.savingsBadge}>
+            <Text style={styles.savingsBadgeText}>{savings}</Text>
+          </View>
+          <View style={styles.annualLeft}>
+            <Text style={[styles.annualPrice, selectedPlan === 'annual' && styles.annualPriceSelected]}>
+              {annualPerWeek}
+            </Text>
+            <Text style={styles.annualBilled}>billed {annualTotal} once a year</Text>
+          </View>
+          <Text style={[styles.planCheck, selectedPlan === 'annual' && styles.planCheckSelected]}>
+            {selectedPlan === 'annual' ? '●' : '○'}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setSelectedPlan('weekly')}
+          style={[styles.planCard, selectedPlan === 'weekly' && styles.planCardSelected]}
+        >
+          <View style={styles.planInfo}>
+            <Text style={[styles.planTitle, selectedPlan === 'weekly' && styles.planTitleSelected]}>
+              Weekly
+            </Text>
+          </View>
+          <View style={styles.planRight}>
+            <Text style={[styles.planPrice, selectedPlan === 'weekly' && styles.planPriceSelected]}>
+              {weeklyPrice}
+            </Text>
+            <Text style={[styles.planCheck, selectedPlan === 'weekly' && styles.planCheckSelected]}>
+              {selectedPlan === 'weekly' ? '●' : '○'}
+            </Text>
+          </View>
+        </Pressable>
       </View>
 
       <Pressable
@@ -120,7 +146,7 @@ export function PaywallScreen() {
           {purchasing
             ? 'Processing…'
             : plansReady
-              ? 'Continue'
+              ? 'Reveal my scores'
               : plansFailed
                 ? 'Retry loading plans'
                 : 'Loading plans…'}
@@ -159,43 +185,87 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   maybeLater: {
     ...typography.label,
     color: colors.textTertiary,
   },
-  title: {
-    ...typography.display,
-    fontSize: 28,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.bodySm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: spacing.lg,
-  },
   photoWrap: {
     alignSelf: 'center',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: colors.tertiary,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    overflow: 'visible',
     marginBottom: spacing.md,
+    position: 'relative',
   },
   photo: {
-    width: '100%',
-    height: '100%',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2,
+    borderColor: colors.tertiary,
+  },
+  photoHalo: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    borderRadius: 55,
+    borderWidth: 1,
+    borderColor: 'rgba(239,230,216,0.18)',
+  },
+  badge: {
+    alignSelf: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.full,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  badgeText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  title: {
+    ...typography.display,
+    fontSize: 24,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 30,
+    marginBottom: spacing.md,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  chip: {
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.full,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   unlockLabel: {
     ...typography.bodySm,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.md,
+    lineHeight: 19,
   },
   plans: {
     marginTop: spacing.lg,
@@ -213,6 +283,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     position: 'relative',
     overflow: 'visible',
+  },
+  planCardAnnual: {
+    paddingTop: spacing.xl,
   },
   planCardSelected: {
     borderColor: colors.tertiary,
@@ -232,7 +305,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.onSecondary,
   },
+  annualLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  annualPrice: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  annualPriceSelected: {
+    color: colors.textPrimary,
+  },
+  annualBilled: {
+    ...typography.caption,
+    color: colors.textTertiary,
+  },
   planInfo: {
+    flex: 1,
     gap: 2,
   },
   planTitle: {
@@ -243,9 +333,10 @@ const styles = StyleSheet.create({
   planTitleSelected: {
     color: colors.textPrimary,
   },
-  planSub: {
-    ...typography.caption,
-    color: colors.textTertiary,
+  planRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   planPrice: {
     fontSize: 16,
@@ -254,6 +345,13 @@ const styles = StyleSheet.create({
   },
   planPriceSelected: {
     color: colors.textPrimary,
+  },
+  planCheck: {
+    fontSize: 18,
+    color: colors.border,
+  },
+  planCheckSelected: {
+    color: colors.tertiary,
   },
   cta: {
     backgroundColor: colors.primary,

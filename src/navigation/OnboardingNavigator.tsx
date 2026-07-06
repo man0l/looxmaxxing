@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme';
@@ -110,6 +111,7 @@ export function OnboardingNavigator({ onComplete }: Props) {
         return (
           <GuidedCaptureScreen
             step={captureStep}
+            onboardingStep={captureStep === 'front' ? 9 : 10}
             onCapture={(uri) => {
               if (captureStep === 'front') {
                 dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
@@ -136,12 +138,18 @@ export function OnboardingNavigator({ onComplete }: Props) {
     }
   };
 
-  return <View style={[styles.root, { paddingBottom: insets.bottom }]}>{renderStep()}</View>;
+  return (
+    <LinearGradient
+      colors={[colors.background, colors.backgroundGradientEnd]}
+      style={[styles.root, { paddingBottom: insets.bottom }]}
+    >
+      {renderStep()}
+    </LinearGradient>
+  );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
   },
 });

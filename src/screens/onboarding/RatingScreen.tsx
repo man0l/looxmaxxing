@@ -10,6 +10,7 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { colors, spacing, radii, typography } from '../../theme';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const TESTIMONIALS = [
   {
@@ -42,6 +43,7 @@ export function RatingScreen({ onContinue }: Props) {
 
   return (
     <View style={styles.container}>
+      <OnboardingProgressBar current={10} />
       <View style={styles.content}>
         <Text style={styles.title}>You&apos;re in good company</Text>
         <Text style={styles.subtitle}>
@@ -86,9 +88,10 @@ export function RatingScreen({ onContinue }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 60,
+    backgroundColor: 'transparent',
+    paddingTop: 56,
     paddingBottom: 40,
+    paddingHorizontal: spacing.xl,
     justifyContent: 'space-between',
   },
   content: {
@@ -99,14 +102,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
-    paddingHorizontal: spacing.xl,
   },
   subtitle: {
     ...typography.bodySm,
     color: colors.textSecondary,
     marginBottom: spacing.xxl,
     lineHeight: 20,
-    paddingHorizontal: spacing.xl,
   },
   carousel: {
     flexGrow: 0,
@@ -162,7 +163,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: spacing.xl,
-    marginHorizontal: spacing.xl,
   },
   ctaText: {
     fontSize: 15,

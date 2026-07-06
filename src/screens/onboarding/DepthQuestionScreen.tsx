@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { DepthAnswer } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
 import { ConcernGlyph } from '../../components/icons/OnboardingIcons';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const ANSWERS: { value: DepthAnswer; label: string }[] = [
   { value: 'recently', label: 'Just recently' },
@@ -40,7 +41,7 @@ export function DepthQuestionScreen({
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.step}>Step 3 of 6</Text>
+      <OnboardingProgressBar current={3} />
       <View style={styles.tagRow}>
         <View style={styles.tag}>
           <ConcernGlyph id={concernId} size={13} color={colors.onTertiary} />
@@ -86,14 +87,10 @@ export function DepthQuestionScreen({
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
     paddingTop: 60,
     paddingBottom: 40,
-  },
-  step: {
-    ...typography.caption,
-    color: colors.textTertiary,
   },
   tagRow: {
     marginTop: spacing.md,

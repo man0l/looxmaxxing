@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors, spacing, radii, typography } from '../../theme';
+import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 import {
   InstagramIcon,
   XIcon,
@@ -21,6 +22,7 @@ const PLATFORMS: { key: string; label: string; Icon: typeof XIcon }[] = [
 export function ShareMotivationScreen({ onContinue }: Props) {
   return (
     <View style={styles.container}>
+      <OnboardingProgressBar current={10} />
       <View style={styles.content}>
         <Text style={styles.title}>Share your progress, your way</Text>
         <Text style={styles.subtitle}>
@@ -65,9 +67,9 @@ export function ShareMotivationScreen({ onContinue }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.xl,
-    paddingTop: 60,
+    paddingTop: 56,
     paddingBottom: 40,
     justifyContent: 'space-between',
   },
