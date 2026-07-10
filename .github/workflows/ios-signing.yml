@@ -66,6 +66,7 @@ jobs:
       EXPO_PUBLIC_REVENUECAT_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_KEY }}
       EXPO_PUBLIC_REVENUECAT_IOS_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_IOS_KEY }}
       EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ secrets.EXPO_PUBLIC_FACEBOOK_APP_ID }}
+      IOS_BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v5
 
@@ -99,6 +100,9 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision
+
+      - name: Set iOS build number
+        run: bash scripts/set-ios-build-number.sh
 
       - name: Generate native iOS project
         run: npx expo prebuild --platform ios --no-install
