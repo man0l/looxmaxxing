@@ -9,7 +9,13 @@ import type { PlanId } from '../types/traits';
 
 export const ENTITLEMENT_ID = 'Looksmaxxing Pro';
 
-const PLATFORM_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
+const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
+const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
+// Each store app (App Store vs Play Store) has its own public SDK key in RevenueCat —
+// a single flat key cannot serve both platforms. Fall back to the Android key if the
+// iOS-specific one isn't set (e.g. a local .env that hasn't been updated yet).
+const PLATFORM_REVENUECAT_KEY =
+  Platform.OS === 'ios' && REVENUECAT_IOS_KEY ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY;
 const TEST_STORE_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY ?? '';
 const REVENUECAT_API_KEY =
   __DEV__ && TEST_STORE_REVENUECAT_KEY ? TEST_STORE_REVENUECAT_KEY : PLATFORM_REVENUECAT_KEY;

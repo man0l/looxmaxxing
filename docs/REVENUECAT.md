@@ -51,10 +51,11 @@ Single entitlement gates everything: **`Looksmaxxing Pro`** (exact string, see `
 
 Keys come from env vars (see `.env.example`), selected at runtime in `src/services/purchases.ts`:
 
-- `EXPO_PUBLIC_REVENUECAT_KEY` — platform key (`appl_` iOS / `goog_` Android). Used in release builds, and in dev when no Test Store key is set (exercises the real App Store / Play sandbox).
+- `EXPO_PUBLIC_REVENUECAT_KEY` — Android/Play Store key (`goog_...`). Used in Android release builds, and as the iOS fallback if `EXPO_PUBLIC_REVENUECAT_IOS_KEY` isn't set.
+- `EXPO_PUBLIC_REVENUECAT_IOS_KEY` — iOS/App Store key (`appl_...`). Used in iOS release builds.
 - `EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY` — RevenueCat **Test Store** key (Apps & providers → Test Store). When set, `__DEV__` builds configure the SDK with it so purchases are simulated in-app with no Apple/Google account. **Never ship this in a release build** — the `__DEV__` gate keeps it dev-only.
 
-Public SDK keys are safe to ship in the binary. If both iOS and Android platform keys are needed, branch on `Platform.OS` over `EXPO_PUBLIC_REVENUECAT_KEY`.
+Public SDK keys are safe to ship in the binary. Each store app in RevenueCat (App Store vs Play Store) has its own distinct public key — `purchases.ts` branches on `Platform.OS` to pick the right one; don't reuse a single key across both platforms.
 
 ## Running it
 
