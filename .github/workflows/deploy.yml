@@ -1,4 +1,4 @@
-name: Android Release
+name: Mobile Release
 
 concurrency:
   group: android-release-${{ github.ref }}
@@ -120,3 +120,85 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KEEP_ARTIFACTS: "2"
         run: bash scripts/prune-android-artifacts.sh
+
+  ios:
+    needs: quality
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
+      EXPO_PUBLIC_REVENUECAT_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_KEY_IOS }}
+      EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ secrets.EXPO_PUBLIC_FACEBOOK_APP_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set short SHA
+        run: echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build iOS on EAS cloud
+        run: |
+          eas build \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --wait \
+            --json \
+            2>/dev/null | tee /tmp/eas-build.json
+          echo "ARTIFACT_URL=$(jq -r '.artifacts.buildUrl' /tmp/eas-build.json)" \
+            >> $GITHUB_ENV
+
+      - name: Download IPA
+        run: curl -L -o looxmaxxing-${{ env.SHA_SHORT }}.ipa "$ARTIFACT_URL"
+
+      - name: Prepare ASC key for submission
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_ISSUER_ID: ${{ secrets.APPLE_API_KEY_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "$APPLE_API_KEY_BASE64" | base64 -d > AuthKey.p8
+          jq --arg keyId "$APPLE_API_KEY_ID" \
+             --arg issuerId "$APPLE_API_KEY_ISSUER_ID" \
+             --arg teamId "$APPLE_TEAM_ID" \
+             '.submit.production.ios = {
+               "ascApiKeyPath": "./AuthKey.p8",
+               "ascApiKeyId": $keyId,
+               "ascApiKeyIssuerId": $issuerId,
+               "appleTeamId": $teamId
+             }' eas.json > eas.json.tmp && mv eas.json.tmp eas.json
+
+      - name: Submit to TestFlight
+        run: |
+          eas submit \
+            --platform ios \
+            --path looxmaxxing-${{ env.SHA_SHORT }}.ipa \
+            --profile production \
+            --non-interactive
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: looxmaxxing-ios-${{ env.SHA_SHORT }}
+          path: looxmaxxing-${{ env.SHA_SHORT }}.ipa
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "ios-${{ github.run_number }}" \
+            "looxmaxxing-${{ env.SHA_SHORT }}.ipa" \
+            --title "iOS build ${{ env.SHA_SHORT }} (b${{ github.run_number }})" \
+            --notes "TestFlight build ${{ github.run_number }}. Submitted to TestFlight automatically." \
+            --latest=false
