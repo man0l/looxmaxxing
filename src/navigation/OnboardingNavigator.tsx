@@ -7,6 +7,7 @@ import { colors } from '../theme';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
 import { AgeGateScreen } from '../screens/onboarding/AgeGateScreen';
+import { IneligibleAgeScreen } from '../screens/onboarding/IneligibleAgeScreen';
 import { ConcernSelectionScreen } from '../screens/onboarding/ConcernSelectionScreen';
 import { ObstacleScreen } from '../screens/onboarding/ObstacleScreen';
 import { ExpectationsScreen } from '../screens/onboarding/ExpectationsScreen';
@@ -21,6 +22,7 @@ import { ShareMotivationScreen } from '../screens/onboarding/ShareMotivationScre
 type Step =
   | 'welcome'
   | 'age'
+  | 'ineligible'
   | 'concerns'
   | 'obstacle'
   | 'expectations'
@@ -60,9 +62,12 @@ export function OnboardingNavigator({ onComplete }: Props) {
             onContinue={() => {
               if (state.ageRange && state.ageRange !== 'under17') goTo('concerns');
             }}
-            onUnder17={() => {}}
+            onUnder17={() => goTo('ineligible')}
           />
         );
+
+      case 'ineligible':
+        return <IneligibleAgeScreen onGoBack={() => goTo('age')} />;
 
       case 'concerns':
         return (

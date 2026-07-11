@@ -155,6 +155,13 @@ export function PaywallScreen() {
 
       {plansFailed ? <Text style={styles.plansError}>{offeringError}</Text> : null}
 
+      <Text style={styles.renewalDisclosure}>
+        {selectedPlan === 'annual'
+          ? `Renews automatically at ${annualTotal}/year unless cancelled at least 24 hours before the current period ends.`
+          : `Renews automatically at ${weeklyPrice}/week unless cancelled at least 24 hours before the current period ends.`}{' '}
+        Manage or cancel anytime in your App Store account settings.
+      </Text>
+
       <View style={styles.footer}>
         <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
           <Text style={styles.footerLink}>Terms</Text>
@@ -373,6 +380,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  renewalDisclosure: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    lineHeight: 15,
   },
   footer: {
     flexDirection: 'row',
