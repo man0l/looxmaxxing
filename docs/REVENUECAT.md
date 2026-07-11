@@ -57,6 +57,23 @@ Keys come from env vars (see `.env.example`), selected at runtime in `src/servic
 
 Public SDK keys are safe to ship in the binary. Each store app in RevenueCat (App Store vs Play Store) has its own distinct public key — `purchases.ts` branches on `Platform.OS` to pick the right one; don't reuse a single key across both platforms.
 
+## Ground-truth App Store Connect data (fetched 2026-07-11, avoid re-scraping)
+
+App Store Connect app: **Axend: Face Analysis Beauty**, app ID `6788362935`.
+
+Subscription group: **Axend Pro**, group ID `22220853`.
+
+| productID | ASC name | Apple ID | Duration | Price (USD) |
+|---|---|---|---|---|
+| `weekly` | Axend Pro Weekly | `6789192385` | 1 week | $4.99 |
+| `monthly` | Axend Pro Monthly | `6789188354` | 1 month | $9.99 |
+| `yearly` | Axend Pro Yearly | `6789183953` | 1 year | $49.99 |
+| `lifetime` | Axend Pro Lifetime | `6789194622` | Non-Consumable | $79.99 |
+
+Team ID (signing): `UTVHQM5W5U` (see `.github/workflows/ios-signing.yml`).
+
+These values are the source of truth for the `.storekit` configuration file (`plugins/looxmaxxing.storekit`) used for local StoreKit Testing — update both places if App Store Connect pricing changes.
+
 ## Running it
 
 - **Web (`expo start --web`)**: native module is never loaded. Offerings are `null`, the paywall shows placeholder prices, and `subscribe()` auto-grants Pro **in `__DEV__` only** so the funnel stays testable. Production builds never auto-grant.

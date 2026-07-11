@@ -43,6 +43,7 @@
     },
     "plugins": [
       "./plugins/withShareIntentQueries",
+      "./plugins/withStoreKitConfig",
       [
         "expo-build-properties",
         {
