@@ -1,4 +1,4 @@
-const { withDangerousMod } = require('@expo/config-plugins');
+const { withDangerousMod, withXcodeProject } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -60,8 +60,34 @@ const withStoreKitSchemeReference = (config) =>
     },
   ]);
 
+// Xcode only resolves the scheme's StoreKitConfigurationFileReference (and stops
+// showing it in red / "None" in Product > Scheme > Edit Scheme > Options) once the
+// .storekit file is also registered as a PBXFileReference in the project itself --
+// the same thing "Add StoreKit Configuration Settings to Workspace..." does from the UI.
+const withStoreKitProjectReference = (config) =>
+  withXcodeProject(config, (cfg) => {
+    try {
+      const project = cfg.modResults;
+      const projectName = cfg.modRequest.projectName;
+
+      const alreadyReferenced = Object.values(
+        project.hash.project.objects.PBXFileReference || {},
+      ).some((ref) => typeof ref === 'object' && ref.path === `"${STOREKIT_FILENAME}"`);
+
+      if (!alreadyReferenced) {
+        const groupKey = project.findPBXGroupKey({ name: projectName });
+        project.addFile(STOREKIT_FILENAME, groupKey);
+      }
+    } catch (error) {
+      console.warn(`[withStoreKitConfig] could not register .storekit file in pbxproj: ${error}`);
+    }
+
+    return cfg;
+  });
+
 module.exports = function withStoreKitConfig(config) {
   config = withCopyStoreKitConfig(config);
   config = withStoreKitSchemeReference(config);
+  config = withStoreKitProjectReference(config);
   return config;
 };
