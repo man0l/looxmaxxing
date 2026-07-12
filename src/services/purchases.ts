@@ -88,7 +88,7 @@ export async function getCurrentOffering(): Promise<OfferingResult> {
     console.warn('[purchases] getOfferings failed', e);
     return {
       offering: null,
-      error: "Couldn't load subscription plans. Check your connection and try again.",
+      error: "Couldn't load subscription plans." + e.message ? ` (${e.message})` : '',
     };
   }
 }
