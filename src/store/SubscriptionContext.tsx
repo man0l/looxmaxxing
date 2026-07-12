@@ -13,15 +13,16 @@ import { isE2E } from '../config/e2e';
 import {
   addCustomerInfoListener,
   configurePurchases,
+  getAppUserID,
   getCurrentOffering,
   getCustomerInfo,
-  getAppUserID,
   isProActive,
   packageForPlan,
   purchasePackage,
   restorePurchases,
 } from '../services/purchases';
 import { invalidateEntitlementCache } from '../services/api';
+import { initAppsFlyer, setAppsFlyerCustomerUserId } from '../services/appsflyer';
 
 interface SubscriptionValue {
   subscribed: boolean;
@@ -74,6 +75,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       if (cancelled) return;
       setSubscribed(isProActive(info));
       setOffering(offeringResult.offering);
+      initAppsFlyer().then(async (afOk) => {
+        if (!afOk || cancelled) return;
+        const appUserId = await getAppUserID();
+        if (appUserId) setAppsFlyerCustomerUserId(appUserId);
+      });
       if (offeringResult.error) {
         setOfferingError(offeringResult.error);
         showToast(offeringResult.error, 'error');
