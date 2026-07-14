@@ -71,12 +71,16 @@ async function fetchWithTimeout(
   url: string,
   init: RequestInit = {},
   timeoutMs: number,
+  externalSignal?: AbortSignal,
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromExternal = () => controller.abort();
+  externalSignal?.addEventListener('abort', abortFromExternal);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } catch (e) {
+    if (externalSignal?.aborted) throw e;
     if (e instanceof Error && e.name === 'AbortError') {
       throw new ScanApiError(504, `Request timed out after ${timeoutMs / 1000}s`);
     }
@@ -88,7 +92,12 @@ async function fetchWithTimeout(
     throw e;
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', abortFromExternal);
   }
+}
+
+function assertNotAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
 }
 
 // One automatic retry for transient network failures (connection drops,
@@ -250,9 +259,13 @@ export async function submitRender(opts: {
   traitId: string;
   style?: string;
   contentType?: string;
+  signal?: AbortSignal;
 }): Promise<RenderResult> {
+  const { signal } = opts;
+  assertNotAborted(signal);
   if (isE2eApiStub || (__DEV__ && !API_BASE)) {
     await new Promise((r) => setTimeout(r, 300));
+    assertNotAborted(signal);
     return {
       imageUrl: E2E_RENDER_IMAGE,
       expiresAt: new Date(Date.now() + 3600000).toISOString(),
@@ -265,12 +278,14 @@ export async function submitRender(opts: {
     `${API_BASE}/v1/renders/uploads`,
     { method: 'POST', headers },
     API_TIMEOUT_MS,
+    signal,
   );
   await assertOk(slotRes, 'mint render slot');
   const { jobId, upload } = (await slotRes.json()) as RenderUploadResponse;
 
   await putPhoto(upload.uploadUrl, opts.photoUri, opts.contentType ?? 'image/jpeg');
 
+  assertNotAborted(signal);
   const startRes = await fetchWithTimeout(
     `${API_BASE}/v1/renders`,
     {
@@ -279,6 +294,7 @@ export async function submitRender(opts: {
       body: JSON.stringify({ jobId, traitId: opts.traitId, style: opts.style ?? null }),
     },
     API_TIMEOUT_MS,
+    signal,
   );
   await assertOk(startRes, 'render');
   const started = (await startRes.json()) as RenderStatusResponse;
@@ -286,14 +302,16 @@ export async function submitRender(opts: {
     return { imageUrl: started.imageUrl, expiresAt: started.expiresAt };
   }
 
-  // Async: poll until done/failed, or time out.
   const deadline = Date.now() + 120000;
   while (Date.now() < deadline) {
+    assertNotAborted(signal);
     await new Promise((r) => setTimeout(r, 4000));
+    assertNotAborted(signal);
     const pollRes = await fetchWithTimeout(
       `${API_BASE}/v1/renders/${jobId}`,
       { headers },
       API_TIMEOUT_MS,
+      signal,
     );
     await assertOk(pollRes, 'render status');
     const poll = (await pollRes.json()) as RenderStatusResponse;
