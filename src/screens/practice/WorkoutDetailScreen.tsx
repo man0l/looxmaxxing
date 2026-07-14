@@ -15,7 +15,7 @@ const targetLabel = (traitId: string) => {
 };
 
 export function WorkoutDetailScreen({ item, onClose }: Props) {
-  const { isDone, toggle } = usePractice();
+  const { isDone, complete } = usePractice();
   const sessionId = workoutSessionId(item.traitId);
   const done = isDone(sessionId);
 
@@ -51,7 +51,8 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
 
       <View style={styles.footer}>
         <Pressable
-          onPress={() => toggle(sessionId)}
+          onPress={() => complete(sessionId)}
+          disabled={done}
           style={[styles.cta, done && styles.ctaDone]}
         >
           <Text style={[styles.ctaText, done && styles.ctaTextDone]}>
