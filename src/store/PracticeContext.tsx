@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 import { getPlanItem, taskIdsForItem } from '../types/practice';
 import { dateKey } from '../services/streak';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
@@ -6,6 +7,7 @@ import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 interface PracticeValue {
   isDone: (id: string) => boolean;
   toggle: (id: string) => void;
+  complete: (id: string) => void;
   doneCountForTrait: (traitId: string) => number;
   totalCountForTrait: (traitId: string) => number;
 }
@@ -15,27 +17,35 @@ interface PracticeStore {
   completed: Record<string, boolean>;
 }
 
+function rolloverIfNeeded(store: PracticeStore): PracticeStore {
+  const today = dateKey(new Date());
+  if (today === store.day) return store;
+  return { day: today, completed: {} };
+}
+
 const PracticeContext = createContext<PracticeValue>({
   isDone: () => false,
   toggle: () => {},
+  complete: () => {},
   doneCountForTrait: () => 0,
   totalCountForTrait: () => 0,
 });
 
 export function PracticeProvider({ children }: { children: React.ReactNode }) {
-  const [completed, setCompleted] = useState<Record<string, boolean>>({});
-  const [day, setDay] = useState(() => dateKey(new Date()));
+  const [store, setStore] = useState<PracticeStore>(() => ({
+    day: dateKey(new Date()),
+    completed: {},
+  }));
   const [hydrated, setHydrated] = useState(false);
+  const { completed } = store;
 
   useEffect(() => {
     const today = dateKey(new Date());
     loadJson<PracticeStore>(STORAGE_KEYS.practice).then((saved) => {
       if (saved?.day === today) {
-        setCompleted(saved.completed);
-        setDay(today);
+        setStore({ day: today, completed: saved.completed });
       } else {
-        setCompleted({});
-        setDay(today);
+        setStore({ day: today, completed: {} });
       }
       setHydrated(true);
     });
@@ -43,36 +53,42 @@ export function PracticeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    const today = dateKey(new Date());
-    if (today !== day) {
-      const timer = setTimeout(() => {
-        setDay(today);
-        setCompleted({});
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-    saveJson(STORAGE_KEYS.practice, { day, completed } satisfies PracticeStore);
-  }, [completed, day, hydrated]);
+    const sync = () => setStore((prev) => rolloverIfNeeded(prev));
+    sync();
+    const interval = setInterval(sync, 60_000);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') sync();
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveJson(STORAGE_KEYS.practice, store satisfies PracticeStore);
+  }, [store, hydrated]);
 
   const isDone = useCallback((id: string) => completed[id] === true, [completed]);
 
-  const toggle = useCallback(
-    (id: string) => {
-      const today = dateKey(new Date());
-      if (today !== day) {
-        setDay(today);
-        setCompleted({ [id]: true });
-        return;
-      }
-      setCompleted((prev) => {
-        const next = { ...prev };
-        if (next[id]) delete next[id];
-        else next[id] = true;
-        return next;
-      });
-    },
-    [day],
-  );
+  const toggle = useCallback((id: string) => {
+    setStore((prev) => {
+      const base = rolloverIfNeeded(prev);
+      const next = { ...base.completed };
+      if (next[id]) delete next[id];
+      else next[id] = true;
+      return { day: base.day, completed: next };
+    });
+  }, []);
+
+  const complete = useCallback((id: string) => {
+    setStore((prev) => {
+      const base = rolloverIfNeeded(prev);
+      if (base.completed[id]) return base;
+      return { day: base.day, completed: { ...base.completed, [id]: true } };
+    });
+  }, []);
 
   const totalCountForTrait = useCallback((traitId: string) => {
     const item = getPlanItem(traitId);
@@ -89,8 +105,8 @@ export function PracticeProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ isDone, toggle, doneCountForTrait, totalCountForTrait }),
-    [isDone, toggle, doneCountForTrait, totalCountForTrait],
+    () => ({ isDone, toggle, complete, doneCountForTrait, totalCountForTrait }),
+    [isDone, toggle, complete, doneCountForTrait, totalCountForTrait],
   );
 
   return <PracticeContext.Provider value={value}>{children}</PracticeContext.Provider>;

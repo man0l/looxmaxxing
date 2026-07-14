@@ -25,7 +25,7 @@ function ChecklistSection({
   traitId: string;
   period: 'am' | 'pm';
 }) {
-  const { isDone, toggle } = usePractice();
+  const { isDone, complete } = usePractice();
   if (tasks.length === 0) return null;
   return (
     <View style={styles.section}>
@@ -37,7 +37,8 @@ function ChecklistSection({
           return (
             <Pressable
               key={id}
-              onPress={() => toggle(id)}
+              onPress={() => complete(id)}
+              disabled={done}
               style={[styles.taskRow, i > 0 && styles.taskDivider]}
             >
               <View style={[styles.checkbox, done && styles.checkboxDone]}>
