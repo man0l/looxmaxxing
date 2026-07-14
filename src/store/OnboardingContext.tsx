@@ -6,6 +6,7 @@ import {
   INITIAL_ONBOARDING,
 } from '../types/onboarding';
 import { deleteUserData } from '../services/api';
+import { runScanPhotoClear } from '../services/photoDeletion';
 import { clearRenderCache } from '../services/renderCache';
 import { getAppUserID } from '../services/purchases';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
@@ -19,6 +20,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const dispatchWithEffects = useCallback((action: OnboardingAction) => {
     if (action.type === 'CLEAR_PHOTOS') {
+      runScanPhotoClear();
       void clearRenderCache();
       void getAppUserID().then(deleteUserData);
     }

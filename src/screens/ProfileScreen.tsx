@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
+import { useScans } from '../store/ScanContext';
 import { PRIVACY_POLICY_URL } from '../config/legal';
 import { useSubscription } from '../store/SubscriptionContext';
 import { presentCustomerCenter } from '../services/purchases';
@@ -38,12 +39,15 @@ function Row({ label, value, onPress, tone = 'default', disabled, first }: RowPr
 export function ProfileScreen() {
   const { frontPhoto, profilePhoto } = useOnboarding();
   const dispatch = useOnboardingDispatch();
+  const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
   const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
   const [showMethodology, setShowMethodology] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const hasPhotos = Boolean(frontPhoto || profilePhoto);
+  const hasPhotos = Boolean(
+    frontPhoto || profilePhoto || scans.some((scan) => scan.photoUri),
+  );
 
   if (showMethodology) {
     return <MethodologyScreen onClose={() => setShowMethodology(false)} />;
