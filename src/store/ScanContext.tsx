@@ -3,6 +3,7 @@ import type { Scan } from '../types/scan';
 import { getScores, improveScores } from '../services/scoring';
 import { submitScan } from '../services/api';
 import { getAppUserID } from '../services/purchases';
+import { registerScanPhotoClear, unregisterScanPhotoClear } from '../services/photoDeletion';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 interface ScanStore {
@@ -50,6 +51,18 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     saveJson(STORAGE_KEYS.scans, { scans, hasRealScan } satisfies ScanStore);
   }, [scans, hasRealScan, hydrated]);
+
+  const clearScanPhotos = useCallback(() => {
+    setScans((prev) => {
+      if (!prev.some((scan) => scan.photoUri)) return prev;
+      return prev.map(({ photoUri: _uri, ...scan }) => scan);
+    });
+  }, []);
+
+  useEffect(() => {
+    registerScanPhotoClear(clearScanPhotos);
+    return unregisterScanPhotoClear;
+  }, [clearScanPhotos]);
 
   const rescan = useCallback((photoUri?: string) => {
     setScans((prev) => {
