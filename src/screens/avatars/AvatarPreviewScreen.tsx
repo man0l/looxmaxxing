@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { getAvatarPreview } from '../../types/avatars';
 import { TRAITS } from '../../types/traits';
 import { topPercentLabel } from '../../services/scoring';
@@ -16,50 +16,86 @@ interface Props {
   onStartPlan: () => void;
 }
 
+const STYLE_DEBOUNCE_MS = 300;
+
+function isAbortError(e: unknown): boolean {
+  return e instanceof Error && e.name === 'AbortError';
+}
+
 export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   const preview = getAvatarPreview(traitId);
   const { latest } = useScans();
   const [selected, setSelected] = useState(preview?.styles[0]);
+  const [debouncedStyle, setDebouncedStyle] = useState(preview?.styles[0]);
   const [renderUrl, setRenderUrl] = useState<string | null>(null);
+  const [renderStyle, setRenderStyle] = useState<string | undefined>(preview?.styles[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const photoUri = latest.photoUri ?? null;
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedStyle(selected), STYLE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [selected]);
+
+  useEffect(() => {
     let cancelled = false;
-    const style = selected;
     (async () => {
       await hydrateRenderCache();
       if (cancelled) return;
-      const cached = getCachedRender(traitId, style);
+      const cached = getCachedRender(traitId, selected);
       if (cached) {
         setRenderUrl(cached);
+        setRenderStyle(selected);
         setError(null);
         setLoading(false);
-        return;
-      }
-      if (!photoUri) {
+      } else {
         setRenderUrl(null);
-        setLoading(false);
+        setRenderStyle(undefined);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [traitId, selected]);
+
+  useEffect(() => {
+    const style = debouncedStyle;
+    if (!style) return;
+    const controller = new AbortController();
+    (async () => {
+      await hydrateRenderCache();
+      if (controller.signal.aborted) return;
+      const cached = getCachedRender(traitId, style);
+      if (cached) return;
+      if (!photoUri) {
         setError('Scan first to preview your potential.');
+        setLoading(false);
         return;
       }
       setLoading(true);
       setError(null);
-      setRenderUrl(null);
       try {
         const appUserId = await getAppUserID();
-        const r = await submitRender({ appUserId, photoUri, traitId, style });
-        if (cancelled) return;
+        const r = await submitRender({
+          appUserId,
+          photoUri,
+          traitId,
+          style,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
         await setCachedRender(traitId, style, r.imageUrl, r.expiresAt);
         setRenderUrl(r.imageUrl);
+        setRenderStyle(style);
       } catch (e) {
-        if (cancelled) return;
+        if (controller.signal.aborted || isAbortError(e)) return;
         if (__DEV__ && Platform.OS === 'web') {
           const stub = 'https://placehold.co/232x232/3A2A1A/EFE6D8.png?text=Dev+Render';
           await setCachedRender(traitId, style, stub);
           setRenderUrl(stub);
+          setRenderStyle(style);
           setError(null);
           return;
         }
@@ -71,13 +107,14 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
               : 'Render failed.',
         );
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [traitId, selected, photoUri, retryNonce]);
+    return () => controller.abort();
+  }, [traitId, debouncedStyle, photoUri, retryNonce]);
+
+  const displayUrl = renderStyle === selected ? renderUrl : null;
+  const showLoading = loading || selected !== debouncedStyle;
 
   if (!preview) return null;
   const trait = TRAITS.find((t) => t.id === traitId);
@@ -96,22 +133,18 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
         <Text style={styles.blurb}>{preview.blurb}</Text>
 
         <View style={styles.renderWrap}>
-          {renderUrl ? (
-            <Image source={{ uri: renderUrl }} style={styles.renderImg} resizeMode="cover" />
-          ) : (
-            <View>
-              <AvatarRender traitId={traitId} style={selected} size={232} />
-              {loading && (
-                <View style={styles.renderOverlay}>
-                  <ActivityIndicator color={colors.primary} />
-                  <Text style={styles.renderOverlayText}>Rendering…</Text>
-                </View>
-              )}
-            </View>
-          )}
+          <View style={styles.renderFrame}>
+            <AvatarRender traitId={traitId} style={selected} size={232} imageUrl={displayUrl} />
+            {showLoading && (
+              <View style={styles.renderOverlay}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={styles.renderOverlayText}>Rendering…</Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        {error && !renderUrl && (
+        {error && !displayUrl && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
             {photoUri && (
@@ -174,19 +207,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   renderWrap: { marginBottom: spacing.lg, alignItems: 'center' },
-  renderImg: {
-    width: 232,
-    height: 232,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  renderFrame: { width: 232, height: 232, position: 'relative' },
   renderOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
+    width: 232,
+    height: 232,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(8,6,4,0.5)',
