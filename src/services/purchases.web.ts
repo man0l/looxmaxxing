@@ -245,6 +245,16 @@ export async function getAppUserID(): Promise<string> {
   }
 }
 
+export async function logOutPurchases(): Promise<void> {
+  if (!configured) return;
+  try {
+    currentAppUserId = '';
+    configured = false;
+  } catch (e) {
+    console.warn('[purchases.web] logOut failed', e);
+  }
+}
+
 export function addCustomerInfoListener(_cb: (info: CustomerInfo) => void): () => void {
   return () => {};
 }

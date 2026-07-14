@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { AppState } from 'react-native';
 import { getPlanItem, taskIdsForItem } from '../types/practice';
 import { dateKey } from '../services/streak';
+import { registerLocalDataReset } from '../services/dataDeletion';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 interface PracticeValue {
@@ -69,6 +70,12 @@ export function PracticeProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     saveJson(STORAGE_KEYS.practice, store satisfies PracticeStore);
   }, [store, hydrated]);
+
+  useEffect(() => {
+    return registerLocalDataReset(() => {
+      setStore({ day: dateKey(new Date()), completed: {} });
+    });
+  }, []);
 
   const isDone = useCallback((id: string) => completed[id] === true, [completed]);
 

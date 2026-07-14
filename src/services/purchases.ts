@@ -184,6 +184,16 @@ export async function getAppUserID(): Promise<string> {
   }
 }
 
+export async function logOutPurchases(): Promise<void> {
+  const Purchases = getPurchases();
+  if (!Purchases || !configured) return;
+  try {
+    await Purchases.logOut();
+  } catch (e) {
+    console.warn('[purchases] logOut failed', e);
+  }
+}
+
 export function addCustomerInfoListener(cb: (info: CustomerInfo) => void): () => void {
   const Purchases = getPurchases();
   if (!Purchases || !configured) return () => {};

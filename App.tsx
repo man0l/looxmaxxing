@@ -12,6 +12,7 @@ import { ScanProvider, useScans } from './src/store/ScanContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { registerAppLifecycleReset } from './src/services/dataDeletion';
 import { hydrateRenderCache } from './src/services/renderCache';
 import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 
@@ -22,6 +23,13 @@ function Root() {
   const { frontPhoto, profilePhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
+
+  useEffect(() => {
+    return registerAppLifecycleReset(() => {
+      firstScanTriggered.current = false;
+      setOnboarded(false);
+    });
+  }, []);
 
   useEffect(() => {
     Promise.all([

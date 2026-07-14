@@ -24,3 +24,13 @@ export async function saveJson<T>(key: string, value: T): Promise<void> {
     /* quota / offline */
   }
 }
+
+const RENDER_CACHE_KEY = 'render-cache-v1';
+
+export async function clearAllAppData(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([...Object.values(STORAGE_KEYS), RENDER_CACHE_KEY]);
+  } catch {
+    /* offline / quota */
+  }
+}

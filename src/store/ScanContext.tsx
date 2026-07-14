@@ -3,6 +3,7 @@ import type { Scan } from '../types/scan';
 import { getScores, improveScores } from '../services/scoring';
 import { submitScan } from '../services/api';
 import { getAppUserID } from '../services/purchases';
+import { registerLocalDataReset } from '../services/dataDeletion';
 import { registerScanPhotoClear, unregisterScanPhotoClear } from '../services/photoDeletion';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
@@ -59,10 +60,22 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const clearAllScans = useCallback(() => {
+    setScans([]);
+    setHasRealScan(false);
+    setScanError(null);
+    setScanning(false);
+    firstRealScanDone.current = false;
+  }, []);
+
   useEffect(() => {
     registerScanPhotoClear(clearScanPhotos);
     return unregisterScanPhotoClear;
   }, [clearScanPhotos]);
+
+  useEffect(() => {
+    return registerLocalDataReset(clearAllScans);
+  }, [clearAllScans]);
 
   const rescan = useCallback((photoUri?: string) => {
     setScans((prev) => {
