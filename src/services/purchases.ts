@@ -86,9 +86,10 @@ export async function getCurrentOffering(): Promise<OfferingResult> {
     return { offering: offerings.current, error: null };
   } catch (e) {
     console.warn('[purchases] getOfferings failed', e);
+    const message = e instanceof Error ? e.message : String(e);
     return {
       offering: null,
-      error: "Couldn't load subscription plans." + e.message ? ` (${e.message})` : '',
+      error: `Couldn't load subscription plans. (${message})`,
     };
   }
 }

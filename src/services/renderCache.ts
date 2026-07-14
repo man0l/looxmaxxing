@@ -90,3 +90,13 @@ export async function setCachedRender(
   notify();
   await persist();
 }
+
+export async function clearRenderCache(): Promise<void> {
+  memory = {};
+  notify();
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* offline / quota */
+  }
+}

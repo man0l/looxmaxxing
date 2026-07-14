@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
 import {
   type OnboardingState,
   type OnboardingAction,
   onboardingReducer,
   INITIAL_ONBOARDING,
 } from '../types/onboarding';
+import { deleteUserData } from '../services/api';
+import { clearRenderCache } from '../services/renderCache';
+import { getAppUserID } from '../services/purchases';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 const OnboardingContext = createContext<OnboardingState>(INITIAL_ONBOARDING);
@@ -13,6 +16,14 @@ const OnboardingDispatchContext = createContext<React.Dispatch<OnboardingAction>
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(onboardingReducer, INITIAL_ONBOARDING);
   const [hydrated, setHydrated] = React.useState(false);
+
+  const dispatchWithEffects = useCallback((action: OnboardingAction) => {
+    if (action.type === 'CLEAR_PHOTOS') {
+      void clearRenderCache();
+      void getAppUserID().then(deleteUserData);
+    }
+    dispatch(action);
+  }, []);
 
   useEffect(() => {
     loadJson<OnboardingState>(STORAGE_KEYS.onboarding).then((saved) => {
@@ -28,7 +39,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <OnboardingContext.Provider value={state}>
-      <OnboardingDispatchContext.Provider value={dispatch}>
+      <OnboardingDispatchContext.Provider value={dispatchWithEffects}>
         {children}
       </OnboardingDispatchContext.Provider>
     </OnboardingContext.Provider>
