@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
+import { DayCompleteMoment } from '../../components/DayCompleteMoment';
+import { useDayCompleteMoment } from '../../hooks/useDayCompleteMoment';
 import { usePractice } from '../../store/PracticeContext';
 import { colors, spacing, radii, typography } from '../../theme';
 
@@ -15,7 +17,8 @@ const targetLabel = (traitId: string) => {
 };
 
 export function WorkoutDetailScreen({ item, onClose }: Props) {
-  const { isDone, complete } = usePractice();
+  const { isDone } = usePractice();
+  const { completeTask, visible, dismiss } = useDayCompleteMoment();
   const sessionId = workoutSessionId(item.traitId);
   const done = isDone(sessionId);
 
@@ -51,7 +54,7 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
 
       <View style={styles.footer}>
         <Pressable
-          onPress={() => complete(sessionId)}
+          onPress={() => completeTask(sessionId)}
           disabled={done}
           style={[styles.cta, done && styles.ctaDone]}
         >
@@ -60,6 +63,8 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
           </Text>
         </Pressable>
       </View>
+
+      {visible && <DayCompleteMoment onClose={dismiss} />}
     </View>
   );
 }
