@@ -116,44 +116,62 @@ export interface PurchaseResult {
   error: string | null;
 }
 
-export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
-  const Purchases = getPurchases();
-  if (!Purchases || !configured) {
-    return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
-  }
+let billingInFlight = false;
+
+const BILLING_BUSY: PurchaseResult = { pro: false, cancelled: true, error: null };
+
+async function withBillingGuard(run: () => Promise<PurchaseResult>): Promise<PurchaseResult> {
+  if (billingInFlight) return BILLING_BUSY;
+  billingInFlight = true;
   try {
-    const { customerInfo } = await Purchases.purchasePackage(pkg);
-    return { pro: isProActive(customerInfo), cancelled: false, error: null };
-  } catch (e) {
-    const err = e as { userCancelled?: boolean; message?: string };
-    if (err.userCancelled) {
-      return { pro: false, cancelled: true, error: null };
-    }
-    console.warn('[purchases] purchase failed', e);
-    return { pro: false, cancelled: false, error: err.message ?? 'Purchase failed. Please try again.' };
+    return await run();
+  } finally {
+    billingInFlight = false;
   }
 }
 
-export async function restorePurchases(): Promise<PurchaseResult> {
-  const Purchases = getPurchases();
-  if (!Purchases || !configured) {
-    return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
-  }
-  try {
-    const customerInfo = await Purchases.restorePurchases();
-    if (isProActive(customerInfo)) {
-      return { pro: true, cancelled: false, error: null };
+export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
+  return withBillingGuard(async () => {
+    const Purchases = getPurchases();
+    if (!Purchases || !configured) {
+      return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
     }
-    return {
-      pro: false,
-      cancelled: false,
-      error: `No active subscription found for this ${Platform.OS === 'ios' ? 'Apple ID' : 'account'}.`,
-    };
-  } catch (e) {
-    const err = e as { message?: string };
-    console.warn('[purchases] restore failed', e);
-    return { pro: false, cancelled: false, error: err.message ?? 'Restore failed. Please try again.' };
-  }
+    try {
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      return { pro: isProActive(customerInfo), cancelled: false, error: null };
+    } catch (e) {
+      const err = e as { userCancelled?: boolean; message?: string };
+      if (err.userCancelled) {
+        return { pro: false, cancelled: true, error: null };
+      }
+      console.warn('[purchases] purchase failed', e);
+      return { pro: false, cancelled: false, error: err.message ?? 'Purchase failed. Please try again.' };
+    }
+  });
+}
+
+export async function restorePurchases(): Promise<PurchaseResult> {
+  return withBillingGuard(async () => {
+    const Purchases = getPurchases();
+    if (!Purchases || !configured) {
+      return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
+    }
+    try {
+      const customerInfo = await Purchases.restorePurchases();
+      if (isProActive(customerInfo)) {
+        return { pro: true, cancelled: false, error: null };
+      }
+      return {
+        pro: false,
+        cancelled: false,
+        error: `No active subscription found for this ${Platform.OS === 'ios' ? 'Apple ID' : 'account'}.`,
+      };
+    } catch (e) {
+      const err = e as { message?: string };
+      console.warn('[purchases] restore failed', e);
+      return { pro: false, cancelled: false, error: err.message ?? 'Restore failed. Please try again.' };
+    }
+  });
 }
 
 export async function getAppUserID(): Promise<string> {
@@ -177,6 +195,8 @@ export function addCustomerInfoListener(cb: (info: CustomerInfo) => void): () =>
 
 export async function presentRevenueCatPaywallIfNeeded(): Promise<boolean> {
   if (!isNative || !configured) return false;
+  if (billingInFlight) return false;
+  billingInFlight = true;
   try {
     const RevenueCatUI = require('react-native-purchases-ui').default;
     const { PAYWALL_RESULT } = require('react-native-purchases-ui');
@@ -187,6 +207,8 @@ export async function presentRevenueCatPaywallIfNeeded(): Promise<boolean> {
   } catch (e) {
     console.warn('[purchases] RevenueCat paywall failed', e);
     return false;
+  } finally {
+    billingInFlight = false;
   }
 }
 

@@ -175,47 +175,65 @@ export interface PurchaseResult {
   error: string | null;
 }
 
-export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
-  if (!configured) {
-    return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
-  }
-  const webPkg = resolveWebPackage(pkg);
-  if (!webPkg) {
-    return { pro: false, cancelled: false, error: 'Package mapping lost — reload and try again.' };
-  }
+let billingInFlight = false;
+
+const BILLING_BUSY: PurchaseResult = { pro: false, cancelled: true, error: null };
+
+async function withBillingGuard(run: () => Promise<PurchaseResult>): Promise<PurchaseResult> {
+  if (billingInFlight) return BILLING_BUSY;
+  billingInFlight = true;
   try {
-    const result = await Purchases.getSharedInstance().purchase({
-      rcPackage: webPkg,
-      htmlTarget: purchaseHtmlTarget(),
-    });
-    clearPurchaseOverlay();
-    return { pro: isProActive(asCustomerInfo(result.customerInfo)), cancelled: false, error: null };
-  } catch (e) {
-    clearPurchaseOverlay();
-    if (e instanceof PurchasesError && e.errorCode === ErrorCode.UserCancelledError) {
-      return { pro: false, cancelled: true, error: null };
-    }
-    const message = e instanceof Error ? e.message : 'Purchase failed. Please try again.';
-    console.warn('[purchases.web] purchase failed', e);
-    return { pro: false, cancelled: false, error: message };
+    return await run();
+  } finally {
+    billingInFlight = false;
   }
 }
 
-export async function restorePurchases(): Promise<PurchaseResult> {
-  if (!configured) {
-    return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
-  }
-  try {
-    const info = await Purchases.getSharedInstance().getCustomerInfo();
-    if (isProActive(asCustomerInfo(info))) {
-      return { pro: true, cancelled: false, error: null };
+export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
+  return withBillingGuard(async () => {
+    if (!configured) {
+      return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
     }
-    return { pro: false, cancelled: false, error: 'No active subscription found for this account.' };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Restore failed. Please try again.';
-    console.warn('[purchases.web] restore failed', e);
-    return { pro: false, cancelled: false, error: message };
-  }
+    const webPkg = resolveWebPackage(pkg);
+    if (!webPkg) {
+      return { pro: false, cancelled: false, error: 'Package mapping lost — reload and try again.' };
+    }
+    try {
+      const result = await Purchases.getSharedInstance().purchase({
+        rcPackage: webPkg,
+        htmlTarget: purchaseHtmlTarget(),
+      });
+      clearPurchaseOverlay();
+      return { pro: isProActive(asCustomerInfo(result.customerInfo)), cancelled: false, error: null };
+    } catch (e) {
+      clearPurchaseOverlay();
+      if (e instanceof PurchasesError && e.errorCode === ErrorCode.UserCancelledError) {
+        return { pro: false, cancelled: true, error: null };
+      }
+      const message = e instanceof Error ? e.message : 'Purchase failed. Please try again.';
+      console.warn('[purchases.web] purchase failed', e);
+      return { pro: false, cancelled: false, error: message };
+    }
+  });
+}
+
+export async function restorePurchases(): Promise<PurchaseResult> {
+  return withBillingGuard(async () => {
+    if (!configured) {
+      return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
+    }
+    try {
+      const info = await Purchases.getSharedInstance().getCustomerInfo();
+      if (isProActive(asCustomerInfo(info))) {
+        return { pro: true, cancelled: false, error: null };
+      }
+      return { pro: false, cancelled: false, error: 'No active subscription found for this account.' };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Restore failed. Please try again.';
+      console.warn('[purchases.web] restore failed', e);
+      return { pro: false, cancelled: false, error: message };
+    }
+  });
 }
 
 export async function getAppUserID(): Promise<string> {
