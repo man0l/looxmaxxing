@@ -1,16 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { runOnboardingToPaywall, unlockPaywall } from './helpers/onboardingFlow';
+import { resetWebApp } from './helpers/resetWebApp';
 
 const API_HOST = 'looxmaxxing-api.vercel.app';
 
 test.describe('LooxMaxxing live API web funnel', () => {
   test.beforeEach(async ({ page }) => {
-    const userId = `e2e_web_${Date.now()}`;
-    await page.addInitScript((id) => {
-      sessionStorage.setItem('e2e_app_user_id', id);
-      localStorage.clear();
-    }, userId);
-    await page.goto('/');
-    await page.reload();
+    await resetWebApp(page, `e2e_web_${Date.now()}`);
   });
 
   test('purchase → real scan API → real avatar render API', async ({ page }) => {
@@ -21,27 +17,8 @@ test.describe('LooxMaxxing live API web funnel', () => {
       apiCalls.push({ method: res.request().method(), url, status: res.status() });
     });
 
-    await expect(page.getByText('How old are you?')).toBeVisible();
-    await page.getByText('25–34').click();
-    await page.getByText('Continue', { exact: true }).click();
-    await page.getByText(/Let.s start/i).click();
-    await page.getByText('Sharper jawline').click();
-    await page.getByText('Continue', { exact: true }).click();
-    await page.getByText('Skip').click();
-    await page.getByText('Got it', { exact: true }).click();
-
-    await expect(page.getByText('Front photo first')).toBeVisible();
-    await page.getByTestId('e2e-use-test-photo').click();
-    await expect(page.getByText('Now your profile')).toBeVisible();
-    await page.getByTestId('e2e-use-test-photo').click();
-
-    await expect(page.getByText(/analysis is ready/i)).toBeVisible();
-    await expect(page.getByTestId('paywall-unlock')).toContainText('Unlock my results', { timeout: 60_000 });
-    await page.getByTestId('paywall-unlock').click();
-
-    const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
-    await expect(testPurchase).toBeVisible({ timeout: 30_000 });
-    await testPurchase.click();
+    await runOnboardingToPaywall(page);
+    await unlockPaywall(page);
 
     await expect(page.getByText('Analyzing your photos')).toBeVisible();
     await expect(page.getByText(/Top \d+% of men/)).toBeVisible({ timeout: 120_000 });
