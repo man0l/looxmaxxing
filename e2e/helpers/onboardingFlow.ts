@@ -55,3 +55,9 @@ export async function unlockPaywall(page: Page) {
   await expect(testPurchase).toBeVisible({ timeout: 30_000 });
   await testPurchase.click();
 }
+
+export async function enterSubscribedApp(page: Page) {
+  await runOnboardingToPaywall(page);
+  await unlockPaywall(page);
+  await expect(page.getByText(/Top \d+% of men/)).toBeVisible({ timeout: 90_000 });
+}
