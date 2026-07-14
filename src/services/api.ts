@@ -230,6 +230,20 @@ export async function invalidateEntitlementCache(appUserId: string): Promise<voi
   }
 }
 
+export async function deleteUserData(appUserId: string): Promise<void> {
+  if (!API_BASE || !appUserId) return;
+  try {
+    const res = await fetchWithTimeout(
+      `${API_BASE}/v1/user-data`,
+      { method: 'DELETE', headers: { 'X-App-User-Id': appUserId } },
+      15_000,
+    );
+    if (!res.ok) await assertOk(res, 'delete user data');
+  } catch {
+    // best-effort — local cache is already cleared
+  }
+}
+
 export async function submitRender(opts: {
   appUserId: string;
   photoUri: string;
