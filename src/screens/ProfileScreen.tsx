@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Platform,
+  Linking,
+  ActivityIndicator,
+} from 'react-native';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
 import { useScans } from '../store/ScanContext';
 import { PRIVACY_POLICY_URL } from '../config/legal';
 import { useSubscription } from '../store/SubscriptionContext';
+import { useToast } from '../store/ToastContext';
+import { deleteAllUserData } from '../services/deleteAllData';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
 import { colors, spacing, radii, typography } from '../theme';
@@ -41,10 +52,13 @@ export function ProfileScreen() {
   const dispatch = useOnboardingDispatch();
   const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
+  const { showToast } = useToast();
   const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
   const [showMethodology, setShowMethodology] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const hasPhotos = Boolean(
     frontPhoto || profilePhoto || scans.some((scan) => scan.photoUri),
   );
@@ -83,6 +97,11 @@ export function ProfileScreen() {
             first
           />
           <Row
+            label="Delete all my data"
+            tone="danger"
+            onPress={() => setConfirmDeleteAll(true)}
+          />
+          <Row
             label="Privacy policy"
             tone="action"
             onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
@@ -109,6 +128,57 @@ export function ProfileScreen() {
               <Text style={styles.dialogDeleteText}>Delete photos</Text>
             </Pressable>
             <Pressable style={styles.dialogCancel} onPress={() => setConfirmDelete(false)}>
+              <Text style={styles.dialogCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {confirmDeleteAll && (
+        <View style={styles.overlay}>
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => !deletingAll && setConfirmDeleteAll(false)}
+          />
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Delete all your data?</Text>
+            <Text style={styles.dialogBody}>
+              This removes your scores, scan history, streak, practice progress, photos, and your
+              anonymous identifier from this device and our servers.
+              {subscribed
+                ? ' Your subscription stays active until you cancel it in App Store settings — use Restore purchases to re-link it after starting over.'
+                : ''}
+            </Text>
+            <Pressable
+              style={[styles.dialogDelete, deletingAll && styles.dialogDeleteDisabled]}
+              disabled={deletingAll}
+              onPress={() => {
+                setDeletingAll(true);
+                void deleteAllUserData().then(({ serverOk }) => {
+                  setDeletingAll(false);
+                  setConfirmDeleteAll(false);
+                  if (serverOk) {
+                    showToast('All data deleted.', 'success');
+                  } else {
+                    showToast(
+                      'Local data cleared. Server cleanup failed — try again when online.',
+                      'error',
+                    );
+                  }
+                });
+              }}
+            >
+              {deletingAll ? (
+                <ActivityIndicator color={colors.onAccent} />
+              ) : (
+                <Text style={styles.dialogDeleteText}>Delete all data</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={styles.dialogCancel}
+              disabled={deletingAll}
+              onPress={() => setConfirmDeleteAll(false)}
+            >
               <Text style={styles.dialogCancelText}>Cancel</Text>
             </Pressable>
           </View>
@@ -216,6 +286,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     paddingVertical: 13,
     alignItems: 'center',
+    minHeight: 46,
+    justifyContent: 'center',
+  },
+  dialogDeleteDisabled: {
+    opacity: 0.7,
   },
   dialogDeleteText: {
     ...typography.label,

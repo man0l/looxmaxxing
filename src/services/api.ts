@@ -239,8 +239,8 @@ export async function invalidateEntitlementCache(appUserId: string): Promise<voi
   }
 }
 
-export async function deleteUserData(appUserId: string): Promise<void> {
-  if (!API_BASE || !appUserId) return;
+export async function deleteUserData(appUserId: string): Promise<{ ok: boolean }> {
+  if (!API_BASE || !appUserId) return { ok: true };
   try {
     const res = await fetchWithTimeout(
       `${API_BASE}/v1/user-data`,
@@ -248,8 +248,9 @@ export async function deleteUserData(appUserId: string): Promise<void> {
       15_000,
     );
     if (!res.ok) await assertOk(res, 'delete user data');
+    return { ok: true };
   } catch {
-    // best-effort — local cache is already cleared
+    return { ok: false };
   }
 }
 

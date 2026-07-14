@@ -6,6 +6,7 @@ import {
   INITIAL_ONBOARDING,
 } from '../types/onboarding';
 import { deleteUserData } from '../services/api';
+import { registerLocalDataReset } from '../services/dataDeletion';
 import { runScanPhotoClear } from '../services/photoDeletion';
 import { clearRenderCache } from '../services/renderCache';
 import { getAppUserID } from '../services/purchases';
@@ -32,6 +33,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       if (saved) dispatch({ type: 'HYDRATE', payload: saved });
       setHydrated(true);
     });
+  }, []);
+
+  useEffect(() => {
+    return registerLocalDataReset(() => dispatch({ type: 'RESET' }));
   }, []);
 
   useEffect(() => {

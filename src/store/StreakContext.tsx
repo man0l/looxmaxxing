@@ -11,6 +11,7 @@ import {
   reachedMilestone,
   type HeatCell,
 } from '../services/streak';
+import { registerLocalDataReset } from '../services/dataDeletion';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 const HEATMAP_WEEKS = 14;
@@ -89,6 +90,13 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     saveJson(STORAGE_KEYS.streak, { history, freezeUsedForMonth } satisfies StreakStore);
   }, [history, freezeUsedForMonth, hydrated]);
+
+  useEffect(() => {
+    return registerLocalDataReset(() => {
+      setHistory({});
+      setFreezeUsedForMonth(null);
+    });
+  }, []);
 
   const useFreeze = useCallback(() => setFreezeUsedForMonth(monthKey()), []);
 

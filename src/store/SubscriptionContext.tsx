@@ -22,6 +22,7 @@ import {
   restorePurchases,
 } from '../services/purchases';
 import { invalidateEntitlementCache } from '../services/api';
+import { registerSubscriptionReset } from '../services/dataDeletion';
 import { initAppsFlyer, setAppsFlyerCustomerUserId } from '../services/appsflyer';
 
 interface SubscriptionValue {
@@ -60,6 +61,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [offeringError, setOfferingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return registerSubscriptionReset(() => {
+      setSubscribed(false);
+      setPaywallVisible(false);
+      setPurchaseError(null);
+    });
+  }, []);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
