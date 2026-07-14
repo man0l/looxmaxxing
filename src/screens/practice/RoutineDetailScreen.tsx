@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { type PlanItem, routineTaskId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
+import { DayCompleteMoment } from '../../components/DayCompleteMoment';
+import { useDayCompleteMoment } from '../../hooks/useDayCompleteMoment';
 import { usePractice } from '../../store/PracticeContext';
 import { colors, spacing, radii, typography } from '../../theme';
 
@@ -19,13 +21,15 @@ function ChecklistSection({
   tasks,
   traitId,
   period,
+  onCompleteTask,
 }: {
   heading: string;
   tasks: string[];
   traitId: string;
   period: 'am' | 'pm';
+  onCompleteTask: (id: string) => void;
 }) {
-  const { isDone, complete } = usePractice();
+  const { isDone } = usePractice();
   if (tasks.length === 0) return null;
   return (
     <View style={styles.section}>
@@ -37,7 +41,7 @@ function ChecklistSection({
           return (
             <Pressable
               key={id}
-              onPress={() => complete(id)}
+              onPress={() => onCompleteTask(id)}
               disabled={done}
               style={[styles.taskRow, i > 0 && styles.taskDivider]}
             >
@@ -55,6 +59,7 @@ function ChecklistSection({
 
 export function RoutineDetailScreen({ item, onClose }: Props) {
   const { doneCountForTrait, totalCountForTrait } = usePractice();
+  const { completeTask, visible, dismiss } = useDayCompleteMoment();
   const done = doneCountForTrait(item.traitId);
   const total = totalCountForTrait(item.traitId);
 
@@ -73,9 +78,23 @@ export function RoutineDetailScreen({ item, onClose }: Props) {
           {done} of {total} done today
         </Text>
 
-        <ChecklistSection heading="Morning" tasks={item.amTasks ?? []} traitId={item.traitId} period="am" />
-        <ChecklistSection heading="Evening" tasks={item.pmTasks ?? []} traitId={item.traitId} period="pm" />
+        <ChecklistSection
+          heading="Morning"
+          tasks={item.amTasks ?? []}
+          traitId={item.traitId}
+          period="am"
+          onCompleteTask={completeTask}
+        />
+        <ChecklistSection
+          heading="Evening"
+          tasks={item.pmTasks ?? []}
+          traitId={item.traitId}
+          period="pm"
+          onCompleteTask={completeTask}
+        />
       </ScrollView>
+
+      {visible && <DayCompleteMoment onClose={dismiss} />}
     </View>
   );
 }
