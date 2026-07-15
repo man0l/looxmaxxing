@@ -1,5 +1,13 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
@@ -10,6 +18,7 @@ import { ScreenShell } from '../components/ScreenShell';
 import { BannerPremium } from '../components/BannerPremium';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
+import { RingGauge } from '../components/RingGauge';
 import { StreakScreen } from './StreakScreen';
 import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -21,7 +30,7 @@ import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { useTabRootReset } from '../hooks/useTabRootReset';
-import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
+import { orderByConcerns, scoreLabel, deltaLabel, topPercentLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -149,7 +158,9 @@ export function ResultsScreen() {
       delta: before != null ? deltaLabel(before, s.percentile) : undefined,
     };
   });
-  const overallPct = orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length;
+  const overallPct = Math.round(
+    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+  );
   const overallScore = scoreLabel(overallPct);
   const overallDelta = prevScan
     ? deltaLabel(
@@ -158,20 +169,35 @@ export function ResultsScreen() {
       )
     : undefined;
 
+  const photoUri = latest.photoUri ?? frontPhoto ?? undefined;
+  const improved =
+    overallDelta != null && overallDelta.startsWith('+');
+  const declined =
+    overallDelta != null && overallDelta.startsWith('-');
+
   return (
     <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.unlockedContainer}>
-        <Card role="hero" onPress={() => setShowStreak(true)} style={styles.streakBanner}>
-          <View style={styles.streakInfo}>
+        <View style={styles.topBar}>
+          <Pressable
+            style={styles.streakChip}
+            onPress={() => setShowStreak(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Day ${streak.currentDay} streak`}
+          >
             <Text style={styles.streakDay}>Day {streak.currentDay}</Text>
+            <Text style={styles.streakDot}>·</Text>
             <Text style={styles.streakTasks}>
               {allDone
-                ? 'all done today ✓'
-                : `${streak.tasksLeftToday} ${streak.tasksLeftToday === 1 ? 'task' : 'tasks'} left today`}
+                ? 'all done ✓'
+                : `${streak.tasksLeftToday} left today`}
             </Text>
-          </View>
-          <Text style={styles.streakChevron}>›</Text>
-        </Card>
+            <Text style={styles.streakChevron}>›</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowShare(true)} hitSlop={8} accessibilityLabel="Share results">
+            <ShareIcon size={22} color={colors.primary} />
+          </Pressable>
+        </View>
 
         {justRescanned && (
           <Card role="inset" style={styles.doneBanner}>
@@ -179,14 +205,50 @@ export function ResultsScreen() {
           </Card>
         )}
 
-        <View style={styles.headerRow}>
-          <Text style={styles.header}>Your results</Text>
-          <Pressable onPress={() => setShowShare(true)} hitSlop={8}>
-            <ShareIcon size={22} color={colors.primary} />
-          </Pressable>
-        </View>
+        <Card role="hero" style={styles.overallHero}>
+          <RingGauge
+            percentile={overallPct}
+            size={112}
+            centerLabel={overallScore}
+            delayMs={0}
+          />
+          <View style={styles.overallInfo}>
+            <Text style={styles.overallKicker}>Overall</Text>
+            <Text style={styles.overallPercentile}>
+              {topPercentLabel(overallPct)} of men
+            </Text>
+            {overallDelta != null && (
+              <View
+                style={[
+                  styles.deltaChip,
+                  improved && styles.deltaChipUp,
+                  declined && styles.deltaChipDown,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.deltaText,
+                    improved && styles.deltaTextUp,
+                    declined && styles.deltaTextDown,
+                  ]}
+                >
+                  {overallDelta}
+                </Text>
+              </View>
+            )}
+          </View>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.heroPhoto} />
+          ) : null}
+        </Card>
 
-        <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={setOpenTrait} />
+        <Text style={styles.sectionFocus}>Your focus</Text>
+        <TraitGrid
+          concerns={concerns}
+          scores={latest.scores}
+          onOpenPlan={setOpenTrait}
+          revealBaseMs={160}
+        />
 
         <Card role="quiet" onPress={() => navigation.navigate('Avatars' as never)} style={styles.potentialCard}>
           <View style={styles.potentialInfo}>
@@ -238,49 +300,111 @@ const styles = StyleSheet.create({
   lockedContainer: {
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
-    paddingTop: 60,
+    paddingTop: 56,
     paddingBottom: 110,
-  },
-  unlockedContainer: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: 60,
-    paddingBottom: 110,
-    gap: spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
   },
   header: {
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
   },
-  streakBanner: {
+  unlockedContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: 56,
+    paddingBottom: 110,
+    gap: spacing.lg,
+  },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
-  streakInfo: {
+  streakChip: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.full,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    flexShrink: 1,
   },
   streakDay: {
     ...typography.stat,
+    fontSize: 14,
     color: colors.tertiary,
   },
+  streakDot: {
+    ...typography.caption,
+    color: colors.textTertiary,
+  },
   streakTasks: {
-    ...typography.bodySm,
+    ...typography.caption,
     color: colors.textSecondary,
+    flexShrink: 1,
   },
   streakChevron: {
-    fontSize: 20,
+    fontSize: 16,
     color: colors.primary,
+    marginLeft: 2,
+  },
+  overallHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
+  overallInfo: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  overallKicker: {
+    ...typography.caption,
+    color: colors.textTertiary,
+  },
+  overallPercentile: {
+    ...typography.display,
+    fontSize: 22,
+    color: colors.textPrimary,
+  },
+  deltaChip: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
+    borderRadius: radii.sm,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    backgroundColor: colors.surfaceInset,
+  },
+  deltaChipUp: {
+    backgroundColor: 'rgba(239,230,216,0.14)',
+  },
+  deltaChipDown: {
+    backgroundColor: 'rgba(154,146,133,0.14)',
+  },
+  deltaText: {
+    ...typography.label,
+    color: colors.textSecondary,
+  },
+  deltaTextUp: {
+    color: colors.tertiary,
+  },
+  deltaTextDown: {
+    color: colors.textSecondary,
+  },
+  heroPhoto: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sectionFocus: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginBottom: -spacing.sm,
   },
   potentialCard: {
     flexDirection: 'row',

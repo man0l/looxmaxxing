@@ -32,7 +32,7 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: P
       <BackHeader onClose={onClose} />
       <ScrollView contentContainerStyle={styles.container} bounces={false}>
         <View style={styles.hero}>
-          <RingGauge percentile={latestPct} size={92} centerLabel={scoreLabel(latestPct)} />
+          <RingGauge percentile={latestPct} size={100} centerLabel={scoreLabel(latestPct)} />
           <View style={styles.heroInfo}>
             <Text style={styles.title}>{trait?.label ?? traitId}</Text>
             <Text style={styles.percentile}>{topPercentLabel(latestPct)} of men</Text>
