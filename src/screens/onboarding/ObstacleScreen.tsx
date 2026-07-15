@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   subtitle: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginBottom: spacing.xl,
   },

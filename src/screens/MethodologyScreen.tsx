@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   intro: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   cardBody: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
   },
 });

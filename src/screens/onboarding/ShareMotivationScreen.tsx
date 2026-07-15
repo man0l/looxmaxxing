@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   subtitle: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginBottom: spacing.xxl,
     lineHeight: 20,

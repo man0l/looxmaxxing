@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   dialogBody: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginBottom: spacing.lg,
   },
