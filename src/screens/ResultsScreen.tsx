@@ -36,7 +36,7 @@ import { colors, spacing, radii, typography } from '../theme';
 
 export function ResultsScreen() {
   const { concerns, frontPhoto, profilePhoto } = useOnboarding();
-  const { subscribed, openPaywall } = useSubscription();
+  const { subscribed, ready: entitlementReady, openPaywall } = useSubscription();
   const streak = useStreak();
   const navigation = useNavigation();
   const [showStreak, setShowStreak] = useState(false);
@@ -56,6 +56,10 @@ export function ResultsScreen() {
       cancelRescan();
     }, [cancelRescan]),
   );
+
+  if (!entitlementReady) {
+    return <ScreenShell style={styles.analyzingRoot} />;
+  }
 
   if (!subscribed) {
     return (

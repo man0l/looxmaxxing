@@ -25,8 +25,11 @@ import {
 import { invalidateEntitlementCache } from '../services/api';
 import { registerSubscriptionReset } from '../services/dataDeletion';
 import { initAppsFlyer, setAppsFlyerCustomerUserId } from '../services/appsflyer';
+import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 interface SubscriptionValue {
+  /** False until first local cache read and/or RevenueCat hydrate finishes. */
+  ready: boolean;
   subscribed: boolean;
   paywallVisible: boolean;
   purchasing: boolean;
@@ -41,6 +44,7 @@ interface SubscriptionValue {
 }
 
 const SubscriptionContext = createContext<SubscriptionValue>({
+  ready: false,
   subscribed: false,
   paywallVisible: false,
   purchasing: false,
@@ -54,8 +58,13 @@ const SubscriptionContext = createContext<SubscriptionValue>({
   dismissPaywall: () => {},
 });
 
+async function persistEntitlement(pro: boolean): Promise<void> {
+  await saveJson(STORAGE_KEYS.entitlement, { pro });
+}
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
+  const [ready, setReady] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
@@ -71,12 +80,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   // subscribes or restores.
   const suppressAutoRestoreRef = useRef(false);
 
+  const applySubscribed = useCallback((pro: boolean) => {
+    setSubscribed(pro);
+    void persistEntitlement(pro);
+  }, []);
+
   useEffect(() => {
     return registerSubscriptionReset(() => {
       suppressAutoRestoreRef.current = true;
       setSubscribed(false);
       setPaywallVisible(false);
       setPurchaseError(null);
+      setReady(true);
+      void persistEntitlement(false);
     });
   }, []);
 
@@ -85,15 +101,33 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     let cancelled = false;
 
     (async () => {
+      // Optimistic: last-known Pro from device so refresh doesn't flash locked UI.
+      const cached = await loadJson<{ pro: boolean }>(STORAGE_KEYS.entitlement);
+      if (cancelled) return;
+      if (cached?.pro) {
+        setSubscribed(true);
+        setReady(true);
+      }
+
       const ok = await configurePurchases();
-      if (!ok || cancelled) return;
+      if (cancelled) return;
+      if (!ok) {
+        // No SDK (web stub failure etc.) — trust cache or free.
+        if (!cached) setReady(true);
+        return;
+      }
+
       const [info, offeringResult] = await Promise.all([
         getCustomerInfo(),
         getCurrentOffering(),
       ]);
       if (cancelled) return;
-      setSubscribed(isProActive(info));
+
+      const pro = isProActive(info);
+      applySubscribed(pro);
       setOffering(offeringResult.offering);
+      setReady(true);
+
       initAppsFlyer().then(async (afOk) => {
         if (!afOk || cancelled) return;
         const appUserId = await getAppUserID();
@@ -105,7 +139,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       }
       unsubscribe = addCustomerInfoListener((updated) => {
         if (suppressAutoRestoreRef.current && isProActive(updated)) return;
-        setSubscribed(isProActive(updated));
+        applySubscribed(isProActive(updated));
       });
     })();
 
@@ -113,7 +147,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       cancelled = true;
       unsubscribe?.();
     };
-  }, [showToast]);
+  }, [applySubscribed, showToast]);
 
   const reloadOffering = useCallback(async () => {
     setOfferingError(null);
@@ -137,7 +171,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const pkg = activeOffering ? packageForPlan(activeOffering, plan) : null;
       if (!pkg) {
         if (__DEV__ && !isE2E) {
-          setSubscribed(true);
+          applySubscribed(true);
           setPaywallVisible(false);
           showToast('Dev mode — Pro unlocked (no real purchase).', 'info');
         } else {
@@ -149,7 +183,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       }
       const existing = await getCustomerInfo();
       if (isProActive(existing)) {
-        setSubscribed(true);
+        applySubscribed(true);
         setPaywallVisible(false);
         showToast("You're in — welcome to Pro.", 'success');
         return;
@@ -160,7 +194,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         const result = await purchasePackage(pkg);
         if (result.pro) {
           getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
-          setSubscribed(true);
+          applySubscribed(true);
           setPaywallVisible(false);
           showToast("You're in — welcome to Pro.", 'success');
         } else if (result.cancelled) {
@@ -169,11 +203,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           setPurchaseError(result.error);
           showToast(result.error, 'error');
         } else {
-          // Payment went through but entitlement not yet reflected — fetch fresh info
           getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
           const refreshed = await getCustomerInfo();
           if (isProActive(refreshed)) {
-            setSubscribed(true);
+            applySubscribed(true);
             setPaywallVisible(false);
             showToast("You're in — welcome to Pro.", 'success');
           } else {
@@ -184,7 +217,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         setPurchasing(false);
       }
     },
-    [offering, showToast],
+    [applySubscribed, offering, showToast],
   );
 
   const restore = useCallback(async () => {
@@ -199,7 +232,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
     if (result.pro) {
       getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
-      setSubscribed(true);
+      applySubscribed(true);
       setPaywallVisible(false);
       showToast('Purchases restored.', 'success');
     } else if (result.error) {
@@ -208,7 +241,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } else {
       showToast('No active subscription found to restore.', 'info');
     }
-  }, [showToast]);
+  }, [applySubscribed, showToast]);
 
   const openPaywall = useCallback(() => {
     setPurchaseError(null);
@@ -218,6 +251,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const value = useMemo(
     () => ({
+      ready,
       subscribed,
       paywallVisible,
       purchasing,
@@ -231,6 +265,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       dismissPaywall,
     }),
     [
+      ready,
       subscribed,
       paywallVisible,
       purchasing,
