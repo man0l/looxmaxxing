@@ -7,6 +7,7 @@ import { resolveDevTestPhotoUri } from '../../services/photoUri';
 import { useLightingOk } from '../../hooks/useLightingOk';
 import { colors, spacing, radii, typography } from '../../theme';
 import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
+import { ScreenShell } from '../../components/ScreenShell';
 import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../components/icons/OnboardingIcons';
 
 const FRONT_GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
@@ -78,6 +79,7 @@ export function GuidedCaptureScreen({
   const badExample = isFront ? FRONT_BAD_EXAMPLE : PROFILE_BAD_EXAMPLE;
 
   return (
+    <ScreenShell>
     <View style={styles.container}>
       {onboardingStep != null && <OnboardingProgressBar current={onboardingStep} />}
       {onCancel ? (
@@ -172,6 +174,7 @@ export function GuidedCaptureScreen({
         Photos are processed to generate your scores. Delete them anytime in Profile.
       </Text>
     </View>
+    </ScreenShell>
   );
 }
 

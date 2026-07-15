@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typography } from '../../theme';
-import { useOnboarding } from '../../store/OnboardingContext';
-import { HeadSilhouette } from '../../components/icons/OnboardingIcons';
 import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
+import { ScanMotif } from '../../components/ScanMotif';
 
 const STEPS = [
   'Detecting facial features',
@@ -16,17 +15,13 @@ const STEPS = [
 
 const STEP_DURATION = 950;
 const FINAL_PAUSE = 1000;
-const WELL_SIZE = 120;
-const SCAN_TRAVEL = WELL_SIZE - 16;
 
 interface Props {
   onComplete: () => void;
 }
 
 export function AnalyzingScreen({ onComplete }: Props) {
-  const { frontPhoto } = useOnboarding();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [scanY] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (activeIndex >= STEPS.length - 1) {
@@ -37,44 +32,11 @@ export function AnalyzingScreen({ onComplete }: Props) {
     return () => clearTimeout(t);
   }, [activeIndex, onComplete]);
 
-  useEffect(() => {
-    const sweep = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanY, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.delay(200),
-        Animated.timing(scanY, {
-          toValue: 0,
-          duration: 1400,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.delay(200),
-      ]),
-    );
-    sweep.start();
-    return () => sweep.stop();
-  }, [scanY]);
-
-  const translateY = scanY.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-SCAN_TRAVEL / 2, SCAN_TRAVEL / 2],
-  });
-
   return (
     <View style={styles.container}>
       <OnboardingProgressBar current={10} />
       <View style={styles.well}>
-        {frontPhoto ? (
-          <Image source={{ uri: frontPhoto }} style={styles.photo} />
-        ) : (
-          <HeadSilhouette size={56} color={colors.textTertiary} />
-        )}
-        <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
+        <ScanMotif size={148} />
       </View>
       <Text style={styles.title}>Analyzing Your Face</Text>
 
@@ -109,26 +71,15 @@ const styles = StyleSheet.create({
     gap: spacing.xxl,
   },
   well: {
-    width: WELL_SIZE,
-    height: WELL_SIZE,
-    borderRadius: WELL_SIZE / 2,
+    width: 168,
+    height: 168,
+    borderRadius: 84,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  scanLine: {
-    position: 'absolute',
-    width: '72%',
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.primary,
   },
   title: {
     ...typography.display,

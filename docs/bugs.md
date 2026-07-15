@@ -24,6 +24,7 @@ Legend: **FE** = app-only change · **BE** = needs a backend/dashboard/server ch
 | F4 | Description text too small | 2026-07-15 | — | Bumped the "headline + description" pattern from `bodySm` (13px) to `bodyMd` (15px) — `subtitle` on 10 onboarding screens (matching the size `WelcomeScreen`'s subtitle already used), `blurb` on the Workout/Routine detail and Avatar preview screens, `intro`/`cardBody` on the methodology screen, and `dialogBody` on the Profile delete-confirmation dialogs. Left short inline captions/labels (row labels, toasts, share-card text, numeric captions) at `bodySm` — only paragraph-style copy under a headline was in scope. |
 | — | One-way routine/workout completion (unreported) | 2026-07-14 | #28 | `complete()` in `PracticeContext`; routine checklist + workout session CTA cannot unmark once done for the day. |
 | — | E2E web funnel out of date with redesigned onboarding | 2026-07-14 | #31 | Shared `onboardingFlow` + `resetWebApp` helpers; stub + live Playwright suites pass (`npm run test:e2e`, `npm run test:e2e:live`). |
+| B5 | Re-scan capture screen white background + no back | 2026-07-15 | #48 | `GuidedCaptureScreen` now owns `ScreenShell` (Celestial Ember gradient) so re-scan from Results/Ratings is not transparent-over-white. Cancel path: `onCancel` + `cancelRescan` from nav fix (#46). |
 
 ---
 
@@ -31,7 +32,6 @@ Legend: **FE** = app-only change · **BE** = needs a backend/dashboard/server ch
 
 | # | Item | Scope | Details |
 |---|------|-------|---------|
-| B5 | Re-scan capture screen has a white background and no way to back out | FE | On Results, tapping the camera icon to retake a photo renders `GuidedCaptureScreen` directly (`ResultsScreen.tsx`'s `rescanStep` branch, via `useRescanFlow`) with nothing wrapping it. The screen's own root is intentionally `backgroundColor: 'transparent'` — it relies on the dark `LinearGradient` background that `OnboardingNavigator` wraps around every onboarding screen. Reused standalone from Results, there's no such ancestor, so it renders on plain white instead of the Celestial Ember background. Separately, `GuidedCaptureScreen`'s `Props` has no `onClose`/`onBack`, and `useRescanFlow`'s `startRescan`/`onCapture` expose no cancel path — the only way `rescanStep` clears back to `null` is completing *both* captures, so there's currently no way to dismiss the screen and return to Results once opened. |
 
 ---
 
