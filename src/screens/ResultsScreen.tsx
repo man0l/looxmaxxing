@@ -58,7 +58,11 @@ export function ResultsScreen() {
   );
 
   if (!entitlementReady) {
-    return <ScreenShell style={styles.analyzingRoot} />;
+    return (
+      <ScreenShell style={styles.analyzingRoot}>
+        <View />
+      </ScreenShell>
+    );
   }
 
   if (!subscribed) {
