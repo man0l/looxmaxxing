@@ -185,6 +185,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setPurchasing(false);
     }
     if (result.pro) {
+      getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
       setSubscribed(true);
       setPaywallVisible(false);
       showToast('Purchases restored.', 'success');
