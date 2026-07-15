@@ -29,7 +29,9 @@ Legend: **FE** = app-only change · **BE** = needs a backend/dashboard/server ch
 
 ## Bugs
 
-_None open._
+| # | Item | Scope | Details |
+|---|------|-------|---------|
+| B5 | Re-scan capture screen has a white background and no way to back out | FE | On Results, tapping the camera icon to retake a photo renders `GuidedCaptureScreen` directly (`ResultsScreen.tsx`'s `rescanStep` branch, via `useRescanFlow`) with nothing wrapping it. The screen's own root is intentionally `backgroundColor: 'transparent'` — it relies on the dark `LinearGradient` background that `OnboardingNavigator` wraps around every onboarding screen. Reused standalone from Results, there's no such ancestor, so it renders on plain white instead of the Celestial Ember background. Separately, `GuidedCaptureScreen`'s `Props` has no `onClose`/`onBack`, and `useRescanFlow`'s `startRescan`/`onCapture` expose no cancel path — the only way `rescanStep` clears back to `null` is completing *both* captures, so there's currently no way to dismiss the screen and return to Results once opened. |
 
 ---
 
