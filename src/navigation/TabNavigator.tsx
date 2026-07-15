@@ -48,6 +48,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
         const onPress = () => {
           if (!route) return;
+          // Always emit tabPress so focused tabs can pop nested overlay state
+          // (trait detail, streak, methodology, etc.) back to the tab root.
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,

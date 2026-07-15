@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useScans } from '../store/ScanContext';
 
 export type RescanStep = 'front' | 'profile' | null;
@@ -9,11 +9,16 @@ export function useRescanFlow() {
   const [justRescanned, setJustRescanned] = useState(false);
   const [frontUri, setFrontUri] = useState<string | undefined>(undefined);
 
-  const startRescan = () => {
+  const startRescan = useCallback(() => {
     setJustRescanned(false);
     setFrontUri(undefined);
     setRescanStep('front');
-  };
+  }, []);
+
+  const cancelRescan = useCallback(() => {
+    setRescanStep(null);
+    setFrontUri(undefined);
+  }, []);
 
   // After both photos are captured, run a real scan through the API. On any
   // failure (offline, 402, API not configured) fall back to the local mock so
@@ -35,5 +40,5 @@ export function useRescanFlow() {
     setJustRescanned(true);
   };
 
-  return { canRescan, rescanStep, startRescan, onCapture, justRescanned, scanning };
+  return { canRescan, rescanStep, startRescan, cancelRescan, onCapture, justRescanned, scanning };
 }
