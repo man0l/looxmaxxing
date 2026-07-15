@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { colors, spacing, radii, typography } from '../theme';
+import { ScreenShell } from '../components/ScreenShell';
+import { Card } from '../components/Card';
+import { colors, spacing, typography } from '../theme';
 
 interface Props {
   onClose: () => void;
@@ -26,7 +28,7 @@ const SECTIONS = [
 
 export function MethodologyScreen({ onClose }: Props) {
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <View style={styles.header}>
         <Pressable onPress={onClose} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -39,21 +41,17 @@ export function MethodologyScreen({ onClose }: Props) {
         </Text>
 
         {SECTIONS.map((section) => (
-          <View key={section.title} style={styles.card}>
+          <Card key={section.title} role="quiet" style={styles.card}>
             <Text style={styles.cardTitle}>{section.title}</Text>
             <Text style={styles.cardBody}>{section.body}</Text>
-          </View>
+          </Card>
         ))}
       </ScrollView>
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     paddingTop: 56,
     paddingHorizontal: spacing.xl,
@@ -79,16 +77,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
+    gap: spacing.xs,
   },
   cardTitle: {
     ...typography.h3,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
   },
   cardBody: {
     ...typography.bodyMd,

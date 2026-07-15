@@ -264,7 +264,15 @@ export async function presentRevenueCatPaywallIfNeeded(): Promise<boolean> {
 }
 
 export async function presentCustomerCenter(): Promise<void> {
-  return;
+  // RevenueCat Customer Center is native-only. On web, send Pro users to
+  // the store subscription pages so Profile still offers a manage path.
+  const apple = 'https://apps.apple.com/account/subscriptions';
+  const play = 'https://play.google.com/store/account/subscriptions';
+  if (typeof window !== 'undefined') {
+    window.open(apple, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  void play;
 }
 
 export function perWeekLabel(pkg: PurchasesPackage): string | null {

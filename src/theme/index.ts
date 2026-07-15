@@ -4,6 +4,9 @@ export type { ColorToken } from './colors';
 export { typography } from './typography';
 export type { TypographyToken } from './typography';
 
+export { fonts } from './fonts';
+export type { FontToken } from './fonts';
+
 export { spacing } from './spacing';
 export type { SpacingToken } from './spacing';
 

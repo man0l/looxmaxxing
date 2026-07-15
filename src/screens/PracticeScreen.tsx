@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { PRACTICE_PLAN, getPlanItem, type PlanItem, workoutSessionId } from '../types/practice';
 import { getScores, topPercentLabel } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { usePractice } from '../store/PracticeContext';
 import { ConcernGlyph } from '../components/icons/OnboardingIcons';
+import { Card } from '../components/Card';
+import { ScreenShell } from '../components/ScreenShell';
 import { WorkoutDetailScreen } from './practice/WorkoutDetailScreen';
 import { RoutineDetailScreen } from './practice/RoutineDetailScreen';
 import { colors, spacing, radii, typography } from '../theme';
@@ -30,7 +32,7 @@ function PlanCard({ item, onPress }: { item: PlanItem; onPress: () => void }) {
   }
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Card role="quiet" onPress={onPress} style={styles.card}>
       <View style={styles.glyphWell}>
         <ConcernGlyph id={item.traitId} size={22} color={colors.tertiary} />
       </View>
@@ -47,7 +49,7 @@ function PlanCard({ item, onPress }: { item: PlanItem; onPress: () => void }) {
           <Text style={styles.statusPending}>{status}</Text>
         )}
       </View>
-    </Pressable>
+    </Card>
   );
 }
 
@@ -74,7 +76,7 @@ export function PracticeScreen() {
   const rest = PRACTICE_PLAN.filter((i) => !planTraitIds.has(i.traitId));
 
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <Text style={styles.header}>Practice</Text>
 
@@ -98,13 +100,12 @@ export function PracticeScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  scroll: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110, gap: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.md },
@@ -113,11 +114,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
   },
   glyphWell: {
     width: 44,

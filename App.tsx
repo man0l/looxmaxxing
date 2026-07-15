@@ -3,6 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  NunitoSans_400Regular,
+  NunitoSans_500Medium,
+  NunitoSans_600SemiBold,
+  NunitoSans_700Bold,
+} from '@expo-google-fonts/nunito-sans';
 import { ToastProvider } from './src/store/ToastContext';
 import { OnboardingProvider, useOnboarding } from './src/store/OnboardingContext';
 import { SubscriptionProvider, useSubscription } from './src/store/SubscriptionContext';
@@ -18,7 +25,7 @@ import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
-  const [appReady, setAppReady] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
   const { paywallVisible, openPaywall, subscribed } = useSubscription();
   const { frontPhoto, profilePhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
@@ -37,14 +44,14 @@ function Root() {
       loadJson<{ onboarded: boolean }>(STORAGE_KEYS.onboarded),
     ]).then(([, saved]) => {
       if (saved?.onboarded) setOnboarded(true);
-      setAppReady(true);
+      setStorageReady(true);
     });
   }, []);
 
   useEffect(() => {
-    if (!appReady) return;
+    if (!storageReady) return;
     saveJson(STORAGE_KEYS.onboarded, { onboarded });
-  }, [onboarded, appReady]);
+  }, [onboarded, storageReady]);
 
   useEffect(() => {
     if (
@@ -60,7 +67,7 @@ function Root() {
     }
   }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
 
-  if (!appReady) return null;
+  if (!storageReady) return null;
 
   return (
     <NavigationContainer>
@@ -85,6 +92,15 @@ function Root() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    NunitoSans_400Regular,
+    NunitoSans_500Medium,
+    NunitoSans_600SemiBold,
+    NunitoSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <ToastProvider>

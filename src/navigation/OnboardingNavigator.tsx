@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
 import { StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '../theme';
+import { ScreenShell } from '../components/ScreenShell';
 import { useOnboarding, useOnboardingDispatch } from '../store/OnboardingContext';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
 import { AgeGateScreen } from '../screens/onboarding/AgeGateScreen';
@@ -144,12 +143,9 @@ export function OnboardingNavigator({ onComplete }: Props) {
   };
 
   return (
-    <LinearGradient
-      colors={[colors.background, colors.backgroundGradientEnd]}
-      style={[styles.root, { paddingBottom: insets.bottom }]}
-    >
+    <ScreenShell style={[styles.root, { paddingBottom: insets.bottom }]}>
       {renderStep()}
-    </LinearGradient>
+    </ScreenShell>
   );
 }
 

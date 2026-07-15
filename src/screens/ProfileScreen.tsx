@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Platform,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -17,6 +16,9 @@ import { useToast } from '../store/ToastContext';
 import { deleteAllUserData } from '../services/deleteAllData';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
+import { ScreenShell } from '../components/ScreenShell';
+import { Card } from '../components/Card';
+import { PressableScale } from '../components/PressableScale';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface RowProps {
@@ -53,7 +55,6 @@ export function ProfileScreen() {
   const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
   const { showToast } = useToast();
-  const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
   const [showMethodology, setShowMethodology] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -68,27 +69,36 @@ export function ProfileScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <Text style={styles.header}>Profile</Text>
 
         <Text style={styles.sectionLabel}>Subscription</Text>
-        <View style={styles.card}>
+        <Card role="quiet" style={styles.card}>
           <Row label="Status" value={subscribed ? 'Pro' : 'Free'} first />
-          {subscribed && isNative && (
-            <Row label="Manage subscription" tone="action" onPress={presentCustomerCenter} />
+          {subscribed ? (
+            <Row
+              label="Manage subscription"
+              tone="action"
+              onPress={() => {
+                void presentCustomerCenter().catch(() => {
+                  showToast('Couldn’t open subscription management.', 'error');
+                });
+              }}
+            />
+          ) : (
+            <Row label="Unlock your results" tone="action" onPress={openPaywall} />
           )}
-          {!subscribed && <Row label="Unlock your results" tone="action" onPress={openPaywall} />}
           <Row label="Restore purchases" tone="action" onPress={restore} />
-        </View>
+        </Card>
 
         <Text style={styles.sectionLabel}>About</Text>
-        <View style={styles.card}>
+        <Card role="quiet" style={styles.card}>
           <Row label="How scoring works" onPress={() => setShowMethodology(true)} first />
-        </View>
+        </Card>
 
         <Text style={styles.sectionLabel}>Privacy</Text>
-        <View style={styles.card}>
+        <Card role="quiet" style={styles.card}>
           <Row
             label={hasPhotos ? 'Delete my photos' : 'No photos stored'}
             tone={hasPhotos ? 'danger' : 'default'}
@@ -106,7 +116,7 @@ export function ProfileScreen() {
             tone="action"
             onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
           />
-        </View>
+        </Card>
       </ScrollView>
 
       {confirmDelete && (
@@ -118,7 +128,7 @@ export function ProfileScreen() {
               Your front and profile photos will be removed from this device. Your scores stay, but
               you’ll need new photos to re-scan.
             </Text>
-            <Pressable
+            <PressableScale
               style={styles.dialogDelete}
               onPress={() => {
                 dispatch({ type: 'CLEAR_PHOTOS' });
@@ -126,7 +136,7 @@ export function ProfileScreen() {
               }}
             >
               <Text style={styles.dialogDeleteText}>Delete photos</Text>
-            </Pressable>
+            </PressableScale>
             <Pressable style={styles.dialogCancel} onPress={() => setConfirmDelete(false)}>
               <Text style={styles.dialogCancelText}>Cancel</Text>
             </Pressable>
@@ -149,7 +159,7 @@ export function ProfileScreen() {
                 ? ' Your subscription stays active until you cancel it in App Store settings — use Restore purchases to re-link it after starting over.'
                 : ''}
             </Text>
-            <Pressable
+            <PressableScale
               style={[styles.dialogDelete, deletingAll && styles.dialogDeleteDisabled]}
               disabled={deletingAll}
               onPress={() => {
@@ -173,7 +183,7 @@ export function ProfileScreen() {
               ) : (
                 <Text style={styles.dialogDeleteText}>Delete all data</Text>
               )}
-            </Pressable>
+            </PressableScale>
             <Pressable
               style={styles.dialogCancel}
               disabled={deletingAll}
@@ -184,18 +194,14 @@ export function ProfileScreen() {
           </View>
         </View>
       )}
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   container: {
     paddingHorizontal: spacing.xl,
@@ -215,11 +221,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
     paddingHorizontal: spacing.lg,
+    paddingVertical: 0,
   },
   row: {
     flexDirection: 'row',

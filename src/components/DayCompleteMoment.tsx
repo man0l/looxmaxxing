@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useStreak } from '../store/StreakContext';
 import { ShareSheet } from './share/ShareSheet';
 import { StreakShareCard } from './share/ShareCards';
+import { Card } from './Card';
+import { PressableScale } from './PressableScale';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface Props {
@@ -22,19 +24,19 @@ export function DayCompleteMoment({ onClose }: Props) {
     <>
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
+        <Card role="hero" style={styles.sheet}>
           <Text style={styles.kicker}>All done for today</Text>
           <Text style={styles.day}>Day {streak.currentDay}</Text>
           <Text style={styles.sub}>Your streak is still growing.</Text>
           <Text style={styles.milestone}>{milestone}</Text>
 
-          <Pressable style={styles.shareBtn} onPress={() => setShowShare(true)}>
+          <PressableScale style={styles.shareBtn} onPress={() => setShowShare(true)}>
             <Text style={styles.shareText}>Share streak</Text>
-          </Pressable>
+          </PressableScale>
           <Pressable style={styles.continueBtn} onPress={onClose}>
             <Text style={styles.continueText}>Continue</Text>
           </Pressable>
-        </View>
+        </Card>
       </View>
 
       {showShare && (
@@ -63,11 +65,6 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
     alignItems: 'center',
   },
   kicker: {
