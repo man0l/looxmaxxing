@@ -23,7 +23,9 @@ export function orderByConcerns(scores: TraitScore[], concerns: string[]): Trait
 }
 
 export function topPercentLabel(percentile: number): string {
-  return `Top ${Math.max(1, 100 - percentile)}%`;
+  // Percentiles may be averages (e.g. overall) — always show a whole number.
+  const top = Math.max(1, Math.min(99, Math.round(100 - percentile)));
+  return `Top ${top}%`;
 }
 
 export function scoreLabel(percentile: number): string {

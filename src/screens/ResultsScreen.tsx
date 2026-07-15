@@ -146,7 +146,9 @@ export function ResultsScreen() {
       delta: before != null ? deltaLabel(before, s.percentile) : undefined,
     };
   });
-  const overallPct = orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length;
+  const overallPct = Math.round(
+    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+  );
   const overallScore = scoreLabel(overallPct);
   const overallDelta = prevScan
     ? deltaLabel(
