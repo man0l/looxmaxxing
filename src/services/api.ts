@@ -220,9 +220,13 @@ interface RenderStatusResponse {
   status: RenderStatus;
   imageUrl?: string;
   expiresAt?: string;
-  // Blurry mid-generation frame, present only while status is 'processing'
-  // (async mode only — see looxmaxxing-api's render Edge Function).
+  // Highest-index mid-generation frame streamed so far, present only while
+  // status is 'processing' (async mode only — see looxmaxxing-api's render
+  // Edge Function, which streams up to 3 progressively sharper frames per
+  // render). Compare previewIndex, not the previewUrl string — the signed
+  // URL differs on every poll regardless of whether a new frame landed.
   previewUrl?: string | null;
+  previewIndex?: number;
 }
 
 // Direct-to-Storage avatar render (mirrors submitScan): mint a signed upload
@@ -267,8 +271,9 @@ export async function submitRender(opts: {
   style?: string;
   contentType?: string;
   signal?: AbortSignal;
-  // Fired at most once, as soon as a mid-generation preview frame shows up
-  // while polling — lets the caller show something before the final result.
+  // Fired once per progressively sharper preview frame that shows up while
+  // polling (0-3 times), so the caller can show a real "picture appears then
+  // sharpens" reveal instead of a single blur-to-final jump.
   onPreview?: (preview: RenderResult) => void;
 }): Promise<RenderResult> {
   const { signal, onPreview } = opts;
@@ -313,7 +318,7 @@ export async function submitRender(opts: {
   }
 
   const deadline = Date.now() + 120000;
-  let previewShown = false;
+  let lastPreviewIndex = -1;
   while (Date.now() < deadline) {
     assertNotAborted(signal);
     await new Promise((r) => setTimeout(r, 4000));
@@ -329,8 +334,12 @@ export async function submitRender(opts: {
     if (poll.status === 'done' && poll.imageUrl) {
       return { imageUrl: poll.imageUrl, expiresAt: poll.expiresAt };
     }
-    if (!previewShown && poll.status === 'processing' && poll.previewUrl) {
-      previewShown = true;
+    if (
+      poll.status === 'processing' &&
+      poll.previewUrl &&
+      (poll.previewIndex ?? 0) > lastPreviewIndex
+    ) {
+      lastPreviewIndex = poll.previewIndex ?? 0;
       onPreview?.({ imageUrl: poll.previewUrl });
     }
     if (poll.status === 'failed') throw new ScanApiError(502, 'Render failed');
