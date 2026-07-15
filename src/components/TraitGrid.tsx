@@ -117,7 +117,11 @@ const styles = StyleSheet.create({
   },
   restCard: {
     width: '31%',
+    maxWidth: '31%',
+    flexGrow: 0,
+    flexShrink: 0,
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: spacing.xs,
     borderRadius: radii.md,
     paddingVertical: spacing.md,

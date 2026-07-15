@@ -10,12 +10,21 @@ import {
 
 const PRESSED_SCALE = 0.97;
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 interface Props extends Omit<PressableProps, 'style' | 'children'> {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-export function PressableScale({ children, style, disabled, onPressIn, onPressOut, ...props }: Props) {
+export function PressableScale({
+  children,
+  style,
+  disabled,
+  onPressIn,
+  onPressOut,
+  ...props
+}: Props) {
   const scale = useMemo(() => new Animated.Value(1), []);
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -45,8 +54,9 @@ export function PressableScale({ children, style, disabled, onPressIn, onPressOu
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       disabled={disabled}
+      style={[style, { transform: [{ scale }] }]}
       onPressIn={(e) => {
         animateTo(PRESSED_SCALE);
         onPressIn?.(e);
@@ -57,7 +67,7 @@ export function PressableScale({ children, style, disabled, onPressIn, onPressOu
       }}
       {...props}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
