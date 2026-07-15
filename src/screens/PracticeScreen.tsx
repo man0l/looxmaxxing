@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { PRACTICE_PLAN, getPlanItem, type PlanItem, workoutSessionId } from '../types/practice';
 import { getScores, topPercentLabel } from '../services/scoring';
@@ -7,6 +7,7 @@ import { usePractice } from '../store/PracticeContext';
 import { ConcernGlyph } from '../components/icons/OnboardingIcons';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
+import { useTabRootReset } from '../hooks/useTabRootReset';
 import { WorkoutDetailScreen } from './practice/WorkoutDetailScreen';
 import { RoutineDetailScreen } from './practice/RoutineDetailScreen';
 import { colors, spacing, radii, typography } from '../theme';
@@ -56,6 +57,8 @@ function PlanCard({ item, onPress }: { item: PlanItem; onPress: () => void }) {
 export function PracticeScreen() {
   const { concerns } = useOnboarding();
   const [activeTraitId, setActiveTraitId] = useState<string | null>(null);
+
+  useTabRootReset(useCallback(() => setActiveTraitId(null), []));
 
   if (activeTraitId) {
     const item = getPlanItem(activeTraitId);

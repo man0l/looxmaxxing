@@ -5,6 +5,7 @@ import { useStreak } from '../store/StreakContext';
 import { StreakHeatmap } from '../components/StreakHeatmap';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { StreakShareCard } from '../components/share/ShareCards';
+import { BackHeader, NestedScreen } from '../components/BackHeader';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface Props {
@@ -17,12 +18,8 @@ export function StreakScreen({ onClose }: Props) {
   const [showShare, setShowShare] = useState(false);
 
   return (
-    <View style={styles.root}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.back}>‹ Results</Text>
-        </Pressable>
-      </View>
+    <NestedScreen onClose={onClose} style={styles.root}>
+      <BackHeader onClose={onClose} />
       <ScrollView contentContainerStyle={styles.container} bounces={false}>
         <Text style={styles.title}>Your streak</Text>
 
@@ -71,14 +68,12 @@ export function StreakScreen({ onClose }: Props) {
           <StreakShareCard day={streak.currentDay} weeks={streak.heatmap} />
         </ShareSheet>
       )}
-    </View>
+    </NestedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerBar: { paddingTop: 56, paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
-  back: { ...typography.label, color: colors.primary },
+  root: { backgroundColor: colors.background },
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
   title: { ...typography.display, fontSize: 26, color: colors.textPrimary, marginBottom: spacing.lg },
   statsRow: {

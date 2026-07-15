@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { MethodologyScreen } from './MethodologyScreen';
 import { ScreenShell } from '../components/ScreenShell';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
+import { useTabRootReset } from '../hooks/useTabRootReset';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface RowProps {
@@ -62,6 +63,14 @@ export function ProfileScreen() {
   const [deletingAll, setDeletingAll] = useState(false);
   const hasPhotos = Boolean(
     frontPhoto || profilePhoto || scans.some((scan) => scan.photoUri),
+  );
+
+  useTabRootReset(
+    useCallback(() => {
+      setShowMethodology(false);
+      setConfirmDelete(false);
+      setConfirmDeleteAll(false);
+    }, []),
   );
 
   if (showMethodology) {

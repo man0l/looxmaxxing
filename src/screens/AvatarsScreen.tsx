@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AVATAR_PREVIEWS, type AvatarPreview } from '../types/avatars';
@@ -10,6 +10,7 @@ import { AvatarRender } from '../components/AvatarRender';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
 import { useCachedRender } from '../hooks/useCachedRender';
+import { useTabRootReset } from '../hooks/useTabRootReset';
 import { AvatarPreviewScreen } from './avatars/AvatarPreviewScreen';
 import { colors, spacing, typography } from '../theme';
 
@@ -40,6 +41,8 @@ export function AvatarsScreen() {
   const route = useRoute();
   const [activeTraitId, setActiveTraitId] = useState<string | null>(null);
   const [lastFocusTrait, setLastFocusTrait] = useState<string | undefined>(undefined);
+
+  useTabRootReset(useCallback(() => setActiveTraitId(null), []));
 
   const focusTrait = (route.params as { focusTrait?: string } | undefined)?.focusTrait;
   if (focusTrait !== lastFocusTrait) {

@@ -4,6 +4,7 @@ import { useScans } from '../store/ScanContext';
 import { topPercentLabel, scoreLabel } from '../services/scoring';
 import { RingGauge } from '../components/RingGauge';
 import { ScoreTimeline, type TimelinePoint } from '../components/ScoreTimeline';
+import { BackHeader, NestedScreen } from '../components/BackHeader';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface Props {
@@ -27,12 +28,8 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: P
     .map((scan) => ({ date: scan.date, percentile: percentileFor(scan.scores, traitId) }));
 
   return (
-    <View style={styles.root}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.back}>‹ Results</Text>
-        </Pressable>
-      </View>
+    <NestedScreen onClose={onClose} style={styles.root}>
+      <BackHeader onClose={onClose} />
       <ScrollView contentContainerStyle={styles.container} bounces={false}>
         <View style={styles.hero}>
           <RingGauge percentile={latestPct} size={100} centerLabel={scoreLabel(latestPct)} />
@@ -69,14 +66,12 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: P
           <Text style={styles.previewLinkText}>Preview your potential ›</Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </NestedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerBar: { paddingTop: 56, paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
-  back: { ...typography.label, color: colors.primary },
+  root: { backgroundColor: colors.background },
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40, gap: spacing.md },
   hero: {
     flexDirection: 'row',

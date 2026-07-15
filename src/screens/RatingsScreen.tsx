@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useScans } from '../store/ScanContext';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
+import { useTabRootReset } from '../hooks/useTabRootReset';
 import { CaptureFab } from '../components/CaptureFab';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
@@ -44,11 +45,20 @@ function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
 export function RatingsScreen() {
   const { scans } = useScans();
   const { frontPhoto } = useOnboarding();
-  const { canRescan, rescanStep, startRescan, onCapture } = useRescanFlow();
+  const { canRescan, rescanStep, startRescan, cancelRescan, onCapture } = useRescanFlow();
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const [shareScan, setShareScan] = useState<Scan | null>(null);
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
   const [detailScan, setDetailScan] = useState<Scan | null>(null);
+
+  useTabRootReset(
+    useCallback(() => {
+      setShareScan(null);
+      setComparePair(null);
+      setDetailScan(null);
+      cancelRescan();
+    }, [cancelRescan]),
+  );
 
   const openCompare = (older: Scan, newer: Scan) => setComparePair([older, newer]);
 
@@ -69,7 +79,14 @@ export function RatingsScreen() {
   }
 
   if (rescanStep) {
-    return <GuidedCaptureScreen step={rescanStep} stepLabel="New scan" onCapture={onCapture} />;
+    return (
+      <GuidedCaptureScreen
+        step={rescanStep}
+        stepLabel="New scan"
+        onCapture={onCapture}
+        onCancel={cancelRescan}
+      />
+    );
   }
 
   return (

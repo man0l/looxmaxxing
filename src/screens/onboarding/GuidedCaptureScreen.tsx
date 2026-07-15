@@ -22,6 +22,7 @@ interface Props {
   onCapture: (uri: string) => void;
   stepLabel?: string;
   onboardingStep?: number;
+  onCancel?: () => void;
 }
 
 export function GuidedCaptureScreen({
@@ -29,6 +30,7 @@ export function GuidedCaptureScreen({
   onCapture,
   stepLabel,
   onboardingStep,
+  onCancel,
 }: Props) {
   const isFront = step === 'front';
   const cameraRef = useRef<CameraView>(null);
@@ -78,6 +80,11 @@ export function GuidedCaptureScreen({
   return (
     <View style={styles.container}>
       {onboardingStep != null && <OnboardingProgressBar current={onboardingStep} />}
+      {onCancel ? (
+        <Pressable onPress={onCancel} hitSlop={12} style={styles.cancelRow}>
+          <Text style={styles.cancelText}>‹ Back</Text>
+        </Pressable>
+      ) : null}
       {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
       <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
       <Text style={styles.subtitle}>
@@ -175,6 +182,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: 56,
     paddingBottom: spacing.lg,
+  },
+  cancelRow: {
+    marginBottom: spacing.sm,
+  },
+  cancelText: {
+    ...typography.label,
+    color: colors.primary,
   },
   step: {
     ...typography.caption,

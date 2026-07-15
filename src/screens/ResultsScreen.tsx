@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
+import { useTabRootReset } from '../hooks/useTabRootReset';
 import { orderByConcerns, scoreLabel, deltaLabel, topPercentLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
@@ -42,9 +43,19 @@ export function ResultsScreen() {
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
   const { scans, latest, hasRealScan, scanError, runScan } = useScans();
-  const { canRescan, rescanStep, startRescan, onCapture, justRescanned, scanning } = useRescanFlow();
+  const { canRescan, rescanStep, startRescan, cancelRescan, onCapture, justRescanned, scanning } =
+    useRescanFlow();
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const goToPractice = () => navigation.navigate('Practice' as never);
+
+  useTabRootReset(
+    useCallback(() => {
+      setShowStreak(false);
+      setOpenTrait(null);
+      setShowShare(false);
+      cancelRescan();
+    }, [cancelRescan]),
+  );
 
   if (!subscribed) {
     return (
@@ -130,6 +141,7 @@ export function ResultsScreen() {
         step={rescanStep}
         stepLabel="New scan"
         onCapture={onCapture}
+        onCancel={cancelRescan}
       />
     );
   }

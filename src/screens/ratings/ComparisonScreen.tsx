@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { TRAITS } from '../../types/traits';
 import type { Scan } from '../../types/scan';
 import { topPercentLabel, scoreLabel, deltaLabel } from '../../services/scoring';
 import { RingGauge } from '../../components/RingGauge';
+import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { colors, spacing, radii, typography } from '../../theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -27,12 +28,8 @@ export function ComparisonScreen({ before, after, onClose }: Props) {
   const afterOverall = overallPercentile(after);
 
   return (
-    <View style={styles.root}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.back}>‹ Ratings</Text>
-        </Pressable>
-      </View>
+    <NestedScreen onClose={onClose} style={styles.root}>
+      <BackHeader onClose={onClose} />
       <ScrollView contentContainerStyle={styles.container} bounces={false}>
         <Text style={styles.kicker}>Before &amp; after</Text>
         <Text style={styles.title}>
@@ -77,14 +74,12 @@ export function ComparisonScreen({ before, after, onClose }: Props) {
           })}
         </View>
       </ScrollView>
-    </View>
+    </NestedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerBar: { paddingTop: 56, paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
-  back: { ...typography.label, color: colors.primary },
+  root: { backgroundColor: colors.background },
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
   kicker: { ...typography.caption, color: colors.secondary },
   title: { ...typography.display, fontSize: 24, color: colors.textPrimary, marginTop: spacing.xs, marginBottom: spacing.lg },

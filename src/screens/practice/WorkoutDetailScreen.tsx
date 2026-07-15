@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
 import { DayCompleteMoment } from '../../components/DayCompleteMoment';
+import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { useDayCompleteMoment } from '../../hooks/useDayCompleteMoment';
 import { usePractice } from '../../store/PracticeContext';
 import { colors, spacing, radii, typography } from '../../theme';
@@ -23,12 +24,8 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
   const done = isDone(sessionId);
 
   return (
-    <View style={styles.root}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.back}>‹ Practice</Text>
-        </Pressable>
-      </View>
+    <NestedScreen onClose={onClose} style={styles.root}>
+      <BackHeader onClose={onClose} />
       <ScrollView contentContainerStyle={styles.container} bounces={false}>
         <Text style={styles.kicker}>Workout · Targets {targetLabel(item.traitId)}</Text>
         <Text style={styles.title}>{item.title}</Text>
@@ -65,18 +62,12 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
       </View>
 
       {visible && <DayCompleteMoment onClose={dismiss} />}
-    </View>
+    </NestedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerBar: {
-    paddingTop: 56,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.sm,
-  },
-  back: { ...typography.label, color: colors.primary },
+  root: { backgroundColor: colors.background },
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
   kicker: { ...typography.caption, color: colors.secondary },
   title: { ...typography.display, fontSize: 26, color: colors.textPrimary, marginTop: spacing.xs },
