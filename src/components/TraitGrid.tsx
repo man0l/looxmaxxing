@@ -4,16 +4,24 @@ import { orderByConcerns, topPercentLabel, scoreLabel } from '../services/scorin
 import { colors, spacing, radii, typography } from '../theme';
 import { RingGauge } from './RingGauge';
 import { Card } from './Card';
+import { StaggerIn } from './StaggerIn';
 
 interface Props {
   concerns: string[];
   scores: TraitScore[];
   onOpenPlan: (traitId: string) => void;
+  /** Base delay for ring draw-in (after overall hero). */
+  revealBaseMs?: number;
 }
 
 const trait = (id: string) => TRAITS.find((t) => t.id === id);
 
-export function TraitGrid({ concerns, scores, onOpenPlan }: Props) {
+export function TraitGrid({
+  concerns,
+  scores,
+  onOpenPlan,
+  revealBaseMs = 120,
+}: Props) {
   const ordered = orderByConcerns(scores, concerns);
   const featured = ordered.filter((s) => concerns.includes(s.traitId));
   const rest = ordered.filter((s) => !concerns.includes(s.traitId));
@@ -23,23 +31,31 @@ export function TraitGrid({ concerns, scores, onOpenPlan }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.featuredGroup}>
-        {featuredList.map((s) => {
+        {featuredList.map((s, i) => {
           const t = trait(s.traitId);
           return (
-            <Card
-              key={s.traitId}
-              role="hero"
-              onPress={() => onOpenPlan(s.traitId)}
-              style={styles.featuredCard}
-              accessibilityLabel={`${t?.label ?? s.traitId} details`}
-            >
-              <RingGauge percentile={s.percentile} size={72} centerLabel={scoreLabel(s.percentile)} />
-              <View style={styles.featuredInfo}>
-                <Text style={styles.featuredLabel}>{t?.label ?? s.traitId}</Text>
-                <Text style={styles.featuredPercentile}>{topPercentLabel(s.percentile)} of men</Text>
-                <Text style={styles.cta}>{t?.plan ?? 'View plan'} ›</Text>
-              </View>
-            </Card>
+            <StaggerIn key={s.traitId} index={i} stepMs={100}>
+              <Card
+                role="hero"
+                onPress={() => onOpenPlan(s.traitId)}
+                style={styles.featuredCard}
+                accessibilityLabel={`${t?.label ?? s.traitId} details`}
+              >
+                <RingGauge
+                  percentile={s.percentile}
+                  size={76}
+                  centerLabel={scoreLabel(s.percentile)}
+                  delayMs={revealBaseMs + i * 100}
+                />
+                <View style={styles.featuredInfo}>
+                  <Text style={styles.featuredLabel}>{t?.label ?? s.traitId}</Text>
+                  <Text style={styles.featuredPercentile}>
+                    {topPercentLabel(s.percentile)} of men
+                  </Text>
+                  <Text style={styles.cta}>{t?.plan ?? 'View plan'} ›</Text>
+                </View>
+              </Card>
+            </StaggerIn>
           );
         })}
       </View>
@@ -48,24 +64,32 @@ export function TraitGrid({ concerns, scores, onOpenPlan }: Props) {
         <>
           <Text style={styles.sectionLabel}>All traits</Text>
           <View style={styles.restGrid}>
-            {restList.map((s) => {
+            {restList.map((s, i) => {
               const t = trait(s.traitId);
+              const delayIndex = featuredList.length + i;
               return (
-                <Card
+                <StaggerIn
                   key={s.traitId}
-                  role="quiet"
-                  onPress={() => onOpenPlan(s.traitId)}
-                  style={styles.restCard}
-                  accessibilityLabel={`${t?.label ?? s.traitId} details`}
+                  index={delayIndex}
+                  stepMs={80}
+                  style={styles.restStagger}
                 >
-                  <RingGauge
-                    percentile={s.percentile}
-                    size={54}
-                    centerLabel={scoreLabel(s.percentile)}
-                  />
-                  <Text style={styles.restLabel}>{t?.label ?? s.traitId}</Text>
-                  <Text style={styles.restPercentile}>{topPercentLabel(s.percentile)}</Text>
-                </Card>
+                  <Card
+                    role="quiet"
+                    onPress={() => onOpenPlan(s.traitId)}
+                    style={styles.restCard}
+                    accessibilityLabel={`${t?.label ?? s.traitId} details`}
+                  >
+                    <RingGauge
+                      percentile={s.percentile}
+                      size={56}
+                      centerLabel={scoreLabel(s.percentile)}
+                      delayMs={revealBaseMs + delayIndex * 80}
+                    />
+                    <Text style={styles.restLabel}>{t?.label ?? s.traitId}</Text>
+                    <Text style={styles.restPercentile}>{topPercentLabel(s.percentile)}</Text>
+                  </Card>
+                </StaggerIn>
               );
             })}
           </View>
@@ -115,13 +139,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  restCard: {
+  restStagger: {
     width: '31%',
     maxWidth: '31%',
-    flexGrow: 0,
-    flexShrink: 0,
+  },
+  restCard: {
+    width: '100%',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
     gap: spacing.xs,
     borderRadius: radii.md,
     paddingVertical: spacing.md,

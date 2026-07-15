@@ -20,7 +20,7 @@ export function BlurredTraitGrid({ concerns }: Props) {
       <View style={styles.featuredRow}>
         {featured.map((s) => (
           <View key={s.traitId} style={styles.featuredItem}>
-            <RingGauge percentile={s.percentile} size={88} obscured />
+            <RingGauge percentile={s.percentile} size={88} obscured animate={false} />
             <Text style={styles.featuredLabel}>{traitLabel(s.traitId)}</Text>
           </View>
         ))}
@@ -28,7 +28,7 @@ export function BlurredTraitGrid({ concerns }: Props) {
       <View style={styles.restRow}>
         {rest.map((s) => (
           <View key={s.traitId} style={styles.restItem}>
-            <RingGauge percentile={s.percentile} size={48} obscured />
+            <RingGauge percentile={s.percentile} size={48} obscured animate={false} />
             <Text style={styles.restLabel}>{traitLabel(s.traitId)}</Text>
           </View>
         ))}
