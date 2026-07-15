@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Text, StyleSheet, ScrollView } from 'react-native';
 import { ScreenShell } from '../components/ScreenShell';
 import { Card } from '../components/Card';
+import { BackHeader, NestedScreen } from '../components/BackHeader';
 import { colors, spacing, typography } from '../theme';
 
 interface Props {
@@ -28,39 +29,28 @@ const SECTIONS = [
 
 export function MethodologyScreen({ onClose }: Props) {
   return (
-    <ScreenShell>
-      <View style={styles.header}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.back}>‹ Back</Text>
-        </Pressable>
-      </View>
-      <ScrollView contentContainerStyle={styles.container} bounces={false}>
-        <Text style={styles.title}>How scoring works</Text>
-        <Text style={styles.intro}>
-          Built to be honest and repeatable — here is exactly what the score is, and what it isn’t.
-        </Text>
+    <NestedScreen onClose={onClose}>
+      <ScreenShell>
+        <BackHeader onClose={onClose} />
+        <ScrollView contentContainerStyle={styles.container} bounces={false}>
+          <Text style={styles.title}>How scoring works</Text>
+          <Text style={styles.intro}>
+            Built to be honest and repeatable — here is exactly what the score is, and what it isn’t.
+          </Text>
 
-        {SECTIONS.map((section) => (
-          <Card key={section.title} role="quiet" style={styles.card}>
-            <Text style={styles.cardTitle}>{section.title}</Text>
-            <Text style={styles.cardBody}>{section.body}</Text>
-          </Card>
-        ))}
-      </ScrollView>
-    </ScreenShell>
+          {SECTIONS.map((section) => (
+            <Card key={section.title} role="quiet" style={styles.card}>
+              <Text style={styles.cardTitle}>{section.title}</Text>
+              <Text style={styles.cardBody}>{section.body}</Text>
+            </Card>
+          ))}
+        </ScrollView>
+      </ScreenShell>
+    </NestedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingTop: 56,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.sm,
-  },
-  back: {
-    ...typography.label,
-    color: colors.primary,
-  },
   container: {
     paddingHorizontal: spacing.xl,
     paddingBottom: 40,
