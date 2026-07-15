@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { runOnboardingToPaywall, unlockPaywall } from './helpers/onboardingFlow';
+import {
+  expectResultsUnlocked,
+  runOnboardingToPaywall,
+  unlockPaywall,
+} from './helpers/onboardingFlow';
 import { resetWebApp } from './helpers/resetWebApp';
 
 const API_HOST = 'looxmaxxing-api.vercel.app';
@@ -21,7 +25,7 @@ test.describe('LooxMaxxing live API web funnel', () => {
     await unlockPaywall(page);
 
     await expect(page.getByText('Analyzing your photos')).toBeVisible();
-    await expect(page.getByText(/Top \d+% of men/)).toBeVisible({ timeout: 120_000 });
+    await expectResultsUnlocked(page, 120_000);
 
     const scanUpload = apiCalls.find((c) => c.url.includes('/v1/scans/uploads'));
     const scanScore = apiCalls.find((c) => c.url.match(/\/v1\/scans(\?|$)/) && c.method === 'POST');
