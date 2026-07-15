@@ -26,7 +26,7 @@ import { loadJson, saveJson, STORAGE_KEYS } from './src/services/storage';
 function Root() {
   const [onboarded, setOnboarded] = useState(false);
   const [storageReady, setStorageReady] = useState(false);
-  const { paywallVisible, openPaywall, subscribed } = useSubscription();
+  const { paywallVisible, openPaywall, subscribed, ready: entitlementReady } = useSubscription();
   const { frontPhoto, profilePhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
@@ -67,7 +67,9 @@ function Root() {
     }
   }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
 
-  if (!storageReady) return null;
+  // Wait for onboarded flag + entitlement hydrate so Pro users never flash the
+  // locked Results unlock banner before RevenueCat (or local cache) resolves.
+  if (!storageReady || (onboarded && !entitlementReady)) return null;
 
   return (
     <NavigationContainer>
