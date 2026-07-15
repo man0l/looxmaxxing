@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
 import { DayCompleteMoment } from '../../components/DayCompleteMoment';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
+import { PressableScale } from '../../components/PressableScale';
 import { useDayCompleteMoment } from '../../hooks/useDayCompleteMoment';
 import { usePractice } from '../../store/PracticeContext';
 import { colors, spacing, radii, typography } from '../../theme';
@@ -50,7 +51,7 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
+        <PressableScale
           onPress={() => completeTask(sessionId)}
           disabled={done}
           style={[styles.cta, done && styles.ctaDone]}
@@ -58,7 +59,7 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
           <Text style={[styles.ctaText, done && styles.ctaTextDone]}>
             {done ? '✓ Session complete today' : 'Mark session complete'}
           </Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       {visible && <DayCompleteMoment onClose={dismiss} />}

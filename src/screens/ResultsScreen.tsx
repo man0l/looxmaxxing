@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +18,7 @@ import { BannerPremium } from '../components/BannerPremium';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
 import { RingGauge } from '../components/RingGauge';
+import { ScanMotif } from '../components/ScanMotif';
 import { StreakScreen } from './StreakScreen';
 import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -87,7 +87,7 @@ export function ResultsScreen() {
       <ScreenShell style={styles.analyzingRoot}>
         {scanning ? (
           <>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ScanMotif size={132} />
             <Text style={styles.analyzingTitle}>Analyzing your photos</Text>
             <Text style={styles.analyzingSub}>Scoring your traits with AI…</Text>
           </>
@@ -284,7 +284,7 @@ export function ResultsScreen() {
 
       {scanning && (
         <View style={styles.analyzingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ScanMotif size={120} />
           <Text style={styles.analyzingText}>Analyzing your photos…</Text>
         </View>
       )}
