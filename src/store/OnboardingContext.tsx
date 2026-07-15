@@ -23,7 +23,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     if (action.type === 'CLEAR_PHOTOS') {
       runScanPhotoClear();
       void clearRenderCache();
-      void getAppUserID().then(deleteUserData);
+      void getAppUserID().then((id) => deleteUserData(id, 'photos'));
     }
     dispatch(action);
   }, []);

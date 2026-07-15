@@ -239,11 +239,14 @@ export async function invalidateEntitlementCache(appUserId: string): Promise<voi
   }
 }
 
-export async function deleteUserData(appUserId: string): Promise<{ ok: boolean }> {
+export async function deleteUserData(
+  appUserId: string,
+  scope: 'photos' | 'all' = 'all',
+): Promise<{ ok: boolean }> {
   if (!API_BASE || !appUserId) return { ok: true };
   try {
     const res = await fetchWithTimeout(
-      `${API_BASE}/v1/user-data`,
+      `${API_BASE}/v1/user-data?scope=${scope}`,
       { method: 'DELETE', headers: { 'X-App-User-Id': appUserId } },
       15_000,
     );
