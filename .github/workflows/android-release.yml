@@ -41,7 +41,6 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      ANDROID_VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v5
 
@@ -69,6 +68,20 @@ jobs:
             gradle-${{ runner.os }}-
 
       - run: npm ci
+
+      # github.run_number resets to 1 whenever this workflow file is
+      # recreated (it happened once already — see git history), which
+      # produces a versionCode Play Console has already served and gets the
+      # rollout rejected with "does not allow any existing users to upgrade".
+      # Ask Play Console for the real max versionCode across all tracks
+      # instead, so this can't regress again; falls back to run_number only
+      # when Play can't be queried (e.g. first-ever release).
+      - name: Compute next Android version code
+        env:
+          ANDROID_PACKAGE_NAME: com.balkanbit.looxmaxxing
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          ANDROID_FALLBACK_VERSION_CODE: ${{ github.run_number }}
+        run: echo "ANDROID_VERSION_CODE=$(node scripts/next-android-version-code.mjs)" >> "$GITHUB_ENV"
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
