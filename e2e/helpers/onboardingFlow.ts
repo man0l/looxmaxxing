@@ -56,8 +56,13 @@ export async function unlockPaywall(page: Page) {
   await testPurchase.click();
 }
 
+/** Results redesign shows Overall + per-trait "Top X% of men" — match any. */
+export async function expectResultsUnlocked(page: Page, timeout = 90_000) {
+  await expect(page.getByText(/Top \d+% of men/).first()).toBeVisible({ timeout });
+}
+
 export async function enterSubscribedApp(page: Page) {
   await runOnboardingToPaywall(page);
   await unlockPaywall(page);
-  await expect(page.getByText(/Top \d+% of men/)).toBeVisible({ timeout: 90_000 });
+  await expectResultsUnlocked(page);
 }

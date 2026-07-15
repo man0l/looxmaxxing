@@ -17,7 +17,8 @@ test.describe('LooxMaxxing web funnel', () => {
     await expect(page.getByText('styling preview')).toBeVisible();
     await expect(page.locator('img[src*="placehold.co"]')).toBeVisible({ timeout: 30_000 });
 
-    await page.getByText('‹ Avatars').click();
+    // Nested screens use plain "‹ Back" (not parent-tab breadcrumbs).
+    await page.getByText('‹ Back', { exact: true }).click();
     await expect(page.locator('img[src*="placehold.co"]').first()).toBeVisible();
   });
 });
