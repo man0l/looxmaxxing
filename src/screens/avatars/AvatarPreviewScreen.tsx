@@ -84,6 +84,12 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
           traitId,
           style,
           signal: controller.signal,
+          onPreview: (preview) => {
+            // Not cached — only the final result is worth persisting.
+            if (controller.signal.aborted) return;
+            setRenderUrl(preview.imageUrl);
+            setRenderStyle(style);
+          },
         });
         if (controller.signal.aborted) return;
         await setCachedRender(traitId, style, r.imageUrl, r.expiresAt);
