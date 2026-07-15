@@ -69,7 +69,8 @@
         {
           "photosPermission": "Axend accesses your photos so you can pick an existing selfie for your scan."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

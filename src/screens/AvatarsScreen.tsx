@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AVATAR_PREVIEWS, type AvatarPreview } from '../types/avatars';
 import { TRAITS } from '../types/traits';
@@ -7,9 +7,11 @@ import { topPercentLabel } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useScans } from '../store/ScanContext';
 import { AvatarRender } from '../components/AvatarRender';
+import { Card } from '../components/Card';
+import { ScreenShell } from '../components/ScreenShell';
 import { useCachedRender } from '../hooks/useCachedRender';
 import { AvatarPreviewScreen } from './avatars/AvatarPreviewScreen';
-import { colors, spacing, radii, typography } from '../theme';
+import { colors, spacing, typography } from '../theme';
 
 function PreviewCard({ preview, onPress }: { preview: AvatarPreview; onPress: () => void }) {
   const { latest } = useScans();
@@ -18,7 +20,7 @@ function PreviewCard({ preview, onPress }: { preview: AvatarPreview; onPress: ()
   const cachedUrl = useCachedRender(preview.traitId, preview.styles[0], { anyStyle: true });
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Card role="quiet" onPress={onPress} style={styles.card}>
       <AvatarRender traitId={preview.traitId} size={64} imageUrl={cachedUrl} />
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle}>{preview.headline}</Text>
@@ -28,7 +30,7 @@ function PreviewCard({ preview, onPress }: { preview: AvatarPreview; onPress: ()
         </Text>
       </View>
       <Text style={styles.chevron}>›</Text>
-    </Pressable>
+    </Card>
   );
 }
 
@@ -66,7 +68,7 @@ export function AvatarsScreen() {
   const rest = AVATAR_PREVIEWS.filter((p) => !concernSet.has(p.traitId));
 
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <Text style={styles.header}>Preview your potential</Text>
         <Text style={styles.sub}>See where your plan can take you — then start it.</Text>
@@ -91,13 +93,12 @@ export function AvatarsScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  scroll: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110, gap: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sub: {
@@ -112,10 +113,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
     padding: spacing.md,
   },
   cardInfo: { flex: 1, gap: 3 },

@@ -5,6 +5,8 @@ import { useOnboarding } from '../store/OnboardingContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { CaptureFab } from '../components/CaptureFab';
+import { Card } from '../components/Card';
+import { ScreenShell } from '../components/ScreenShell';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { RingGauge } from '../components/RingGauge';
 import { ShareSheet } from '../components/share/ShareSheet';
@@ -71,7 +73,7 @@ export function RatingsScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <View style={styles.headerRow}>
           <View>
@@ -98,9 +100,10 @@ export function RatingsScreen() {
             const improved = delta != null && delta.startsWith('+');
             const declined = delta != null && delta.startsWith('-');
             return (
-              <Pressable
+              <Card
                 key={scan.id}
-                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                role="quiet"
+                style={styles.row}
                 onPress={prev ? () => openCompare(prev, scan) : () => setDetailScan(scan)}
               >
                 <RingGauge percentile={overall} size={48} centerLabel={scoreLabel(overall)} />
@@ -147,7 +150,7 @@ export function RatingsScreen() {
                   <ShareIcon size={20} color={colors.primary} />
                 </Pressable>
                 <Text style={styles.chevron}>›</Text>
-              </Pressable>
+              </Card>
             );
           })}
         </View>
@@ -173,13 +176,12 @@ export function RatingsScreen() {
             </ShareSheet>
           );
         })()}
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  scroll: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
@@ -201,13 +203,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
   },
-  rowPressed: { borderColor: colors.primary, backgroundColor: colors.surfaceRaised },
   info: { flex: 1, gap: 4 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   date: { ...typography.h3, color: colors.textPrimary },

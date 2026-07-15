@@ -1,51 +1,61 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors, radii } from '../theme';
 import { CameraIcon } from './icons/OnboardingIcons';
+import { PressableScale } from './PressableScale';
 
 interface Props {
   onPress: () => void;
   disabled?: boolean;
 }
 
+const FAB_SIZE = 56;
+const HALO_SIZE = FAB_SIZE + 24;
+const HALO_OPACITY = 0.2;
+
 export function CaptureFab({ onPress, disabled }: Props) {
   return (
-    <View style={[styles.wrapper, disabled && styles.wrapperDisabled]}>
-      <Pressable
-        style={styles.fab}
+    <View style={[styles.container, disabled && styles.containerDisabled]} pointerEvents="box-none">
+      <View style={styles.halo} pointerEvents="none" />
+      <PressableScale
         onPress={onPress}
-        android_ripple={{ color: colors.onPrimary, borderless: false, radius: 28 }}
+        disabled={disabled}
+        style={styles.fab}
         accessibilityRole="button"
         accessibilityLabel="Take a new scan"
+        android_ripple={{ color: colors.onPrimary, borderless: false, radius: 28 }}
       >
         <CameraIcon size={26} color={colors.onPrimary} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  container: {
     position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: radii.full,
-    backgroundColor: colors.primary,
+    right: 20 - (HALO_SIZE - FAB_SIZE) / 2,
+    bottom: 24 - (HALO_SIZE - FAB_SIZE) / 2,
+    width: HALO_SIZE,
+    height: HALO_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 100,
-    elevation: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    overflow: 'hidden',
   },
-  wrapperDisabled: {
+  containerDisabled: {
     opacity: 0.45,
   },
+  halo: {
+    position: 'absolute',
+    width: HALO_SIZE,
+    height: HALO_SIZE,
+    borderRadius: HALO_SIZE / 2,
+    backgroundColor: `rgba(61, 107, 230, ${HALO_OPACITY})`,
+  },
   fab: {
-    width: 56,
-    height: 56,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

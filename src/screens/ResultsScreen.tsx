@@ -6,6 +6,10 @@ import { useSubscription } from '../store/SubscriptionContext';
 import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
 import { TraitGrid } from '../components/TraitGrid';
 import { CaptureFab } from '../components/CaptureFab';
+import { ScreenShell } from '../components/ScreenShell';
+import { BannerPremium } from '../components/BannerPremium';
+import { Card } from '../components/Card';
+import { PressableScale } from '../components/PressableScale';
 import { StreakScreen } from './StreakScreen';
 import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -35,19 +39,23 @@ export function ResultsScreen() {
 
   if (!subscribed) {
     return (
-      <View style={styles.root}>
+      <ScreenShell>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.lockedContainer}>
           <Text style={styles.header}>Results</Text>
           <BlurredTraitGrid concerns={concerns} />
-          <Pressable onPress={openPaywall} style={styles.unlockBanner}>
+          <BannerPremium
+            onPress={openPaywall}
+            style={styles.unlockBanner}
+            accessibilityLabel="Unlock your results"
+          >
             <Text style={styles.unlockTitle}>Your scores are waiting</Text>
             <Text style={styles.unlockCaption}>
               Unlock to see your full analysis and the plan for every trait.
             </Text>
-          </Pressable>
+          </BannerPremium>
         </ScrollView>
         <CaptureFab onPress={openPaywall} />
-      </View>
+      </ScreenShell>
     );
   }
 
@@ -56,7 +64,7 @@ export function ResultsScreen() {
   // failure, offer a retry so the user is never stuck.
   if (subscribed && !hasRealScan) {
     return (
-      <View style={styles.analyzingRoot}>
+      <ScreenShell style={styles.analyzingRoot}>
         {scanning ? (
           <>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -67,7 +75,7 @@ export function ResultsScreen() {
           <>
             <Text style={styles.analyzingTitle}>Couldn’t finish your scan</Text>
             <Text style={styles.analyzingSub}>{scanError ?? 'Something went wrong.'}</Text>
-            <Pressable
+            <PressableScale
               style={styles.retryBtn}
               onPress={() => {
                 if (frontPhoto && profilePhoto) {
@@ -76,10 +84,10 @@ export function ResultsScreen() {
               }}
             >
               <Text style={styles.retryText}>Try again</Text>
-            </Pressable>
+            </PressableScale>
           </>
         )}
-      </View>
+      </ScreenShell>
     );
   }
 
@@ -139,9 +147,9 @@ export function ResultsScreen() {
     : undefined;
 
   return (
-    <View style={styles.root}>
+    <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.unlockedContainer}>
-        <Pressable style={styles.streakBanner} onPress={() => setShowStreak(true)}>
+        <Card role="hero" onPress={() => setShowStreak(true)} style={styles.streakBanner}>
           <View style={styles.streakInfo}>
             <Text style={styles.streakDay}>Day {streak.currentDay}</Text>
             <Text style={styles.streakTasks}>
@@ -151,12 +159,12 @@ export function ResultsScreen() {
             </Text>
           </View>
           <Text style={styles.streakChevron}>›</Text>
-        </Pressable>
+        </Card>
 
         {justRescanned && (
-          <View style={styles.doneBanner}>
+          <Card role="inset" style={styles.doneBanner}>
             <Text style={styles.doneText}>✓ New scan saved — your percentiles updated</Text>
-          </View>
+          </Card>
         )}
 
         <View style={styles.headerRow}>
@@ -168,10 +176,7 @@ export function ResultsScreen() {
 
         <TraitGrid concerns={concerns} scores={latest.scores} onOpenPlan={setOpenTrait} />
 
-        <Pressable
-          style={styles.potentialCard}
-          onPress={() => navigation.navigate('Avatars' as never)}
-        >
+        <Card role="quiet" onPress={() => navigation.navigate('Avatars' as never)} style={styles.potentialCard}>
           <View style={styles.potentialInfo}>
             <Text style={styles.potentialTitle}>See your potential</Text>
             <Text style={styles.potentialCaption}>
@@ -179,15 +184,15 @@ export function ResultsScreen() {
             </Text>
           </View>
           <Text style={styles.potentialChevron}>›</Text>
-        </Pressable>
+        </Card>
 
         {hasRealScan && (
-          <Pressable style={styles.rescanCardActive} onPress={startRescan}>
+          <Card role="inset" onPress={startRescan} style={styles.rescanCardActive}>
             <Text style={styles.rescanTitleActive}>Re-rate now ›</Text>
             <Text style={styles.rescanCaption}>
               Capture a new scan anytime to see how your percentiles moved.
             </Text>
-          </Pressable>
+          </Card>
         )}
       </ScrollView>
       <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
@@ -209,18 +214,14 @@ export function ResultsScreen() {
           <Text style={styles.analyzingText}>Analyzing your photos…</Text>
         </View>
       )}
-    </View>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   lockedContainer: {
     flexGrow: 1,
@@ -248,9 +249,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radii.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -276,20 +274,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
   },
   potentialInfo: { flex: 1, gap: 3 },
   potentialTitle: { ...typography.h3, color: colors.textPrimary },
   potentialCaption: { ...typography.bodySm, color: colors.textSecondary },
   potentialChevron: { fontSize: 20, color: colors.textTertiary },
   unlockBanner: {
-    backgroundColor: colors.secondary,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
     marginTop: spacing.lg,
   },
   unlockTitle: {
@@ -302,27 +292,14 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: spacing.xs,
   },
-  rescanCard: {
-    backgroundColor: colors.surfaceInset,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-  },
   rescanCardActive: {
-    backgroundColor: colors.surfaceInset,
-    borderWidth: 1,
     borderColor: colors.primary,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
   },
   rescanTitleActive: {
     ...typography.h3,
     color: colors.primary,
   },
   doneBanner: {
-    backgroundColor: colors.surfaceInset,
-    borderWidth: 1,
     borderColor: colors.tertiary,
     borderRadius: radii.md,
     paddingVertical: spacing.sm,
@@ -331,10 +308,6 @@ const styles = StyleSheet.create({
   doneText: {
     ...typography.bodySm,
     color: colors.tertiary,
-  },
-  rescanTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
   },
   rescanCaption: {
     ...typography.bodySm,
@@ -357,8 +330,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   analyzingRoot: {
-    flex: 1,
-    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,

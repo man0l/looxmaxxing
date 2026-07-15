@@ -6,6 +6,8 @@ import type { PlanId } from '../types/traits';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useSubscription } from '../store/SubscriptionContext';
 import { BlurredTraitGrid } from '../components/BlurredTraitGrid';
+import { ScreenShell } from '../components/ScreenShell';
+import { PressableScale } from '../components/PressableScale';
 import { packageForPlan, perWeekLabel } from '../services/purchases';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -52,6 +54,7 @@ export function PaywallScreen() {
   const extraCount = Math.max(0, concerns.length - 3);
 
   return (
+    <ScreenShell>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.container, { paddingBottom: 32 + insets.bottom }]}
@@ -136,7 +139,7 @@ export function PaywallScreen() {
         </Pressable>
       </View>
 
-      <Pressable
+      <PressableScale
         testID="paywall-unlock"
         onPress={() => (plansReady ? subscribe(selectedPlan) : reloadOffering())}
         style={[styles.cta, (purchasing || (!plansReady && !plansFailed)) && styles.ctaDisabled]}
@@ -151,7 +154,7 @@ export function PaywallScreen() {
                 ? 'Retry loading plans'
                 : 'Loading plans…'}
         </Text>
-      </Pressable>
+      </PressableScale>
 
       {plansFailed ? <Text style={styles.plansError}>{offeringError}</Text> : null}
 
@@ -176,13 +179,14 @@ export function PaywallScreen() {
         </Pressable>
       </View>
     </ScrollView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   container: {
     flexGrow: 1,
