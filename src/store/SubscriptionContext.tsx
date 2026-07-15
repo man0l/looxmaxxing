@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type { PurchasesOffering } from 'react-native-purchases';
@@ -61,9 +62,18 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [offeringError, setOfferingError] = useState<string | null>(null);
+  // After "delete all my data" logs the RevenueCat user out, the SDK
+  // auto-resyncs the still-valid App Store receipt to the new anonymous
+  // user and fires the customerInfo listener below with an active
+  // entitlement — silently re-unlocking Pro without the user tapping
+  // "Restore purchases", contradicting the deletion dialog's stated policy.
+  // Suppress listener-driven reactivation until the user explicitly
+  // subscribes or restores.
+  const suppressAutoRestoreRef = useRef(false);
 
   useEffect(() => {
     return registerSubscriptionReset(() => {
+      suppressAutoRestoreRef.current = true;
       setSubscribed(false);
       setPaywallVisible(false);
       setPurchaseError(null);
@@ -94,6 +104,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         showToast(offeringResult.error, 'error');
       }
       unsubscribe = addCustomerInfoListener((updated) => {
+        if (suppressAutoRestoreRef.current && isProActive(updated)) return;
         setSubscribed(isProActive(updated));
       });
     })();
@@ -116,6 +127,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const subscribe = useCallback(
     async (plan: PlanId) => {
+      suppressAutoRestoreRef.current = false;
       setPurchaseError(null);
       let activeOffering = offering;
       if (!activeOffering) {
@@ -176,6 +188,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   );
 
   const restore = useCallback(async () => {
+    suppressAutoRestoreRef.current = false;
     setPurchaseError(null);
     setPurchasing(true);
     let result = { pro: false, cancelled: false, error: null as string | null };
