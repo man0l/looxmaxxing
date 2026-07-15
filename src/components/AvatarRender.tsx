@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, View, Text, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 import { ConcernGlyph } from './icons/OnboardingIcons';
 import { colors, radii, spacing, typography } from '../theme';
@@ -10,15 +11,43 @@ interface Props {
   imageUrl?: string | null;
 }
 
+// There's no low-res pass from the render backend yet (see BE3), so this
+// approximates a blur-up by de-blurring the loaded image itself in steps
+// instead of hard-cutting from the placeholder straight to a sharp image.
+const BLUR_STEPS = [14, 8, 3, 0];
+const BLUR_STEP_MS = 90;
+const REVEAL_MS = BLUR_STEPS.length * BLUR_STEP_MS;
+
 export function AvatarRender({ traitId, style, size = 132, imageUrl }: Props) {
   const gradId = `grad-${traitId}`;
+  const revealAnim = useMemo(() => new Animated.Value(imageUrl ? 1 : 0), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [blurRadius, setBlurRadius] = useState(imageUrl ? 0 : BLUR_STEPS[0]);
+  const shownUrl = useRef<string | null>(imageUrl ?? null);
+
+  useEffect(() => {
+    if (!imageUrl || imageUrl === shownUrl.current) return;
+    shownUrl.current = imageUrl;
+    revealAnim.setValue(0);
+    setBlurRadius(BLUR_STEPS[0]);
+    Animated.timing(revealAnim, {
+      toValue: 1,
+      duration: REVEAL_MS,
+      useNativeDriver: true,
+    }).start();
+    const timers = BLUR_STEPS.map((radius, i) =>
+      setTimeout(() => setBlurRadius(radius), i * BLUR_STEP_MS),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [imageUrl, revealAnim]);
+
   return (
     <View style={[styles.frame, { width: size, height: size, borderRadius: radii.lg }]}>
       {imageUrl ? (
-        <Image
+        <Animated.Image
           source={{ uri: imageUrl }}
-          style={{ width: size, height: size }}
+          style={{ width: size, height: size, opacity: revealAnim }}
           resizeMode="cover"
+          blurRadius={blurRadius}
         />
       ) : (
         <Svg width={size} height={size} viewBox="0 0 100 100">

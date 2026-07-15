@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
   kicker: { ...typography.caption, color: colors.secondary },
   title: { ...typography.display, fontSize: 26, color: colors.textPrimary, marginTop: spacing.xs },
-  blurb: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm },
+  blurb: { ...typography.bodyMd, color: colors.textSecondary, marginTop: spacing.sm },
   progress: { ...typography.label, color: colors.tertiary, marginTop: spacing.md, marginBottom: spacing.lg },
   section: { marginBottom: spacing.lg, gap: spacing.sm },
   sectionHeading: { ...typography.caption, color: colors.textTertiary },

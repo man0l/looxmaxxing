@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   subtitle: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginTop: 2,
     marginBottom: spacing.md,

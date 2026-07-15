@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   subtitle: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 19,

@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing.xl, paddingBottom: 40 },
   kicker: { ...typography.caption, color: colors.secondary },
   title: { ...typography.display, fontSize: 26, color: colors.textPrimary, marginTop: spacing.xs },
-  blurb: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm, marginBottom: spacing.lg },
+  blurb: { ...typography.bodyMd, color: colors.textSecondary, marginTop: spacing.sm, marginBottom: spacing.lg },
   steps: { gap: spacing.sm },
   stepCard: {
     flexDirection: 'row',

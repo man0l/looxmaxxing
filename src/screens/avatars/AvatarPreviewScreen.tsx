@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   blurb: {
-    ...typography.bodySm,
+    ...typography.bodyMd,
     color: colors.textSecondary,
     marginTop: spacing.xs,
     marginBottom: spacing.xl,
