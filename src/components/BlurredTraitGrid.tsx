@@ -78,9 +78,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: radii.lg,
+    // Warm fog over scores — denser than a plain opacity wash
     backgroundColor: Platform.select({
-      android: `${colors.surface}D9`,
-      default: `${colors.surface}99`,
+      android: 'rgba(21, 16, 11, 0.82)',
+      default: 'rgba(21, 16, 11, 0.72)',
     }),
   },
 });
