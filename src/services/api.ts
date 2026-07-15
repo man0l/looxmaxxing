@@ -220,6 +220,9 @@ interface RenderStatusResponse {
   status: RenderStatus;
   imageUrl?: string;
   expiresAt?: string;
+  // Blurry mid-generation frame, present only while status is 'processing'
+  // (async mode only — see looxmaxxing-api's render Edge Function).
+  previewUrl?: string | null;
 }
 
 // Direct-to-Storage avatar render (mirrors submitScan): mint a signed upload
@@ -264,8 +267,11 @@ export async function submitRender(opts: {
   style?: string;
   contentType?: string;
   signal?: AbortSignal;
+  // Fired at most once, as soon as a mid-generation preview frame shows up
+  // while polling — lets the caller show something before the final result.
+  onPreview?: (preview: RenderResult) => void;
 }): Promise<RenderResult> {
-  const { signal } = opts;
+  const { signal, onPreview } = opts;
   assertNotAborted(signal);
   if (isE2eApiStub || (__DEV__ && !API_BASE)) {
     await new Promise((r) => setTimeout(r, 300));
@@ -307,6 +313,7 @@ export async function submitRender(opts: {
   }
 
   const deadline = Date.now() + 120000;
+  let previewShown = false;
   while (Date.now() < deadline) {
     assertNotAborted(signal);
     await new Promise((r) => setTimeout(r, 4000));
@@ -321,6 +328,10 @@ export async function submitRender(opts: {
     const poll = (await pollRes.json()) as RenderStatusResponse;
     if (poll.status === 'done' && poll.imageUrl) {
       return { imageUrl: poll.imageUrl, expiresAt: poll.expiresAt };
+    }
+    if (!previewShown && poll.status === 'processing' && poll.previewUrl) {
+      previewShown = true;
+      onPreview?.({ imageUrl: poll.previewUrl });
     }
     if (poll.status === 'failed') throw new ScanApiError(502, 'Render failed');
   }
