@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Platform,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -56,7 +55,6 @@ export function ProfileScreen() {
   const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
   const { showToast } = useToast();
-  const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
   const [showMethodology, setShowMethodology] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -78,10 +76,19 @@ export function ProfileScreen() {
         <Text style={styles.sectionLabel}>Subscription</Text>
         <Card role="quiet" style={styles.card}>
           <Row label="Status" value={subscribed ? 'Pro' : 'Free'} first />
-          {subscribed && isNative && (
-            <Row label="Manage subscription" tone="action" onPress={presentCustomerCenter} />
+          {subscribed ? (
+            <Row
+              label="Manage subscription"
+              tone="action"
+              onPress={() => {
+                void presentCustomerCenter().catch(() => {
+                  showToast('Couldn’t open subscription management.', 'error');
+                });
+              }}
+            />
+          ) : (
+            <Row label="Unlock your results" tone="action" onPress={openPaywall} />
           )}
-          {!subscribed && <Row label="Unlock your results" tone="action" onPress={openPaywall} />}
           <Row label="Restore purchases" tone="action" onPress={restore} />
         </Card>
 
