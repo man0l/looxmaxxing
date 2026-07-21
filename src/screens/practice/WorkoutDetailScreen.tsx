@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
 import { DayCompleteMoment } from '../../components/DayCompleteMoment';
+import { PracticeAnimation } from '../../components/PracticeAnimation';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { PressableScale } from '../../components/PressableScale';
 import { useDayCompleteMoment } from '../../hooks/useDayCompleteMoment';
@@ -44,6 +45,7 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
                   <Text style={styles.stepDuration}>{step.duration}</Text>
                 </View>
                 <Text style={styles.stepDetail}>{step.detail}</Text>
+                {step.animation && <PracticeAnimation slug={step.animation} />}
               </View>
             </View>
           ))}
