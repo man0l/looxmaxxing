@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     padding: spacing.lg,
+    overflow: 'hidden',
   },
   stepIndex: {
     width: 26,

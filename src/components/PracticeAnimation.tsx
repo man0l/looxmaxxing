@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, StyleSheet } from 'react-native';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { colors, radii, spacing } from '../theme';
 
@@ -38,24 +38,30 @@ export function PracticeAnimation({ slug }: Props) {
   if (!source) return null;
 
   return (
-    <LottieView
-      source={source}
-      autoPlay={!reduceMotion}
-      loop={!reduceMotion}
-      progress={reduceMotion ? 0 : undefined}
-      style={styles.animation}
-      resizeMode="cover"
-    />
+    <View style={styles.wrapper}>
+      <LottieView
+        source={source}
+        autoPlay={!reduceMotion}
+        loop={!reduceMotion}
+        progress={reduceMotion ? 0 : undefined}
+        style={styles.animation}
+        resizeMode="cover"
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  animation: {
+  wrapper: {
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: radii.md,
     backgroundColor: colors.background,
     marginTop: spacing.sm,
     overflow: 'hidden',
+  },
+  animation: {
+    width: '100%',
+    height: '100%',
   },
 });
