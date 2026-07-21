@@ -23,21 +23,34 @@ export function AvatarRender({ traitId, style, size = 132, imageUrl }: Props) {
   const revealAnim = useMemo(() => new Animated.Value(imageUrl ? 1 : 0), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [blurRadius, setBlurRadius] = useState(imageUrl ? 0 : BLUR_STEPS[0]);
   const shownUrl = useRef<string | null>(imageUrl ?? null);
+  const revealedOnce = useRef(Boolean(imageUrl));
 
   useEffect(() => {
     if (!imageUrl || imageUrl === shownUrl.current) return;
     shownUrl.current = imageUrl;
-    revealAnim.setValue(0);
-    setBlurRadius(BLUR_STEPS[0]);
-    Animated.timing(revealAnim, {
-      toValue: 1,
-      duration: REVEAL_MS,
-      useNativeDriver: true,
-    }).start();
-    const timers = BLUR_STEPS.map((radius, i) =>
-      setTimeout(() => setBlurRadius(radius), i * BLUR_STEP_MS),
-    );
-    return () => timers.forEach(clearTimeout);
+
+    if (!revealedOnce.current) {
+      // First frame ever (placeholder → image): the full pop-in + de-blur.
+      revealedOnce.current = true;
+      revealAnim.setValue(0);
+      setBlurRadius(BLUR_STEPS[0]);
+      Animated.timing(revealAnim, {
+        toValue: 1,
+        duration: REVEAL_MS,
+        useNativeDriver: true,
+      }).start();
+      const timers = BLUR_STEPS.map((radius, i) =>
+        setTimeout(() => setBlurRadius(radius), i * BLUR_STEP_MS),
+      );
+      return () => timers.forEach(clearTimeout);
+    }
+
+    // A sharper frame replaced one that's already visible (e.g. a later
+    // streamed partial, or the final result). Stay fully visible and
+    // unblurred instead of resetting opacity/blur back to the start —
+    // that reset was making every new frame flash back to blank/blurry
+    // before re-revealing, instead of one continuous sharpening.
+    setBlurRadius(0);
   }, [imageUrl, revealAnim]);
 
   return (
