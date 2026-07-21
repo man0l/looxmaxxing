@@ -4,6 +4,7 @@ export interface WorkoutStep {
   name: string;
   detail: string;
   duration: string;
+  animation?: string;
 }
 
 export interface PlanItem {
@@ -27,10 +28,10 @@ export const PRACTICE_PLAN: PlanItem[] = [
     type: 'workout',
     blurb: 'A short daily session to tone the muscles along your jaw and neckline.',
     steps: [
-      { name: 'Tongue-to-roof hold', detail: 'Rest your whole tongue on the roof of your mouth, teeth lightly together. Hold and breathe through your nose.', duration: '2 min' },
-      { name: 'Chin pull-backs', detail: 'Pull your chin straight back to make a "double chin", hold, release. Keep your gaze level.', duration: '10 reps' },
+      { name: 'Tongue-to-roof hold', detail: 'Rest your whole tongue on the roof of your mouth, teeth lightly together. Hold and breathe through your nose.', duration: '2 min', animation: 'tongue-to-roof-hold' },
+      { name: 'Chin pull-backs', detail: 'Pull your chin straight back to make a "double chin", hold, release. Keep your gaze level.', duration: '10 reps', animation: 'chin-pull-back' },
       { name: 'Jaw clenches', detail: 'Bite down firmly, hold the squeeze, then relax fully.', duration: '12 reps' },
-      { name: 'Lying neck lifts', detail: 'Lying down, tuck your chin and lift your head a few inches. Slow and controlled.', duration: '10 reps' },
+      { name: 'Lying neck lifts', detail: 'Lying down, tuck your chin and lift your head a few inches. Slow and controlled.', duration: '10 reps', animation: 'lying-neck-lift' },
     ],
   },
   {
@@ -39,9 +40,9 @@ export const PRACTICE_PLAN: PlanItem[] = [
     type: 'workout',
     blurb: 'Targeted face exercises to lift and define the mid-face.',
     steps: [
-      { name: 'Cheek lifts', detail: 'Smile without showing teeth, then lift your cheeks toward your eyes. Hold at the top.', duration: '12 reps' },
-      { name: 'Cheek suck-ins', detail: 'Suck your cheeks in against your teeth, hold, release.', duration: '10 reps' },
-      { name: 'Fingertip smile press', detail: 'Press fingertips lightly on the cheekbones and smile against the resistance.', duration: '2 min' },
+      { name: 'Cheek lifts', detail: 'Smile without showing teeth, then lift your cheeks toward your eyes. Hold at the top.', duration: '12 reps', animation: 'closed-lip-cheek-lift' },
+      { name: 'Cheek suck-ins', detail: 'Suck your cheeks in against your teeth, hold, release.', duration: '10 reps', animation: 'cheek-suck-in' },
+      { name: 'Fingertip smile press', detail: 'Press fingertips lightly on the cheekbones and smile against the resistance.', duration: '2 min', animation: 'fingertip-smile-press' },
     ],
   },
   {
@@ -50,9 +51,9 @@ export const PRACTICE_PLAN: PlanItem[] = [
     type: 'workout',
     blurb: 'Posture sets your jaw, neck and presence. A few resets a day go a long way.',
     steps: [
-      { name: 'Standing chin pull-backs', detail: 'Stand tall, draw your head back over your shoulders. Hold.', duration: '10 reps' },
-      { name: 'Wall arm slides', detail: 'Back to a wall, slide your arms up and down keeping contact.', duration: '10 reps' },
-      { name: 'Shoulder-blade squeezes', detail: 'Pull your shoulder blades together and down. Hold.', duration: '12 reps' },
+      { name: 'Standing chin pull-backs', detail: 'Stand tall, draw your head back over your shoulders. Hold.', duration: '10 reps', animation: 'chin-pull-back' },
+      { name: 'Wall arm slides', detail: 'Back to a wall, slide your arms up and down keeping contact.', duration: '10 reps', animation: 'wall-arm-slide' },
+      { name: 'Shoulder-blade squeezes', detail: 'Pull your shoulder blades together and down. Hold.', duration: '12 reps', animation: 'shoulder-blade-squeeze' },
       { name: 'Hip flexor stretch', detail: 'Half-kneel and press the hips forward to open the front of the hip.', duration: '30s / side' },
     ],
   },
@@ -64,7 +65,7 @@ export const PRACTICE_PLAN: PlanItem[] = [
     steps: [
       { name: 'Wide smile holds', detail: 'Smile as wide as is comfortable, hold, release slowly.', duration: '12 reps' },
       { name: 'Lip stretches', detail: 'Pucker, then stretch into a smile. Move between the two.', duration: '10 reps' },
-      { name: 'Eye-smile raises', detail: 'Smile with your eyes — raise the cheeks and soften the gaze.', duration: '2 min' },
+      { name: 'Eye-smile raises', detail: 'Smile with your eyes — raise the cheeks and soften the gaze.', duration: '2 min', animation: 'eye-smile' },
     ],
   },
   {
