@@ -126,10 +126,12 @@ async function putPhoto(
   uploadUrl: string,
   uri: string,
   contentType: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   await withTransientRetry(async () => {
+    assertNotAborted(signal);
     const localUri = await resolveCaptureUri(uri);
-    const readRes = await fetchWithTimeout(localUri, {}, PHOTO_READ_TIMEOUT_MS);
+    const readRes = await fetchWithTimeout(localUri, {}, PHOTO_READ_TIMEOUT_MS, signal);
     // The Blob polyfill on RN Android can't convert ArrayBuffer-backed responses
     // for some sources (e.g. dev Metro assets throw
     // "Creating blobs from 'ArrayBuffer' and 'ArrayBufferView' are not supported").
@@ -144,6 +146,7 @@ async function putPhoto(
         headers: { 'Content-Type': contentType, 'x-upsert': 'true' },
       },
       API_TIMEOUT_MS,
+      signal,
     );
     await assertOk(res, 'photo upload');
   });
@@ -159,6 +162,10 @@ export async function submitScan(opts: {
   profileUri: string;
   frontContentType?: string;
   profileContentType?: string;
+  // Aborted if the app is backgrounded mid-scan — a suspended iOS process can
+  // leave a plain foreground fetch neither resolving nor rejecting, which
+  // otherwise shows as an endless "Analyzing your photos" screen on return.
+  signal?: AbortSignal;
 }): Promise<ScanResult> {
   if (isE2eApiStub || (__DEV__ && !API_BASE)) {
     await new Promise((r) => setTimeout(r, 400));
@@ -173,24 +180,28 @@ export async function submitScan(opts: {
     throw new ScanApiError(0, 'EXPO_PUBLIC_API_BASE_URL is not set');
   }
 
+  const { signal } = opts;
   const headers = {
     'Content-Type': 'application/json',
     'X-App-User-Id': opts.appUserId,
   };
 
+  assertNotAborted(signal);
   const slotRes = await fetchWithTimeout(
     `${API_BASE}/v1/scans/uploads`,
     { method: 'POST', headers },
     API_TIMEOUT_MS,
+    signal,
   );
   await assertOk(slotRes, 'mint upload slots');
   const { scanId, uploads } = (await slotRes.json()) as ScanUploadsResponse;
 
   await Promise.all([
-    putPhoto(uploads.front.uploadUrl, opts.frontUri, opts.frontContentType ?? 'image/jpeg'),
-    putPhoto(uploads.profile.uploadUrl, opts.profileUri, opts.profileContentType ?? 'image/jpeg'),
+    putPhoto(uploads.front.uploadUrl, opts.frontUri, opts.frontContentType ?? 'image/jpeg', signal),
+    putPhoto(uploads.profile.uploadUrl, opts.profileUri, opts.profileContentType ?? 'image/jpeg', signal),
   ]);
 
+  assertNotAborted(signal);
   const scanRes = await fetchWithTimeout(
     `${API_BASE}/v1/scans`,
     {
@@ -199,6 +210,7 @@ export async function submitScan(opts: {
       body: JSON.stringify({ scanId }),
     },
     API_TIMEOUT_MS,
+    signal,
   );
   await assertOk(scanRes, 'scan');
   return (await scanRes.json()) as ScanResult;

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import type { Scan } from '../types/scan';
 import { getScores, improveScores } from '../services/scoring';
 import { submitScan } from '../services/api';
@@ -96,9 +97,22 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
     async ({ frontUri, profileUri }: { frontUri: string; profileUri: string }) => {
       setScanning(true);
       setScanError(null);
+      const controller = new AbortController();
+      // A plain foreground request can get silently killed by iOS once the
+      // process is suspended for a while, leaving the fetch promise neither
+      // resolved nor rejected — which otherwise shows as an endless
+      // "Analyzing your photos" screen when the user comes back. Abort our
+      // own request on backgrounding so it fails fast with a clear retry.
+      let backgrounded = false;
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state === 'background') {
+          backgrounded = true;
+          controller.abort();
+        }
+      });
       try {
         const appUserId = await getAppUserID();
-        const result = await submitScan({ appUserId, frontUri, profileUri });
+        const result = await submitScan({ appUserId, frontUri, profileUri, signal: controller.signal });
         setScans((prev) => {
           const next: Scan = {
             id: `scan-${Date.now()}`,
@@ -111,7 +125,11 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
         firstRealScanDone.current = true;
         setHasRealScan(true);
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Scan failed';
+        const message = backgrounded
+          ? 'Connection interrupted while the app was in the background. Please try again.'
+          : e instanceof Error
+            ? e.message
+            : 'Scan failed';
         if (__DEV__) {
           rescan(frontUri);
           setScanError(null);
@@ -121,6 +139,7 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
         throw e;
       } finally {
         setScanning(false);
+        sub.remove();
       }
     },
     [rescan],
