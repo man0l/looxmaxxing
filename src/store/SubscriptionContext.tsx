@@ -183,6 +183,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       }
       const existing = await getCustomerInfo();
       if (isProActive(existing)) {
+        getAppUserID().then((uid) => invalidateEntitlementCache(uid)).catch(() => {});
         applySubscribed(true);
         setPaywallVisible(false);
         showToast("You're in — welcome to Pro.", 'success');
