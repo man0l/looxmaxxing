@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, routineTaskId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
@@ -57,10 +58,23 @@ function ChecklistSection({
 }
 
 export function RoutineDetailScreen({ item, onClose }: Props) {
-  const { doneCountForTrait, totalCountForTrait } = usePractice();
+  const { isDone, doneCountForTrait, totalCountForTrait } = usePractice();
   const { completeTask, visible, dismiss } = useDayCompleteMoment();
   const done = doneCountForTrait(item.traitId);
   const total = totalCountForTrait(item.traitId);
+  const [pendingClose, setPendingClose] = useState(false);
+
+  const handleCompleteTask = (id: string) => {
+    const completesRoutine = !isDone(id) && total > 0 && done === total - 1;
+    completeTask(id);
+    if (completesRoutine) setPendingClose(true);
+  };
+
+  useEffect(() => {
+    if (!pendingClose || visible) return;
+    const timer = setTimeout(onClose, 500);
+    return () => clearTimeout(timer);
+  }, [pendingClose, visible, onClose]);
 
   return (
     <NestedScreen onClose={onClose} style={styles.root}>
@@ -80,14 +94,14 @@ export function RoutineDetailScreen({ item, onClose }: Props) {
             tasks={item.amTasks ?? []}
             traitId={item.traitId}
             period="am"
-            onCompleteTask={completeTask}
+            onCompleteTask={handleCompleteTask}
           />
           <ChecklistSection
             heading="Evening"
             tasks={item.pmTasks ?? []}
             traitId={item.traitId}
             period="pm"
-            onCompleteTask={completeTask}
+            onCompleteTask={handleCompleteTask}
           />
         </View>
       </ScrollView>
