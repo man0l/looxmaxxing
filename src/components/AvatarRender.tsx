@@ -9,6 +9,8 @@ interface Props {
   style?: string;
   size?: number;
   imageUrl?: string | null;
+  /** Blurred selfie (or similar) while waiting for the first render of this style. */
+  placeholderUri?: string | null;
 }
 
 // There's no low-res pass from the render backend yet (see BE3), so this
@@ -17,8 +19,15 @@ interface Props {
 const BLUR_STEPS = [14, 8, 3, 0];
 const BLUR_STEP_MS = 90;
 const REVEAL_MS = BLUR_STEPS.length * BLUR_STEP_MS;
+const PLACEHOLDER_BLUR = 18;
 
-export function AvatarRender({ traitId, style, size = 132, imageUrl }: Props) {
+export function AvatarRender({
+  traitId,
+  style,
+  size = 132,
+  imageUrl,
+  placeholderUri,
+}: Props) {
   const gradId = `grad-${traitId}`;
   const revealAnim = useMemo(() => new Animated.Value(imageUrl ? 1 : 0), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [blurRadius, setBlurRadius] = useState(imageUrl ? 0 : BLUR_STEPS[0]);
@@ -61,6 +70,13 @@ export function AvatarRender({ traitId, style, size = 132, imageUrl }: Props) {
           style={{ width: size, height: size, opacity: revealAnim }}
           resizeMode="cover"
           blurRadius={blurRadius}
+        />
+      ) : placeholderUri ? (
+        <Animated.Image
+          source={{ uri: placeholderUri }}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
+          blurRadius={PLACEHOLDER_BLUR}
         />
       ) : (
         <Svg width={size} height={size} viewBox="0 0 100 100">
