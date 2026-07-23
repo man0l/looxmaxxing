@@ -15,6 +15,7 @@ import { TraitGrid } from '../components/TraitGrid';
 import { CaptureFab } from '../components/CaptureFab';
 import { ScreenShell } from '../components/ScreenShell';
 import { BannerPremium } from '../components/BannerPremium';
+import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
 import { RingGauge } from '../components/RingGauge';
@@ -69,6 +70,7 @@ export function ResultsScreen() {
     return (
       <ScreenShell>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.lockedContainer}>
+          <BrandMark style={styles.brandLocked} />
           <Text style={styles.header}>Results</Text>
           <BlurredTraitGrid concerns={concerns} />
           <BannerPremium
@@ -186,6 +188,7 @@ export function ResultsScreen() {
   return (
     <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.unlockedContainer}>
+        <BrandMark />
         <View style={styles.topBar}>
           <Pressable
             style={styles.streakChip}
@@ -315,6 +318,9 @@ const styles = StyleSheet.create({
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
+  },
+  brandLocked: {
+    marginBottom: spacing.lg,
   },
   unlockedContainer: {
     paddingHorizontal: spacing.xl,
