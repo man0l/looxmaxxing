@@ -1,5 +1,14 @@
 import { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Image,
+  Platform,
+  Animated,
+  PanResponder,
+} from 'react-native';
 import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { isE2E } from '../../config/e2e';
@@ -15,6 +24,8 @@ const FRONT_BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-op
 const PROFILE_GOOD_EXAMPLE = require('../../../assets/images/onboarding-profile-example-optimized.png');
 const PROFILE_BAD_EXAMPLE = require('../../../assets/images/profile-bad-example-optimized.png');
 
+const CLOSE_DISTANCE = 120;
+const CLOSE_VELOCITY = 0.8;
 
 type CaptureStep = 'front' | 'profile';
 
@@ -38,11 +49,38 @@ export function GuidedCaptureScreen({
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('front');
   const [busy, setBusy] = useState(false);
+  const [translateY] = useState(() => new Animated.Value(0));
   const granted = permission?.granted ?? false;
-  // Live ambient-light sensor. Returns true/false once a reading is available,
-  // or null when no sensor exists (web, no light sensor, etc.) — in that case
-  // we just don't render the chip.
   const lightingLive = useLightingOk(granted);
+
+  const dismiss = () => {
+    if (!onCancel) return;
+    Animated.timing(translateY, {
+      toValue: 600,
+      duration: 180,
+      useNativeDriver: false,
+    }).start(onCancel);
+  };
+
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > CLOSE_DISTANCE || g.vy > CLOSE_VELOCITY) {
+          dismiss();
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: false,
+            bounciness: 4,
+          }).start();
+        }
+      },
+    }),
+  );
 
   const handleCapture = async () => {
     if (!granted) {
@@ -77,103 +115,113 @@ export function GuidedCaptureScreen({
   const showE2eCapture = (isE2E && Platform.OS === 'web') || __DEV__;
   const goodExample = isFront ? FRONT_GOOD_EXAMPLE : PROFILE_GOOD_EXAMPLE;
   const badExample = isFront ? FRONT_BAD_EXAMPLE : PROFILE_BAD_EXAMPLE;
+  const dismissible = Boolean(onCancel);
 
   return (
     <ScreenShell>
-    <View style={styles.container}>
-      {onboardingStep != null && <OnboardingProgressBar current={onboardingStep} />}
-      {onCancel ? (
-        <Pressable onPress={onCancel} hitSlop={12} style={styles.cancelRow}>
-          <Text style={styles.cancelText}>‹ Back</Text>
-        </Pressable>
-      ) : null}
-      {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
-      <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
-      <Text style={styles.subtitle}>
-        {isFront
-          ? 'Face the camera, fill the oval, even lighting.'
-          : 'Turn to your side — keep your face in the oval.'}
-      </Text>
+      <Animated.View
+        style={[
+          styles.container,
+          dismissible && styles.containerDismissible,
+          dismissible && { transform: [{ translateY }] },
+        ]}
+      >
+        {onboardingStep != null && <OnboardingProgressBar current={onboardingStep} />}
+        {dismissible ? (
+          <View style={styles.dismissHeader} {...pan.panHandlers}>
+            <View style={styles.grabber} />
+            <Pressable style={styles.closeButton} onPress={dismiss} hitSlop={10}>
+              <Text style={styles.closeX}>✕</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
+        <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
+        <Text style={styles.subtitle}>
+          {isFront
+            ? 'Face the camera, fill the oval, even lighting.'
+            : 'Turn to your side — keep your face in the oval.'}
+        </Text>
 
-      <View style={styles.examplesRow}>
-        <View style={styles.exampleItem}>
-          <Image source={goodExample} style={styles.exampleImg} resizeMode="cover" />
-          <View style={styles.exampleLabelGood}>
-            <Text style={styles.exampleLabelGoodText}>✓ Like this</Text>
+        <View style={styles.examplesRow}>
+          <View style={styles.exampleItem}>
+            <Image source={goodExample} style={styles.exampleImg} resizeMode="cover" />
+            <View style={styles.exampleLabelGood}>
+              <Text style={styles.exampleLabelGoodText}>✓ Like this</Text>
+            </View>
+          </View>
+          <View style={styles.exampleItem}>
+            <Image source={badExample} style={styles.exampleImg} resizeMode="cover" />
+            <View style={styles.exampleLabelBad}>
+              <Text style={styles.exampleLabelBadText}>✕ Too dark</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.exampleItem}>
-          <Image source={badExample} style={styles.exampleImg} resizeMode="cover" />
-          <View style={styles.exampleLabelBad}>
-            <Text style={styles.exampleLabelBadText}>✕ Too dark</Text>
+
+        <View style={styles.viewport}>
+          {granted ? (
+            <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
+          ) : (
+            <View style={styles.permissionPrompt}>
+              <HeadSilhouette size={56} color={colors.textTertiary} />
+              <Text style={styles.permissionText}>
+                {permission ? 'Allow camera access to take your photo.' : 'Preparing camera…'}
+              </Text>
+              {permission && !permission.granted && (
+                <Pressable style={styles.permissionBtn} onPress={requestPermission}>
+                  <Text style={styles.permissionBtnText}>Allow camera</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          <View style={styles.oval} pointerEvents="none" />
+
+          <View style={styles.angleToggle} pointerEvents="none">
+            <Text style={[styles.angleLabel, isFront && styles.angleLabelActive]}>● Front</Text>
+            <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>○ Profile</Text>
           </View>
+
+          {granted && lightingLive === true && (
+            <View style={styles.lightingChip} pointerEvents="none">
+              <Text style={styles.lightingChipText}>✓ Lighting looks good</Text>
+            </View>
+          )}
+          {granted && lightingLive === false && (
+            <View style={[styles.lightingChip, styles.lightingChipWarn]} pointerEvents="none">
+              <Text style={[styles.lightingChipText, styles.lightingChipWarnText]}>
+                ✕ Too dark — find brighter light
+              </Text>
+            </View>
+          )}
         </View>
-      </View>
 
-      <View style={styles.viewport}>
-        {granted ? (
-          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
-        ) : (
-          <View style={styles.permissionPrompt}>
-            <HeadSilhouette size={56} color={colors.textTertiary} />
-            <Text style={styles.permissionText}>
-              {permission ? 'Allow camera access to take your photo.' : 'Preparing camera…'}
-            </Text>
-            {permission && !permission.granted && (
-              <Pressable style={styles.permissionBtn} onPress={requestPermission}>
-                <Text style={styles.permissionBtnText}>Allow camera</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-
-        <View style={styles.oval} pointerEvents="none" />
-
-        <View style={styles.angleToggle} pointerEvents="none">
-          <Text style={[styles.angleLabel, isFront && styles.angleLabelActive]}>● Front</Text>
-          <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>○ Profile</Text>
+        <View style={styles.controls}>
+          <Pressable onPress={handleGallery} style={styles.sideBtn}>
+            <GalleryIcon size={24} color={colors.textSecondary} />
+          </Pressable>
+          <Pressable
+            onPress={handleCapture}
+            style={[styles.captureBtn, busy && styles.captureBtnBusy]}
+            disabled={busy}
+          >
+            <CameraIcon size={28} color={colors.onPrimary} />
+          </Pressable>
+          <Pressable onPress={toggleFacing} style={styles.sideBtn} disabled={!granted}>
+            <RetakeIcon size={24} color={granted ? colors.textSecondary : colors.textTertiary} />
+          </Pressable>
         </View>
 
-        {granted && lightingLive === true && (
-          <View style={styles.lightingChip} pointerEvents="none">
-            <Text style={styles.lightingChipText}>✓ Lighting looks good</Text>
-          </View>
+        {showE2eCapture && (
+          <Pressable testID="e2e-use-test-photo" style={styles.e2eBtn} onPress={handleE2ePhoto}>
+            <Text style={styles.e2eBtnText}>Use test photo</Text>
+          </Pressable>
         )}
-        {granted && lightingLive === false && (
-          <View style={[styles.lightingChip, styles.lightingChipWarn]} pointerEvents="none">
-            <Text style={[styles.lightingChipText, styles.lightingChipWarnText]}>
-              ✕ Too dark — find brighter light
-            </Text>
-          </View>
-        )}
-      </View>
 
-      <View style={styles.controls}>
-        <Pressable onPress={handleGallery} style={styles.sideBtn}>
-          <GalleryIcon size={24} color={colors.textSecondary} />
-        </Pressable>
-        <Pressable
-          onPress={handleCapture}
-          style={[styles.captureBtn, busy && styles.captureBtnBusy]}
-          disabled={busy}
-        >
-          <CameraIcon size={28} color={colors.onPrimary} />
-        </Pressable>
-        <Pressable onPress={toggleFacing} style={styles.sideBtn} disabled={!granted}>
-          <RetakeIcon size={24} color={granted ? colors.textSecondary : colors.textTertiary} />
-        </Pressable>
-      </View>
-
-      {showE2eCapture && (
-        <Pressable testID="e2e-use-test-photo" style={styles.e2eBtn} onPress={handleE2ePhoto}>
-          <Text style={styles.e2eBtnText}>Use test photo</Text>
-        </Pressable>
-      )}
-
-      <Text style={styles.privacy}>
-        Photos are processed to generate your scores. Delete them anytime in Profile.
-      </Text>
-    </View>
+        <Text style={styles.privacy}>
+          Photos are processed to generate your scores. Delete them anytime in Profile.
+        </Text>
+      </Animated.View>
     </ScreenShell>
   );
 }
@@ -186,12 +234,40 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: spacing.lg,
   },
-  cancelRow: {
+  containerDismissible: {
+    paddingTop: spacing.md,
+  },
+  dismissHeader: {
+    alignSelf: 'stretch',
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  cancelText: {
+  grabber: {
+    width: 40,
+    height: 5,
+    borderRadius: radii.full,
+    backgroundColor: colors.border,
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceInset,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeX: {
     ...typography.label,
-    color: colors.primary,
+    fontSize: 15,
+    lineHeight: 18,
+    color: colors.textSecondary,
   },
   step: {
     ...typography.caption,
