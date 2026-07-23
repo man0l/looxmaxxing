@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, Animated, StyleSheet, Text, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Animated,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { colors, typography } from '../theme';
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+// RN Animated + react-native-svg Circle is unreliable on web (AnimatedCircle
+// throws). Native keeps the draw-in animation; web renders the final ring.
+const AnimatedCircle =
+  Platform.OS === 'web' ? null : Animated.createAnimatedComponent(Circle);
 
 interface Props {
   percentile: number;
@@ -27,6 +37,7 @@ export function RingGauge({
   const circumference = 2 * Math.PI * radius;
   const progress = Math.min(100, Math.max(0, percentile)) / 100;
   const targetOffset = circumference * (1 - progress);
+  const isWeb = Platform.OS === 'web';
 
   const offset = useMemo(() => new Animated.Value(circumference), [circumference]);
   const glow = useMemo(() => new Animated.Value(0), []);
@@ -49,8 +60,8 @@ export function RingGauge({
   }, []);
 
   useEffect(() => {
-    if (obscured || !animate || reduceMotion) {
-      offset.setValue(targetOffset);
+    if (obscured || !animate || reduceMotion || isWeb) {
+      if (!isWeb) offset.setValue(targetOffset);
       glow.setValue(obscured ? 0 : 1);
       return;
     }
@@ -79,15 +90,46 @@ export function RingGauge({
     circumference,
     delayMs,
     glow,
+    isWeb,
     obscured,
     offset,
     reduceMotion,
     targetOffset,
   ]);
 
+  // Web: soft fade-in of the halo only (no SVG attribute animation).
+  useEffect(() => {
+    if (!isWeb) return;
+    if (obscured || !animate || reduceMotion) {
+      glow.setValue(obscured ? 0 : 1);
+      return;
+    }
+    glow.setValue(0);
+    const anim = Animated.timing(glow, {
+      toValue: 1,
+      duration: 500,
+      delay: delayMs,
+      useNativeDriver: false,
+    });
+    anim.start();
+    return () => anim.stop();
+  }, [animate, delayMs, glow, isWeb, obscured, reduceMotion]);
+
   const cx = size / 2;
   const cy = size / 2;
   const washOpacity = obscured ? 0 : 0.12;
+  const progressShared = {
+    cx,
+    cy,
+    r: radius,
+    stroke: colors.tertiary,
+    strokeWidth,
+    fill: 'none' as const,
+    strokeLinecap: 'round' as const,
+    strokeDasharray: `${circumference} ${circumference}`,
+    strokeOpacity: obscured ? 0.35 : 1,
+    transform: `rotate(-90 ${cx} ${cy})`,
+  };
 
   return (
     <View style={{ width: size, height: size }}>
@@ -123,19 +165,11 @@ export function RingGauge({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        <AnimatedCircle
-          cx={cx}
-          cy={cy}
-          r={radius}
-          stroke={colors.tertiary}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={offset}
-          strokeOpacity={obscured ? 0.35 : 1}
-          transform={`rotate(-90 ${cx} ${cy})`}
-        />
+        {isWeb || !AnimatedCircle ? (
+          <Circle {...progressShared} strokeDashoffset={targetOffset} />
+        ) : (
+          <AnimatedCircle {...progressShared} strokeDashoffset={offset} />
+        )}
       </Svg>
       <View style={styles.center} pointerEvents="none">
         <Text

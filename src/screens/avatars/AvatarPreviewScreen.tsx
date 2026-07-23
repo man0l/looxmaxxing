@@ -4,6 +4,7 @@ import { getAvatarPreview } from '../../types/avatars';
 import { TRAITS } from '../../types/traits';
 import { topPercentLabel } from '../../services/scoring';
 import { useScans } from '../../store/ScanContext';
+import { useOnboarding } from '../../store/OnboardingContext';
 import { AvatarRender } from '../../components/AvatarRender';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { submitRender, ScanApiError } from '../../services/api';
@@ -26,6 +27,7 @@ function isAbortError(e: unknown): boolean {
 export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   const preview = getAvatarPreview(traitId);
   const { latest } = useScans();
+  const { frontPhoto } = useOnboarding();
   const [selected, setSelected] = useState(preview?.styles[0]);
   const [debouncedStyle, setDebouncedStyle] = useState(preview?.styles[0]);
   const [renderUrl, setRenderUrl] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
-  const photoUri = latest.photoUri ?? null;
+  const photoUri = latest.photoUri ?? frontPhoto ?? null;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedStyle(selected), STYLE_DEBOUNCE_MS);
@@ -137,11 +139,21 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
 
         <View style={styles.renderWrap}>
           <View style={styles.renderFrame}>
-            <AvatarRender traitId={traitId} style={selected} size={232} imageUrl={displayUrl} />
+            <AvatarRender
+              traitId={traitId}
+              style={selected}
+              size={232}
+              imageUrl={displayUrl}
+              placeholderUri={!displayUrl ? photoUri : null}
+            />
             {showLoading && (
-              <View style={styles.renderOverlay}>
-                <ActivityIndicator color={colors.primary} />
-                <Text style={styles.renderOverlayText}>Rendering…</Text>
+              <View
+                style={[
+                  styles.renderOverlay,
+                  !displayUrl && photoUri ? styles.renderOverlayOnPhoto : null,
+                ]}
+              >
+                <ActivityIndicator color={colors.primary} size="large" />
               </View>
             )}
           </View>
@@ -220,10 +232,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(8,6,4,0.5)',
   },
-  renderOverlayText: {
-    ...typography.caption,
-    color: colors.textPrimary,
-    marginTop: spacing.xs,
+  renderOverlayOnPhoto: {
+    backgroundColor: 'rgba(8,6,4,0.28)',
   },
   errorBox: { alignItems: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.lg },
   errorText: { ...typography.bodySm, color: colors.textSecondary, textAlign: 'center' },
