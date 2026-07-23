@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { StreakHeatmap } from '../StreakHeatmap';
 import { RingGauge } from '../RingGauge';
+import { BrandMark } from '../BrandMark';
 import { scoreLabel, topPercentLabel } from '../../services/scoring';
 import type { HeatCell } from '../../services/streak';
 import { colors, spacing, radii, typography } from '../../theme';
@@ -13,13 +14,12 @@ interface StreakCardProps {
 export function StreakShareCard({ day, weeks }: StreakCardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.brand}>axend</Text>
+      <BrandMark variant="wordmark" height={22} style={styles.brand} />
       <Text style={styles.bigNumber}>{day}</Text>
       <Text style={styles.bigLabel}>day streak</Text>
       <View style={styles.heatmap}>
         <StreakHeatmap weeks={weeks} />
       </View>
-      <Text style={styles.footer}>looxmaxxing.app</Text>
     </View>
   );
 }
@@ -48,7 +48,7 @@ function isDown(delta?: string): boolean {
 export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreCardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.brand}>axend</Text>
+      <BrandMark variant="wordmark" height={22} style={styles.brand} />
       {photoUri ? (
         <View style={styles.photoRing}>
           <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
@@ -95,7 +95,6 @@ export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreC
           </View>
         ))}
       </View>
-      <Text style={styles.footer}>looxmaxxing.app</Text>
     </View>
   );
 }
@@ -112,8 +111,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brand: {
-    ...typography.label,
-    color: colors.secondary,
     marginBottom: spacing.lg,
   },
   photoRing: {
@@ -209,10 +206,5 @@ const styles = StyleSheet.create({
   gridTop: {
     ...typography.caption,
     color: colors.textSecondary,
-  },
-  footer: {
-    ...typography.caption,
-    color: colors.textTertiary,
-    marginTop: spacing.xxl,
   },
 });

@@ -21,9 +21,14 @@ Entry points: Streak screen "Share streak" (streak card) and the Results header 
 `react-native-share` and `react-native-view-shot` are native modules — **not in Expo Go or web**. Needs `npx expo run:ios` / an EAS dev build. Then:
 
 1. **Facebook App ID** — the Instagram Stories deep link requires one. Replace `FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID'` in `src/services/share.ts` and register the app in the Meta developer console.
-2. **iOS `LSApplicationQueriesSchemes`** (Info.plist / app.json `ios.infoPlist`) — add the schemes the deep links query: `instagram-stories`, `instagram`, `whatsapp`, `twitter`, `tiktoksharesdk` (and `fb`).
-3. **iOS photo-add usage string** — `NSPhotoLibraryAddUsageDescription` if "save to camera roll" via the share sheet is used.
-4. **TikTok** currently routes through the generic share sheet (`Share.open`) — TikTok's first-party share SDK is a separate integration if direct-to-TikTok is needed later.
+2. **iOS `LSApplicationQueriesSchemes`** (Info.plist / app.json `ios.infoPlist`) — add the schemes the deep links query: `instagram-stories`, `instagram`, `whatsapp`, `twitter`, `tiktoksharesdk` (and `fb`). Already set in `app.json`.
+3. **Android package queries** — `plugins/withShareIntentQueries.js` adds `com.twitter.android` (X), WhatsApp, Instagram, TikTok so Android 11+ can resolve direct share intents.
+4. **iOS photo-add usage string** — `NSPhotoLibraryAddUsageDescription` if "save to camera roll" via the share sheet is used.
+5. **Direct targets:** Instagram Stories / Instagram, WhatsApp, **X**, and **TikTok** use `Share.shareSingle`:
+   - X → `Social.Twitter` → package `com.twitter.android` / `twitter://`
+   - TikTok (Android) → custom `social: 'tiktok'` via patch (`patches/react-native-share+12.3.1.patch`) targeting `com.zhiliaoapp.musically` or `com.ss.android.ugc.trill`
+   - TikTok (iOS) → system share sheet (no static-image deep link without TikTok Share Kit)
+   Fallbacks open the OS share sheet if the app isn't installed or the handler fails.
 
 ## Status / honest scope
 

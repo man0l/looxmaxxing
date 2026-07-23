@@ -4,8 +4,6 @@ import type { View } from 'react-native';
 export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
 export type ShareOutcome = 'shared' | 'cancelled' | 'failed';
 
-export const APP_URL = 'https://looxmaxxing.app';
-
 export async function captureCard(_ref: MutableRefObject<View | null>): Promise<string | null> {
   return null;
 }
@@ -18,7 +16,7 @@ export async function shareCard(
   try {
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator) : undefined;
     if (nav?.share) {
-      await nav.share({ text: message, url: APP_URL });
+      await nav.share({ text: message });
       return 'shared';
     }
   } catch (e) {

@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { MutableRefObject } from 'react';
-import type { View } from 'react-native';
+import { Platform, type View } from 'react-native';
 
 export type ShareTarget = 'instagram' | 'x' | 'whatsapp' | 'tiktok' | 'more';
 export type ShareOutcome = 'shared' | 'cancelled' | 'failed';
-
-export const APP_URL = 'https://looxmaxxing.app';
 
 // Facebook App ID is required for the Instagram Stories deep link.
 // Set EXPO_PUBLIC_FACEBOOK_APP_ID in .env / CI secrets.
@@ -98,12 +96,38 @@ export async function shareCard(
         return 'shared';
 
       case 'x':
+        // Same direct path as WhatsApp: Android targets com.twitter.android
+        // (X still ships under that package); iOS uses the twitter:// scheme via
+        // react-native-share's Twitter handler. Fallback to the OS sheet if the
+        // app isn't installed or the native handler fails.
+        try {
+          await single({ social: Social.Twitter, message, ...image });
+        } catch (e) {
+          if (isCancel(e)) return 'cancelled';
+          console.warn('[share] x/twitter failed -> sheet:', (e as Error)?.message);
+          await nativeSheet();
+        }
+        return 'shared';
+
       case 'tiktok':
+        // react-native-share has no built-in TikTok social; Android uses a patched
+        // package-targeted ACTION_SEND (com.zhiliaoapp.musically / trill). iOS has
+        // no static-image deep link without TikTok Share Kit, so it uses the OS sheet.
+        try {
+          if (Platform.OS === 'android') {
+            await single({ social: 'tiktok', message, ...image });
+          } else {
+            await nativeSheet();
+          }
+        } catch (e) {
+          if (isCancel(e)) return 'cancelled';
+          console.warn('[share] tiktok failed -> sheet:', (e as Error)?.message);
+          await nativeSheet();
+        }
+        return 'shared';
+
       case 'more':
       default:
-        // react-native-share can't open X or TikTok directly (TwitterShare has no
-        // component class; TikTok has no Social target and rejects static images),
-        // so these route to the system share sheet with the image + text attached.
         await nativeSheet();
         return 'shared';
     }
