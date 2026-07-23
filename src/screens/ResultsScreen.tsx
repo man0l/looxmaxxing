@@ -32,7 +32,12 @@ import { useScans } from '../store/ScanContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { useTabRootReset } from '../hooks/useTabRootReset';
-import { orderByConcerns, scoreLabel, deltaLabel, topPercentLabel } from '../services/scoring';
+import {
+  orderForShare,
+  scoreLabel,
+  deltaLabel,
+  topPercentLabel,
+} from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -151,8 +156,7 @@ export function ResultsScreen() {
   } else {
     const allDone = streak.tasksLeftToday === 0 && streak.tasksTotalToday > 0;
     const prevScan = scans[1];
-    const orderedScores = orderByConcerns(latest.scores, concerns);
-    const shareRows = orderedScores.map((s) => {
+    const shareRows = orderForShare(latest.scores).map((s) => {
       const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
       return {
         label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
@@ -161,7 +165,7 @@ export function ResultsScreen() {
       };
     });
     const overallPct = Math.round(
-      orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+      latest.scores.reduce((sum, s) => sum + s.percentile, 0) / latest.scores.length,
     );
     const overallScore = scoreLabel(overallPct);
     const overallDelta = prevScan
@@ -284,7 +288,7 @@ export function ResultsScreen() {
         {showShare && (
           <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
             <ScoreShareCard
-              overall={overallScore}
+              overallPercentile={overallPct}
               overallDelta={overallDelta}
               rows={shareRows}
               photoUri={latest.photoUri ?? frontPhoto ?? undefined}
