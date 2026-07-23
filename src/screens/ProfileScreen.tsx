@@ -17,6 +17,7 @@ import { deleteAllUserData } from '../services/deleteAllData';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
 import { ScreenShell } from '../components/ScreenShell';
+import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
 import { useTabRootReset } from '../hooks/useTabRootReset';
@@ -80,7 +81,10 @@ export function ProfileScreen() {
   return (
     <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Profile</Text>
+        <View style={styles.headerRow}>
+          <BrandMark variant="monogram" height={18} />
+          <Text style={styles.header}>Profile</Text>
+        </View>
 
         <Text style={styles.sectionLabel}>Subscription</Text>
         <Card role="quiet" style={styles.card}>
@@ -218,11 +222,16 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
     gap: spacing.sm,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
   header: {
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
-    marginBottom: spacing.md,
   },
   sectionLabel: {
     ...typography.caption,

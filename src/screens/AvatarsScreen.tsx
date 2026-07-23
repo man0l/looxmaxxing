@@ -7,6 +7,7 @@ import { topPercentLabel } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useScans } from '../store/ScanContext';
 import { AvatarRender } from '../components/AvatarRender';
+import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
 import { useCachedRender } from '../hooks/useCachedRender';
@@ -73,7 +74,10 @@ export function AvatarsScreen() {
   return (
     <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Preview your potential</Text>
+        <View style={styles.headerRow}>
+          <BrandMark variant="monogram" height={18} />
+          <Text style={styles.header}>Preview your potential</Text>
+        </View>
         <Text style={styles.sub}>See where your plan can take you — then start it.</Text>
 
         {goals.length > 0 && (
@@ -103,6 +107,7 @@ export function AvatarsScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110, gap: spacing.sm },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sub: {
     ...typography.bodySm,
