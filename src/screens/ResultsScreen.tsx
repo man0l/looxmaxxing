@@ -212,7 +212,12 @@ export function ResultsScreen() {
           )}
 
           <Text style={styles.sectionFocus}>Overall</Text>
-          <Card role="hero" style={styles.overallHero}>
+          <Card
+            role="hero"
+            style={styles.overallHero}
+            onPress={() => setShowShare(true)}
+            accessibilityLabel="Share overall results"
+          >
             <View style={styles.overallVisual}>
               {photoUri ? (
                 <Image source={{ uri: photoUri }} style={styles.heroPhoto} />
