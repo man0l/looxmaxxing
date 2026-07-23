@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
 import { getScores, topPercentLabel } from '../../services/scoring';
@@ -24,6 +25,18 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
   const { completeTask, visible, dismiss } = useDayCompleteMoment();
   const sessionId = workoutSessionId(item.traitId);
   const done = isDone(sessionId);
+  const [pendingClose, setPendingClose] = useState(false);
+
+  const handleComplete = () => {
+    completeTask(sessionId);
+    setPendingClose(true);
+  };
+
+  useEffect(() => {
+    if (!pendingClose || visible) return;
+    const timer = setTimeout(onClose, 500);
+    return () => clearTimeout(timer);
+  }, [pendingClose, visible, onClose]);
 
   return (
     <NestedScreen onClose={onClose} style={styles.root}>
@@ -54,7 +67,7 @@ export function WorkoutDetailScreen({ item, onClose }: Props) {
 
       <View style={styles.footer}>
         <PressableScale
-          onPress={() => completeTask(sessionId)}
+          onPress={handleComplete}
           disabled={done}
           style={[styles.cta, done && styles.ctaDone]}
         >
