@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { ScreenShell } from '../components/ScreenShell';
 import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
+import { TabSwipeHost } from '../components/TabSwipeHost';
 import { useTabRootReset } from '../hooks/useTabRootReset';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -66,148 +67,155 @@ export function ProfileScreen() {
     frontPhoto || profilePhoto || scans.some((scan) => scan.photoUri),
   );
 
-  useTabRootReset(
-    useCallback(() => {
-      setShowMethodology(false);
-      setConfirmDelete(false);
-      setConfirmDeleteAll(false);
-    }, []),
-  );
+  const popNested = useCallback(() => {
+    setShowMethodology(false);
+    setConfirmDelete(false);
+    setConfirmDeleteAll(false);
+  }, []);
 
+  useTabRootReset(popNested);
+
+  const isNested = showMethodology || confirmDelete || confirmDeleteAll;
+
+  let body: ReactNode;
   if (showMethodology) {
-    return <MethodologyScreen onClose={() => setShowMethodology(false)} />;
+    body = <MethodologyScreen onClose={() => setShowMethodology(false)} />;
+  } else {
+    body = (
+      <ScreenShell>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+          <BrandMark style={styles.brand} />
+          <Text style={styles.header}>Profile</Text>
+
+          <Text style={styles.sectionLabel}>Subscription</Text>
+          <Card role="quiet" style={styles.card}>
+            <Row label="Status" value={subscribed ? 'Pro' : 'Free'} first />
+            {subscribed ? (
+              <Row
+                label="Manage subscription"
+                tone="action"
+                onPress={() => {
+                  void presentCustomerCenter().catch(() => {
+                    showToast('Couldn’t open subscription management.', 'error');
+                  });
+                }}
+              />
+            ) : (
+              <Row label="Unlock your results" tone="action" onPress={openPaywall} />
+            )}
+            <Row label="Restore purchases" tone="action" onPress={restore} />
+          </Card>
+
+          <Text style={styles.sectionLabel}>About</Text>
+          <Card role="quiet" style={styles.card}>
+            <Row label="How scoring works" onPress={() => setShowMethodology(true)} first />
+          </Card>
+
+          <Text style={styles.sectionLabel}>Privacy</Text>
+          <Card role="quiet" style={styles.card}>
+            <Row
+              label={hasPhotos ? 'Delete my photos' : 'No photos stored'}
+              tone={hasPhotos ? 'danger' : 'default'}
+              onPress={hasPhotos ? () => setConfirmDelete(true) : undefined}
+              disabled={!hasPhotos}
+              first
+            />
+            <Row
+              label="Delete all my data"
+              tone="danger"
+              onPress={() => setConfirmDeleteAll(true)}
+            />
+            <Row
+              label="Privacy policy"
+              tone="action"
+              onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+            />
+          </Card>
+        </ScrollView>
+
+        {confirmDelete && (
+          <View style={styles.overlay}>
+            <Pressable style={styles.backdrop} onPress={() => setConfirmDelete(false)} />
+            <View style={styles.dialog}>
+              <Text style={styles.dialogTitle}>Delete your photos?</Text>
+              <Text style={styles.dialogBody}>
+                Your front and profile photos will be removed from this device. Your scores stay, but
+                you’ll need new photos to re-scan.
+              </Text>
+              <PressableScale
+                style={styles.dialogDelete}
+                onPress={() => {
+                  dispatch({ type: 'CLEAR_PHOTOS' });
+                  setConfirmDelete(false);
+                }}
+              >
+                <Text style={styles.dialogDeleteText}>Delete photos</Text>
+              </PressableScale>
+              <Pressable style={styles.dialogCancel} onPress={() => setConfirmDelete(false)}>
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {confirmDeleteAll && (
+          <View style={styles.overlay}>
+            <Pressable
+              style={styles.backdrop}
+              onPress={() => !deletingAll && setConfirmDeleteAll(false)}
+            />
+            <View style={styles.dialog}>
+              <Text style={styles.dialogTitle}>Delete all your data?</Text>
+              <Text style={styles.dialogBody}>
+                This removes your scores, scan history, streak, practice progress, photos, and your
+                anonymous identifier from this device and our servers.
+                {subscribed
+                  ? ' Your subscription stays active until you cancel it in App Store settings — use Restore purchases to re-link it after starting over.'
+                  : ''}
+              </Text>
+              <PressableScale
+                style={[styles.dialogDelete, deletingAll && styles.dialogDeleteDisabled]}
+                disabled={deletingAll}
+                onPress={() => {
+                  setDeletingAll(true);
+                  void deleteAllUserData().then(({ serverOk }) => {
+                    setDeletingAll(false);
+                    setConfirmDeleteAll(false);
+                    if (serverOk) {
+                      showToast('All data deleted.', 'success');
+                    } else {
+                      showToast(
+                        'Local data cleared. Server cleanup failed — try again when online.',
+                        'error',
+                      );
+                    }
+                  });
+                }}
+              >
+                {deletingAll ? (
+                  <ActivityIndicator color={colors.onAccent} />
+                ) : (
+                  <Text style={styles.dialogDeleteText}>Delete all data</Text>
+                )}
+              </PressableScale>
+              <Pressable
+                style={styles.dialogCancel}
+                disabled={deletingAll}
+                onPress={() => setConfirmDeleteAll(false)}
+              >
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </ScreenShell>
+    );
   }
 
   return (
-    <ScreenShell>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <View style={styles.headerRow}>
-          <BrandMark variant="monogram" height={18} />
-          <Text style={styles.header}>Profile</Text>
-        </View>
-
-        <Text style={styles.sectionLabel}>Subscription</Text>
-        <Card role="quiet" style={styles.card}>
-          <Row label="Status" value={subscribed ? 'Pro' : 'Free'} first />
-          {subscribed ? (
-            <Row
-              label="Manage subscription"
-              tone="action"
-              onPress={() => {
-                void presentCustomerCenter().catch(() => {
-                  showToast('Couldn’t open subscription management.', 'error');
-                });
-              }}
-            />
-          ) : (
-            <Row label="Unlock your results" tone="action" onPress={openPaywall} />
-          )}
-          <Row label="Restore purchases" tone="action" onPress={restore} />
-        </Card>
-
-        <Text style={styles.sectionLabel}>About</Text>
-        <Card role="quiet" style={styles.card}>
-          <Row label="How scoring works" onPress={() => setShowMethodology(true)} first />
-        </Card>
-
-        <Text style={styles.sectionLabel}>Privacy</Text>
-        <Card role="quiet" style={styles.card}>
-          <Row
-            label={hasPhotos ? 'Delete my photos' : 'No photos stored'}
-            tone={hasPhotos ? 'danger' : 'default'}
-            onPress={hasPhotos ? () => setConfirmDelete(true) : undefined}
-            disabled={!hasPhotos}
-            first
-          />
-          <Row
-            label="Delete all my data"
-            tone="danger"
-            onPress={() => setConfirmDeleteAll(true)}
-          />
-          <Row
-            label="Privacy policy"
-            tone="action"
-            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-          />
-        </Card>
-      </ScrollView>
-
-      {confirmDelete && (
-        <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={() => setConfirmDelete(false)} />
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>Delete your photos?</Text>
-            <Text style={styles.dialogBody}>
-              Your front and profile photos will be removed from this device. Your scores stay, but
-              you’ll need new photos to re-scan.
-            </Text>
-            <PressableScale
-              style={styles.dialogDelete}
-              onPress={() => {
-                dispatch({ type: 'CLEAR_PHOTOS' });
-                setConfirmDelete(false);
-              }}
-            >
-              <Text style={styles.dialogDeleteText}>Delete photos</Text>
-            </PressableScale>
-            <Pressable style={styles.dialogCancel} onPress={() => setConfirmDelete(false)}>
-              <Text style={styles.dialogCancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {confirmDeleteAll && (
-        <View style={styles.overlay}>
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => !deletingAll && setConfirmDeleteAll(false)}
-          />
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>Delete all your data?</Text>
-            <Text style={styles.dialogBody}>
-              This removes your scores, scan history, streak, practice progress, photos, and your
-              anonymous identifier from this device and our servers.
-              {subscribed
-                ? ' Your subscription stays active until you cancel it in App Store settings — use Restore purchases to re-link it after starting over.'
-                : ''}
-            </Text>
-            <PressableScale
-              style={[styles.dialogDelete, deletingAll && styles.dialogDeleteDisabled]}
-              disabled={deletingAll}
-              onPress={() => {
-                setDeletingAll(true);
-                void deleteAllUserData().then(({ serverOk }) => {
-                  setDeletingAll(false);
-                  setConfirmDeleteAll(false);
-                  if (serverOk) {
-                    showToast('All data deleted.', 'success');
-                  } else {
-                    showToast(
-                      'Local data cleared. Server cleanup failed — try again when online.',
-                      'error',
-                    );
-                  }
-                });
-              }}
-            >
-              {deletingAll ? (
-                <ActivityIndicator color={colors.onAccent} />
-              ) : (
-                <Text style={styles.dialogDeleteText}>Delete all data</Text>
-              )}
-            </PressableScale>
-            <Pressable
-              style={styles.dialogCancel}
-              disabled={deletingAll}
-              onPress={() => setConfirmDeleteAll(false)}
-            >
-              <Text style={styles.dialogCancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-    </ScreenShell>
+    <TabSwipeHost isNested={isNested} onPopNested={popNested} enabled={!deletingAll}>
+      {body}
+    </TabSwipeHost>
   );
 }
 
@@ -218,20 +226,18 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: spacing.xl,
-    paddingTop: 60,
+    paddingTop: 56,
     paddingBottom: 110,
     gap: spacing.sm,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+  brand: {
+    marginBottom: spacing.sm,
   },
   header: {
     ...typography.display,
     fontSize: 24,
     color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
   sectionLabel: {
     ...typography.caption,

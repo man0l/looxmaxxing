@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { Card } from '../components/Card';
 import { PressableScale } from '../components/PressableScale';
 import { RingGauge } from '../components/RingGauge';
 import { ScanMotif } from '../components/ScanMotif';
+import { TabSwipeHost } from '../components/TabSwipeHost';
 import { StreakScreen } from './StreakScreen';
 import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -49,25 +50,27 @@ export function ResultsScreen() {
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const goToPractice = () => navigation.navigate('Practice' as never);
 
-  useTabRootReset(
-    useCallback(() => {
-      setShowStreak(false);
-      setOpenTrait(null);
-      setShowShare(false);
-      cancelRescan();
-    }, [cancelRescan]),
-  );
+  const popNested = useCallback(() => {
+    setShowStreak(false);
+    setOpenTrait(null);
+    setShowShare(false);
+    cancelRescan();
+  }, [cancelRescan]);
+
+  useTabRootReset(popNested);
+
+  const isNested = Boolean(showStreak || openTrait || rescanStep || showShare);
+
+  let body: ReactNode;
 
   if (!entitlementReady) {
-    return (
+    body = (
       <ScreenShell style={styles.analyzingRoot}>
         <View />
       </ScreenShell>
     );
-  }
-
-  if (!subscribed) {
-    return (
+  } else if (!subscribed) {
+    body = (
       <ScreenShell>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.lockedContainer}>
           <BrandMark style={styles.brandLocked} />
@@ -87,13 +90,10 @@ export function ResultsScreen() {
         <CaptureFab onPress={openPaywall} />
       </ScreenShell>
     );
-  }
-
-  // The first real scan runs right after payment (triggered in App.tsx). Until
-  // it lands, show an analyzing state instead of the mock-seeded results; on
-  // failure, offer a retry so the user is never stuck.
-  if (subscribed && !hasRealScan) {
-    return (
+  } else if (!hasRealScan) {
+    // First real scan runs right after payment (App.tsx). Show analyzing /
+    // retry until scores land — never leave the user stuck on seeded mocks.
+    body = (
       <ScreenShell style={styles.analyzingRoot}>
         {scanning ? (
           <>
@@ -119,14 +119,10 @@ export function ResultsScreen() {
         )}
       </ScreenShell>
     );
-  }
-
-  if (showStreak) {
-    return <StreakScreen onClose={() => setShowStreak(false)} />;
-  }
-
-  if (openTrait) {
-    return (
+  } else if (showStreak) {
+    body = <StreakScreen onClose={() => setShowStreak(false)} />;
+  } else if (openTrait) {
+    body = (
       <TraitDetailScreen
         traitId={openTrait}
         onClose={() => setOpenTrait(null)}
@@ -143,10 +139,8 @@ export function ResultsScreen() {
         }}
       />
     );
-  }
-
-  if (rescanStep) {
-    return (
+  } else if (rescanStep) {
+    body = (
       <GuidedCaptureScreen
         step={rescanStep}
         stepLabel="New scan"
@@ -154,77 +148,82 @@ export function ResultsScreen() {
         onCancel={cancelRescan}
       />
     );
-  }
+  } else {
+    const allDone = streak.tasksLeftToday === 0 && streak.tasksTotalToday > 0;
+    const prevScan = scans[1];
+    const orderedScores = orderByConcerns(latest.scores, concerns);
+    const shareRows = orderedScores.map((s) => {
+      const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
+      return {
+        label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+        percentile: s.percentile,
+        delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+      };
+    });
+    const overallPct = Math.round(
+      orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+    );
+    const overallScore = scoreLabel(overallPct);
+    const overallDelta = prevScan
+      ? deltaLabel(
+          prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
+          overallPct,
+        )
+      : undefined;
+    const photoUri = latest.photoUri ?? frontPhoto ?? undefined;
+    const improved = overallDelta != null && overallDelta.startsWith('+');
+    const declined = overallDelta != null && overallDelta.startsWith('-');
 
-  const allDone = streak.tasksLeftToday === 0 && streak.tasksTotalToday > 0;
+    body = (
+      <ScreenShell>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.unlockedContainer}>
+          <BrandMark />
+          <View style={styles.topBar}>
+            <Pressable
+              style={styles.streakChip}
+              onPress={() => setShowStreak(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Day ${streak.currentDay} streak`}
+            >
+              <Text style={styles.streakDay}>Day {streak.currentDay}</Text>
+              <Text style={styles.streakDot}>·</Text>
+              <Text style={styles.streakTasks}>
+                {allDone ? 'all done ✓' : `${streak.tasksLeftToday} left today`}
+              </Text>
+              <Text style={styles.streakChevron}>›</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowShare(true)}
+              hitSlop={8}
+              accessibilityLabel="Share results"
+            >
+              <ShareIcon size={22} color={colors.primary} />
+            </Pressable>
+          </View>
 
-  const prevScan = scans[1];
-  const orderedScores = orderByConcerns(latest.scores, concerns);
-  const shareRows = orderedScores.map((s) => {
-    const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
-    return {
-      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
-      percentile: s.percentile,
-      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
-    };
-  });
-  const overallPct = Math.round(
-    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
-  );
-  const overallScore = scoreLabel(overallPct);
-  const overallDelta = prevScan
-    ? deltaLabel(
-        prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
-        overallPct,
-      )
-    : undefined;
+          {justRescanned && (
+            <Card role="inset" style={styles.doneBanner}>
+              <Text style={styles.doneText}>✓ New scan saved — your percentiles updated</Text>
+            </Card>
+          )}
 
-  const photoUri = latest.photoUri ?? frontPhoto ?? undefined;
-  const improved =
-    overallDelta != null && overallDelta.startsWith('+');
-  const declined =
-    overallDelta != null && overallDelta.startsWith('-');
-
-  return (
-    <ScreenShell>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.unlockedContainer}>
-        <BrandMark />
-        <View style={styles.topBar}>
-          <Pressable
-            style={styles.streakChip}
-            onPress={() => setShowStreak(true)}
-            accessibilityRole="button"
-            accessibilityLabel={`Day ${streak.currentDay} streak`}
-          >
-            <Text style={styles.streakDay}>Day {streak.currentDay}</Text>
-            <Text style={styles.streakDot}>·</Text>
-            <Text style={styles.streakTasks}>
-              {allDone
-                ? 'all done ✓'
-                : `${streak.tasksLeftToday} left today`}
-            </Text>
-            <Text style={styles.streakChevron}>›</Text>
-          </Pressable>
-          <Pressable onPress={() => setShowShare(true)} hitSlop={8} accessibilityLabel="Share results">
-            <ShareIcon size={22} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        {justRescanned && (
-          <Card role="inset" style={styles.doneBanner}>
-            <Text style={styles.doneText}>✓ New scan saved — your percentiles updated</Text>
-          </Card>
-        )}
-
-        <Card role="hero" style={styles.overallHero}>
-          <RingGauge
-            percentile={overallPct}
-            size={112}
-            centerLabel={overallScore}
-            delayMs={0}
-          />
-          <View style={styles.overallInfo}>
-            <Text style={styles.overallKicker}>Overall</Text>
+          <Text style={styles.sectionFocus}>Overall</Text>
+          <Card role="hero" style={styles.overallHero}>
+            <View style={styles.overallVisual}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.heroPhoto} />
+              ) : (
+                <View style={[styles.heroPhoto, styles.heroPhotoEmpty]} />
+              )}
+              <View style={styles.ringBadge}>
+                <RingGauge
+                  percentile={overallPct}
+                  size={92}
+                  centerLabel={overallScore}
+                  delayMs={0}
+                />
+              </View>
+            </View>
             <Text style={styles.overallPercentile}>
               {topPercentLabel(overallPct)} of men
             </Text>
@@ -247,59 +246,70 @@ export function ResultsScreen() {
                 </Text>
               </View>
             )}
-          </View>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.heroPhoto} />
-          ) : null}
-        </Card>
-
-        <Text style={styles.sectionFocus}>Your focus</Text>
-        <TraitGrid
-          concerns={concerns}
-          scores={latest.scores}
-          onOpenPlan={setOpenTrait}
-          revealBaseMs={160}
-        />
-
-        <Card role="quiet" onPress={() => navigation.navigate('Avatars' as never)} style={styles.potentialCard}>
-          <View style={styles.potentialInfo}>
-            <Text style={styles.potentialTitle}>See your potential</Text>
-            <Text style={styles.potentialCaption}>
-              Preview where your plan can take each trait.
-            </Text>
-          </View>
-          <Text style={styles.potentialChevron}>›</Text>
-        </Card>
-
-        {hasRealScan && (
-          <Card role="inset" onPress={startRescan} style={styles.rescanCardActive}>
-            <Text style={styles.rescanTitleActive}>Re-rate now ›</Text>
-            <Text style={styles.rescanCaption}>
-              Capture a new scan anytime to see how your percentiles moved.
-            </Text>
           </Card>
-        )}
-      </ScrollView>
-      <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
-      {showShare && (
-        <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
-          <ScoreShareCard
-            overall={overallScore}
-            overallDelta={overallDelta}
-            rows={shareRows}
-            photoUri={latest.photoUri ?? frontPhoto ?? undefined}
+          <Text style={styles.sectionFocus}>Your focus</Text>
+          <TraitGrid
+            concerns={concerns}
+            scores={latest.scores}
+            onOpenPlan={setOpenTrait}
+            revealBaseMs={160}
           />
-        </ShareSheet>
-      )}
 
-      {scanning && (
-        <View style={styles.analyzingOverlay}>
-          <ScanMotif size={120} />
-          <Text style={styles.analyzingText}>Analyzing your photos…</Text>
-        </View>
-      )}
-    </ScreenShell>
+          <Card
+            role="quiet"
+            onPress={() => navigation.navigate('Avatars' as never)}
+            style={styles.potentialCard}
+          >
+            <View style={styles.potentialInfo}>
+              <Text style={styles.potentialTitle}>See your potential</Text>
+              <Text style={styles.potentialCaption}>
+                Preview where your plan can take each trait.
+              </Text>
+            </View>
+            <Text style={styles.potentialChevron}>›</Text>
+          </Card>
+
+          {hasRealScan && (
+            <Card role="inset" onPress={startRescan} style={styles.rescanCardActive}>
+              <Text style={styles.rescanTitleActive}>Re-rate now ›</Text>
+              <Text style={styles.rescanCaption}>
+                Capture a new scan anytime to see how your percentiles moved.
+              </Text>
+            </Card>
+          )}
+        </ScrollView>
+        <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
+
+        {showShare && (
+          <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
+            <ScoreShareCard
+              overall={overallScore}
+              overallDelta={overallDelta}
+              rows={shareRows}
+              photoUri={latest.photoUri ?? frontPhoto ?? undefined}
+            />
+          </ShareSheet>
+        )}
+
+        {scanning && (
+          <View style={styles.analyzingOverlay}>
+            <ScanMotif size={120} />
+            <Text style={styles.analyzingText}>Analyzing your photos…</Text>
+          </View>
+        )}
+      </ScreenShell>
+    );
+  }
+
+  return (
+    <TabSwipeHost
+      isNested={isNested}
+      onPopNested={popNested}
+      enabled={entitlementReady && !(subscribed && !hasRealScan && scanning)}
+    >
+      {body}
+    </TabSwipeHost>
   );
 }
 
@@ -366,30 +376,52 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   overallHero: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
-  overallInfo: {
-    flex: 1,
-    gap: spacing.xs,
+  overallVisual: {
+    position: 'relative',
+    width: 168,
+    height: 168,
+    marginBottom: spacing.md,
+    alignSelf: 'center',
   },
-  overallKicker: {
-    ...typography.caption,
-    color: colors.textTertiary,
+  heroPhoto: {
+    width: 168,
+    height: 168,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceInset,
+  },
+  heroPhotoEmpty: {
+    borderStyle: 'dashed',
+  },
+  ringBadge: {
+    position: 'absolute',
+    right: -14,
+    bottom: -14,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 4,
+    borderColor: colors.surface,
+    padding: 3,
   },
   overallPercentile: {
     ...typography.display,
-    fontSize: 22,
+    fontSize: 26,
+    lineHeight: 30,
     color: colors.textPrimary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   deltaChip: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
+    alignSelf: 'center',
     borderRadius: radii.sm,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     backgroundColor: colors.surfaceInset,
   },
   deltaChipUp: {
@@ -407,13 +439,6 @@ const styles = StyleSheet.create({
   },
   deltaTextDown: {
     color: colors.textSecondary,
-  },
-  heroPhoto: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   sectionFocus: {
     ...typography.caption,
