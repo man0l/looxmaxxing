@@ -13,7 +13,7 @@ import { useOnboarding } from '../store/OnboardingContext';
 import { ShareSheet } from './share/ShareSheet';
 import { ScoreShareCard } from './share/ShareCards';
 import { PressableScale } from './PressableScale';
-import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
+import { orderForShare, deltaLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, fonts, spacing, radii, typography } from '../theme';
 
@@ -24,13 +24,12 @@ interface Props {
 export function DayCompleteMoment({ onClose }: Props) {
   const streak = useStreak();
   const { scans, latest } = useScans();
-  const { concerns, frontPhoto } = useOnboarding();
+  const { frontPhoto } = useOnboarding();
   const [showShare, setShowShare] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const prevScan = scans[1];
-  const orderedScores = orderByConcerns(latest.scores, concerns);
-  const shareRows = orderedScores.map((s) => {
+  const shareRows = orderForShare(latest.scores).map((s) => {
     const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
     return {
       label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
@@ -39,9 +38,8 @@ export function DayCompleteMoment({ onClose }: Props) {
     };
   });
   const overallPct = Math.round(
-    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+    latest.scores.reduce((sum, s) => sum + s.percentile, 0) / latest.scores.length,
   );
-  const overallScore = scoreLabel(overallPct);
   const overallDelta = prevScan
     ? deltaLabel(
         prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
@@ -187,7 +185,7 @@ export function DayCompleteMoment({ onClose }: Props) {
       {showShare && (
         <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
           <ScoreShareCard
-            overall={overallScore}
+            overallPercentile={overallPct}
             overallDelta={overallDelta}
             rows={shareRows}
             photoUri={latest.photoUri ?? frontPhoto ?? undefined}

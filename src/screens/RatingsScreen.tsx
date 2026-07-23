@@ -18,7 +18,7 @@ import { ComparisonScreen } from './ratings/ComparisonScreen';
 import { ScanDetailScreen } from './ratings/ScanDetailScreen';
 import { ShareIcon, CompareIcon } from '../components/icons/ActionIcons';
 import { TRAITS, type TraitScore } from '../types/traits';
-import { topPercentLabel, scoreLabel, deltaLabel } from '../services/scoring';
+import { topPercentLabel, scoreLabel, deltaLabel, orderForShare } from '../services/scoring';
 import type { Scan } from '../types/scan';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -34,7 +34,7 @@ function formatDate(iso: string): string {
 }
 
 function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
-  return scores.map((s) => {
+  return orderForShare(scores).map((s) => {
     const before = prev?.find((p) => p.traitId === s.traitId)?.percentile;
     return {
       label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
@@ -182,7 +182,7 @@ export function RatingsScreen() {
             return (
               <ShareSheet message="My axend scan" onClose={() => setShareScan(null)}>
                 <ScoreShareCard
-                  overall={scoreLabel(curOverall)}
+                  overallPercentile={curOverall}
                   overallDelta={
                     prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
                   }

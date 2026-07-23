@@ -22,6 +22,30 @@ export function orderByConcerns(scores: TraitScore[], concerns: string[]): Trait
   ];
 }
 
+/** Fixed share-card order — structure first, never concern-personalized. */
+export const SHARE_TRAIT_ORDER = [
+  'jawline',
+  'cheekbones',
+  'masculinity',
+  'skin',
+  'hair',
+  'smile',
+  'eyes',
+] as const;
+
+export function orderForShare(scores: TraitScore[]): TraitScore[] {
+  const byId = new Map(scores.map((s) => [s.traitId, s]));
+  const ordered: TraitScore[] = [];
+  for (const id of SHARE_TRAIT_ORDER) {
+    const s = byId.get(id);
+    if (s) ordered.push(s);
+  }
+  for (const s of scores) {
+    if (!ordered.some((o) => o.traitId === s.traitId)) ordered.push(s);
+  }
+  return ordered;
+}
+
 export function topPercentLabel(percentile: number): string {
   // Percentiles may be averages (e.g. overall) — always show a whole number.
   const top = Math.max(1, Math.min(99, Math.round(100 - percentile)));

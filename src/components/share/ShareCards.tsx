@@ -31,7 +31,7 @@ interface ScoreRow {
 }
 
 interface ScoreCardProps {
-  overall: string;
+  overallPercentile: number;
   rows: ScoreRow[];
   photoUri?: string;
   overallDelta?: string;
@@ -45,39 +45,66 @@ function isDown(delta?: string): boolean {
   return Boolean(delta && delta.startsWith('-'));
 }
 
-export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreCardProps) {
+export function ScoreShareCard({
+  overallPercentile,
+  rows,
+  photoUri,
+  overallDelta,
+}: ScoreCardProps) {
+  const overallScore = scoreLabel(overallPercentile);
+  const improved = isUp(overallDelta);
+  const declined = isDown(overallDelta);
+
   return (
     <View style={styles.card}>
       <BrandMark variant="wordmark" height={22} style={styles.brand} />
-      {photoUri ? (
-        <View style={styles.photoRing}>
-          <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
-          <View style={styles.photoScore}>
-            <Text style={styles.photoScoreText}>{overall}</Text>
-          </View>
+
+      <View style={styles.overallVisual}>
+        {photoUri ? (
+          <Image source={{ uri: photoUri }} style={styles.heroPhoto} resizeMode="cover" />
+        ) : (
+          <View style={[styles.heroPhoto, styles.heroPhotoEmpty]} />
+        )}
+        <View style={styles.ringBadge}>
+          <RingGauge
+            percentile={overallPercentile}
+            size={80}
+            centerLabel={overallScore}
+            animate={false}
+          />
         </View>
-      ) : null}
-      <Text style={styles.scanLabel}>My scan</Text>
-      {photoUri ? null : <Text style={styles.bigNumber}>{overall}</Text>}
-      <View style={styles.overallLabelRow}>
-        <Text style={styles.bigLabel}>overall</Text>
-        {overallDelta ? (
+      </View>
+
+      <Text style={styles.overallPercentile}>{topPercentLabel(overallPercentile)} of men</Text>
+      {overallDelta ? (
+        <View
+          style={[
+            styles.deltaChip,
+            improved && styles.deltaChipUp,
+            declined && styles.deltaChipDown,
+          ]}
+        >
           <Text
             style={[
-              styles.overallDelta,
-              isUp(overallDelta) && styles.deltaUp,
-              isDown(overallDelta) && styles.deltaDown,
+              styles.deltaText,
+              improved && styles.deltaTextUp,
+              declined && styles.deltaTextDown,
             ]}
           >
-            {isUp(overallDelta) ? '▲ ' : isDown(overallDelta) ? '▼ ' : ''}
             {overallDelta}
           </Text>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
+
       <View style={styles.grid}>
         {rows.map((r) => (
           <View key={r.label} style={styles.gridItem}>
-            <RingGauge percentile={r.percentile} size={46} centerLabel={scoreLabel(r.percentile)} />
+            <RingGauge
+              percentile={r.percentile}
+              size={46}
+              centerLabel={scoreLabel(r.percentile)}
+              animate={false}
+            />
             <Text style={styles.gridLabel}>{r.label}</Text>
             <Text style={styles.gridTop}>{topPercentLabel(r.percentile)}</Text>
             {r.delta ? (
@@ -99,9 +126,11 @@ export function ScoreShareCard({ overall, rows, photoUri, overallDelta }: ScoreC
   );
 }
 
+const PHOTO_SIZE = 168;
+
 const styles = StyleSheet.create({
   card: {
-    width: 264,
+    width: 300,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
@@ -113,41 +142,64 @@ const styles = StyleSheet.create({
   brand: {
     marginBottom: spacing.lg,
   },
-  photoRing: {
-    width: 132,
-    height: 132,
-    borderRadius: radii.full,
-    borderWidth: 2,
-    borderColor: colors.tertiary,
-    padding: 4,
+  overallVisual: {
+    position: 'relative',
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
     marginBottom: spacing.md,
+    alignSelf: 'center',
   },
-  photo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: radii.full,
-    backgroundColor: colors.surface,
+  heroPhoto: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceInset,
   },
-  photoScore: {
+  heroPhotoEmpty: {
+    borderStyle: 'dashed',
+  },
+  ringBadge: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
-    minWidth: 40,
-    height: 40,
+    right: -12,
+    bottom: -12,
     borderRadius: radii.full,
-    backgroundColor: colors.primary,
-    borderWidth: 2,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 4,
     borderColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
+    padding: 3,
   },
-  photoScoreText: {
+  overallPercentile: {
+    ...typography.display,
+    fontSize: 22,
+    lineHeight: 26,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  deltaChip: {
+    alignSelf: 'center',
+    borderRadius: radii.sm,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: colors.surfaceInset,
+    marginTop: spacing.sm,
+  },
+  deltaChipUp: {
+    backgroundColor: 'rgba(239,230,216,0.14)',
+  },
+  deltaChipDown: {
+    backgroundColor: 'rgba(154,146,133,0.14)',
+  },
+  deltaText: {
     ...typography.label,
+    color: colors.textSecondary,
+  },
+  deltaTextUp: {
     color: colors.tertiary,
   },
-  scanLabel: {
-    ...typography.caption,
+  deltaTextDown: {
     color: colors.textSecondary,
   },
   bigNumber: {
@@ -158,17 +210,6 @@ const styles = StyleSheet.create({
   },
   bigLabel: {
     ...typography.bodySm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  overallLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  overallDelta: {
-    ...typography.label,
-    fontWeight: '700',
     color: colors.textSecondary,
     marginTop: 2,
   },
