@@ -15,7 +15,7 @@ import { ScoreShareCard } from './share/ShareCards';
 import { PressableScale } from './PressableScale';
 import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
 import { TRAITS } from '../types/traits';
-import { colors, spacing, radii, typography } from '../theme';
+import { colors, fonts, spacing, radii, typography } from '../theme';
 
 interface Props {
   onClose: () => void;
@@ -50,7 +50,7 @@ export function DayCompleteMoment({ onClose }: Props) {
     : undefined;
 
   const glow = useMemo(() => new Animated.Value(0), []);
-  const dayScale = useMemo(() => new Animated.Value(0.86), []);
+  const dayScale = useMemo(() => new Animated.Value(0.92), []);
   const contentOpacity = useMemo(() => new Animated.Value(0), []);
   const contentY = useMemo(() => new Animated.Value(14), []);
 
@@ -80,7 +80,7 @@ export function DayCompleteMoment({ onClose }: Props) {
       return;
     }
     glow.setValue(0);
-    dayScale.setValue(0.86);
+    dayScale.setValue(0.92);
     contentOpacity.setValue(0);
     contentY.setValue(14);
 
@@ -93,8 +93,8 @@ export function DayCompleteMoment({ onClose }: Props) {
         }),
         Animated.spring(dayScale, {
           toValue: 1,
-          friction: 6,
-          tension: 120,
+          friction: 7,
+          tension: 100,
           useNativeDriver: true,
         }),
       ]),
@@ -155,9 +155,14 @@ export function DayCompleteMoment({ onClose }: Props) {
         />
         <View style={styles.sheet}>
           <Text style={styles.kicker}>All done for today</Text>
-          <Animated.Text style={[styles.day, { transform: [{ scale: dayScale }] }]}>
-            Day {streak.currentDay}
-          </Animated.Text>
+          <View style={styles.dayWrap}>
+            <Animated.Text
+              style={[styles.day, { transform: [{ scale: dayScale }] }]}
+              allowFontScaling={false}
+            >
+              Day {streak.currentDay}
+            </Animated.Text>
+          </View>
           <Animated.View
             style={{
               opacity: contentOpacity,
@@ -219,19 +224,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.lg,
-    padding: spacing.xl,
-    overflow: 'hidden',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    overflow: 'visible',
   },
   kicker: {
     ...typography.caption,
     color: colors.tertiary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  dayWrap: {
+    minHeight: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    overflow: 'visible',
   },
   day: {
-    ...typography.display,
-    fontSize: 48,
+    fontFamily: fonts.semiBold,
+    fontSize: 56,
+    lineHeight: 64,
+    fontWeight: '600',
+    letterSpacing: -1,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   sub: {
     ...typography.bodyMd,

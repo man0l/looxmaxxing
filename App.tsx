@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   useFonts,
@@ -104,20 +105,26 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <ToastProvider>
-        <OnboardingProvider>
-          <SubscriptionProvider>
-            <PracticeProvider>
-              <StreakProvider>
-                <ScanProvider>
-                  <Root />
-                </ScanProvider>
-              </StreakProvider>
-            </PracticeProvider>
-          </SubscriptionProvider>
-        </OnboardingProvider>
-      </ToastProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <ToastProvider>
+          <OnboardingProvider>
+            <SubscriptionProvider>
+              <PracticeProvider>
+                <StreakProvider>
+                  <ScanProvider>
+                    <Root />
+                  </ScanProvider>
+                </StreakProvider>
+              </PracticeProvider>
+            </SubscriptionProvider>
+          </OnboardingProvider>
+        </ToastProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});

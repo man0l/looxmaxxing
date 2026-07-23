@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AVATAR_PREVIEWS, type AvatarPreview } from '../types/avatars';
@@ -10,6 +10,7 @@ import { AvatarRender } from '../components/AvatarRender';
 import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
+import { TabSwipeHost } from '../components/TabSwipeHost';
 import { useCachedRender } from '../hooks/useCachedRender';
 import { useTabRootReset } from '../hooks/useTabRootReset';
 import { AvatarPreviewScreen } from './avatars/AvatarPreviewScreen';
@@ -43,7 +44,8 @@ export function AvatarsScreen() {
   const [activeTraitId, setActiveTraitId] = useState<string | null>(null);
   const [lastFocusTrait, setLastFocusTrait] = useState<string | undefined>(undefined);
 
-  useTabRootReset(useCallback(() => setActiveTraitId(null), []));
+  const popNested = useCallback(() => setActiveTraitId(null), []);
+  useTabRootReset(popNested);
 
   const focusTrait = (route.params as { focusTrait?: string } | undefined)?.focusTrait;
   if (focusTrait !== lastFocusTrait) {
@@ -54,60 +56,73 @@ export function AvatarsScreen() {
     if (focusTrait) navigation.setParams({ focusTrait: undefined } as never);
   }, [focusTrait, navigation]);
 
-  if (activeTraitId) {
-    return (
-      <AvatarPreviewScreen
-        traitId={activeTraitId}
-        onClose={() => setActiveTraitId(null)}
-        onStartPlan={() => {
-          setActiveTraitId(null);
-          navigation.navigate('Practice' as never);
-        }}
-      />
-    );
-  }
-
   const concernSet = new Set(concerns);
   const goals = AVATAR_PREVIEWS.filter((p) => concernSet.has(p.traitId));
   const rest = AVATAR_PREVIEWS.filter((p) => !concernSet.has(p.traitId));
 
+  let body: ReactNode;
+  if (activeTraitId) {
+    body = (
+      <AvatarPreviewScreen
+        traitId={activeTraitId}
+        onClose={popNested}
+        onStartPlan={() => {
+          popNested();
+          navigation.navigate('Practice' as never);
+        }}
+      />
+    );
+  } else {
+    body = (
+      <ScreenShell>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+          <BrandMark style={styles.brand} />
+          <Text style={styles.header}>Avatars</Text>
+          <Text style={styles.sub}>See where your plan can take you — then start it.</Text>
+
+          {goals.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel}>Your goals</Text>
+              <View style={styles.group}>
+                {goals.map((p) => (
+                  <PreviewCard
+                    key={p.traitId}
+                    preview={p}
+                    onPress={() => setActiveTraitId(p.traitId)}
+                  />
+                ))}
+              </View>
+            </>
+          )}
+
+          <Text style={styles.sectionLabel}>
+            {goals.length > 0 ? 'More to explore' : 'Previews'}
+          </Text>
+          <View style={styles.group}>
+            {rest.map((p) => (
+              <PreviewCard
+                key={p.traitId}
+                preview={p}
+                onPress={() => setActiveTraitId(p.traitId)}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </ScreenShell>
+    );
+  }
+
   return (
-    <ScreenShell>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <View style={styles.headerRow}>
-          <BrandMark variant="monogram" height={18} />
-          <Text style={styles.header}>Preview your potential</Text>
-        </View>
-        <Text style={styles.sub}>See where your plan can take you — then start it.</Text>
-
-        {goals.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>Your goals</Text>
-            <View style={styles.group}>
-              {goals.map((p) => (
-                <PreviewCard key={p.traitId} preview={p} onPress={() => setActiveTraitId(p.traitId)} />
-              ))}
-            </View>
-          </>
-        )}
-
-        <Text style={styles.sectionLabel}>
-          {goals.length > 0 ? 'More to explore' : 'Previews'}
-        </Text>
-        <View style={styles.group}>
-          {rest.map((p) => (
-            <PreviewCard key={p.traitId} preview={p} onPress={() => setActiveTraitId(p.traitId)} />
-          ))}
-        </View>
-      </ScrollView>
-    </ScreenShell>
+    <TabSwipeHost isNested={activeTraitId != null} onPopNested={popNested}>
+      {body}
+    </TabSwipeHost>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: 'transparent' },
-  container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110, gap: spacing.sm },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  container: { paddingHorizontal: spacing.xl, paddingTop: 56, paddingBottom: 110, gap: spacing.sm },
+  brand: { marginBottom: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sub: {
     ...typography.bodySm,

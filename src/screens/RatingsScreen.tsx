@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useScans } from '../store/ScanContext';
 import { useOnboarding } from '../store/OnboardingContext';
@@ -9,6 +9,7 @@ import { CaptureFab } from '../components/CaptureFab';
 import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
+import { TabSwipeHost } from '../components/TabSwipeHost';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
 import { RingGauge } from '../components/RingGauge';
 import { ShareSheet } from '../components/share/ShareSheet';
@@ -52,35 +53,32 @@ export function RatingsScreen() {
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
   const [detailScan, setDetailScan] = useState<Scan | null>(null);
 
-  useTabRootReset(
-    useCallback(() => {
-      setShareScan(null);
-      setComparePair(null);
-      setDetailScan(null);
-      cancelRescan();
-    }, [cancelRescan]),
-  );
+  const popNested = useCallback(() => {
+    setShareScan(null);
+    setComparePair(null);
+    setDetailScan(null);
+    cancelRescan();
+  }, [cancelRescan]);
+
+  useTabRootReset(popNested);
 
   const openCompare = (older: Scan, newer: Scan) => setComparePair([older, newer]);
 
+  const isNested = Boolean(comparePair || detailScan || rescanStep || shareScan);
+
+  let body: ReactNode;
   if (comparePair) {
-    return (
+    body = (
       <ComparisonScreen
         before={comparePair[0]}
         after={comparePair[1]}
         onClose={() => setComparePair(null)}
       />
     );
-  }
-
-  if (detailScan) {
-    return (
-      <ScanDetailScreen scan={detailScan} isFirst onClose={() => setDetailScan(null)} />
-    );
-  }
-
-  if (rescanStep) {
-    return (
+  } else if (detailScan) {
+    body = <ScanDetailScreen scan={detailScan} isFirst onClose={() => setDetailScan(null)} />;
+  } else if (rescanStep) {
+    body = (
       <GuidedCaptureScreen
         step={rescanStep}
         stepLabel="New scan"
@@ -88,124 +86,128 @@ export function RatingsScreen() {
         onCancel={cancelRescan}
       />
     );
+  } else {
+    body = (
+      <ScreenShell>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+          <BrandMark style={styles.brand} />
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.header}>Ratings</Text>
+              <Text style={styles.sub}>Every scan you’ve taken.</Text>
+            </View>
+            {scans.length >= 2 && (
+              <Pressable
+                style={styles.compareBtn}
+                onPress={() => openCompare(scans[1], scans[0])}
+                hitSlop={8}
+              >
+                <CompareIcon size={18} color={colors.primary} />
+                <Text style={styles.compareLabel}>Compare</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.list}>
+            {scans.map((scan, i) => {
+              const overall = overallPercentile(scan.scores);
+              const prev = scans[i + 1];
+              const delta = prev ? deltaLabel(overallPercentile(prev.scores), overall) : null;
+              const improved = delta != null && delta.startsWith('+');
+              const declined = delta != null && delta.startsWith('-');
+              return (
+                <Card
+                  key={scan.id}
+                  role="quiet"
+                  style={styles.row}
+                  onPress={prev ? () => openCompare(prev, scan) : () => setDetailScan(scan)}
+                >
+                  <RingGauge percentile={overall} size={48} centerLabel={scoreLabel(overall)} />
+                  <View style={styles.info}>
+                    <View style={styles.dateRow}>
+                      <Text style={styles.date}>{formatDate(scan.date)}</Text>
+                      {i === 0 && (
+                        <View style={styles.latestBadge}>
+                          <Text style={styles.latestText}>Latest</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.overallRow}>
+                      <Text style={styles.overall}>{topPercentLabel(overall)} of men</Text>
+                      {delta ? (
+                        <View
+                          style={[
+                            styles.deltaChip,
+                            improved && styles.deltaChipUp,
+                            declined && styles.deltaChipDown,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.deltaText,
+                              improved && styles.deltaTextUp,
+                              declined && styles.deltaTextDown,
+                            ]}
+                          >
+                            {improved ? '▲ ' : declined ? '▼ ' : ''}
+                            {delta}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.firstScan}>First scan</Text>
+                      )}
+                    </View>
+                  </View>
+                  <Pressable
+                    style={styles.shareBtn}
+                    onPress={() => setShareScan(scan)}
+                    hitSlop={8}
+                  >
+                    <ShareIcon size={20} color={colors.primary} />
+                  </Pressable>
+                  <Text style={styles.chevron}>›</Text>
+                </Card>
+              );
+            })}
+          </View>
+        </ScrollView>
+
+        <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
+
+        {shareScan &&
+          (() => {
+            const idx = scans.findIndex((s) => s.id === shareScan.id);
+            const prev = idx >= 0 ? scans[idx + 1] : undefined;
+            const curOverall = overallPercentile(shareScan.scores);
+            return (
+              <ShareSheet message="My axend scan" onClose={() => setShareScan(null)}>
+                <ScoreShareCard
+                  overall={scoreLabel(curOverall)}
+                  overallDelta={
+                    prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
+                  }
+                  rows={shareRows(shareScan.scores, prev?.scores)}
+                  photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
+                />
+              </ShareSheet>
+            );
+          })()}
+      </ScreenShell>
+    );
   }
 
   return (
-    <ScreenShell>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <View style={styles.headerRow}>
-          <View>
-            <View style={styles.titleRow}>
-              <BrandMark variant="monogram" height={18} />
-              <Text style={styles.header}>Ratings</Text>
-            </View>
-            <Text style={styles.sub}>Every scan you’ve taken.</Text>
-          </View>
-          {scans.length >= 2 && (
-            <Pressable
-              style={styles.compareBtn}
-              onPress={() => openCompare(scans[1], scans[0])}
-              hitSlop={8}
-            >
-              <CompareIcon size={18} color={colors.primary} />
-              <Text style={styles.compareLabel}>Compare</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <View style={styles.list}>
-          {scans.map((scan, i) => {
-            const overall = overallPercentile(scan.scores);
-            const prev = scans[i + 1];
-            const delta = prev ? deltaLabel(overallPercentile(prev.scores), overall) : null;
-            const improved = delta != null && delta.startsWith('+');
-            const declined = delta != null && delta.startsWith('-');
-            return (
-              <Card
-                key={scan.id}
-                role="quiet"
-                style={styles.row}
-                onPress={prev ? () => openCompare(prev, scan) : () => setDetailScan(scan)}
-              >
-                <RingGauge percentile={overall} size={48} centerLabel={scoreLabel(overall)} />
-                <View style={styles.info}>
-                  <View style={styles.dateRow}>
-                    <Text style={styles.date}>{formatDate(scan.date)}</Text>
-                    {i === 0 && (
-                      <View style={styles.latestBadge}>
-                        <Text style={styles.latestText}>Latest</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.overallRow}>
-                    <Text style={styles.overall}>{topPercentLabel(overall)} of men</Text>
-                    {delta ? (
-                      <View
-                        style={[
-                          styles.deltaChip,
-                          improved && styles.deltaChipUp,
-                          declined && styles.deltaChipDown,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.deltaText,
-                            improved && styles.deltaTextUp,
-                            declined && styles.deltaTextDown,
-                          ]}
-                        >
-                          {improved ? '▲ ' : declined ? '▼ ' : ''}
-                          {delta}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.firstScan}>First scan</Text>
-                    )}
-                  </View>
-                </View>
-                <Pressable
-                  style={styles.shareBtn}
-                  onPress={() => setShareScan(scan)}
-                  hitSlop={8}
-                >
-                  <ShareIcon size={20} color={colors.primary} />
-                </Pressable>
-                <Text style={styles.chevron}>›</Text>
-              </Card>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
-
-      {shareScan &&
-        (() => {
-          const idx = scans.findIndex((s) => s.id === shareScan.id);
-          const prev = idx >= 0 ? scans[idx + 1] : undefined;
-          const curOverall = overallPercentile(shareScan.scores);
-          return (
-            <ShareSheet message="My axend scan" onClose={() => setShareScan(null)}>
-              <ScoreShareCard
-                overall={scoreLabel(curOverall)}
-                overallDelta={
-                  prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
-                }
-                rows={shareRows(shareScan.scores, prev?.scores)}
-                photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
-              />
-            </ShareSheet>
-          );
-        })()}
-    </ScreenShell>
+    <TabSwipeHost isNested={isNested} onPopNested={popNested}>
+      {body}
+    </TabSwipeHost>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: 'transparent' },
-  container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110 },
+  container: { paddingHorizontal: spacing.xl, paddingTop: 56, paddingBottom: 110 },
+  brand: { marginBottom: spacing.lg },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sub: {
     ...typography.bodySm,
