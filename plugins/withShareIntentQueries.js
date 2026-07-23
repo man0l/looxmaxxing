@@ -5,6 +5,7 @@ const SHARE_PACKAGES = [
   'com.twitter.android',
   'com.whatsapp',
   'com.zhiliaoapp.musically',
+  'com.ss.android.ugc.trill',
 ];
 
 const withShareIntentQueries = (config) =>

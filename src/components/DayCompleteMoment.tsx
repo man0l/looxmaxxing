@@ -8,9 +8,13 @@ import {
   View,
 } from 'react-native';
 import { useStreak } from '../store/StreakContext';
+import { useScans } from '../store/ScanContext';
+import { useOnboarding } from '../store/OnboardingContext';
 import { ShareSheet } from './share/ShareSheet';
-import { StreakShareCard } from './share/ShareCards';
+import { ScoreShareCard } from './share/ShareCards';
 import { PressableScale } from './PressableScale';
+import { orderByConcerns, scoreLabel, deltaLabel } from '../services/scoring';
+import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
 interface Props {
@@ -19,8 +23,31 @@ interface Props {
 
 export function DayCompleteMoment({ onClose }: Props) {
   const streak = useStreak();
+  const { scans, latest } = useScans();
+  const { concerns, frontPhoto } = useOnboarding();
   const [showShare, setShowShare] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+
+  const prevScan = scans[1];
+  const orderedScores = orderByConcerns(latest.scores, concerns);
+  const shareRows = orderedScores.map((s) => {
+    const before = prevScan?.scores.find((p) => p.traitId === s.traitId)?.percentile;
+    return {
+      label: TRAITS.find((t) => t.id === s.traitId)?.label ?? s.traitId,
+      percentile: s.percentile,
+      delta: before != null ? deltaLabel(before, s.percentile) : undefined,
+    };
+  });
+  const overallPct = Math.round(
+    orderedScores.reduce((sum, s) => sum + s.percentile, 0) / orderedScores.length,
+  );
+  const overallScore = scoreLabel(overallPct);
+  const overallDelta = prevScan
+    ? deltaLabel(
+        prevScan.scores.reduce((sum, s) => sum + s.percentile, 0) / prevScan.scores.length,
+        overallPct,
+      )
+    : undefined;
 
   const glow = useMemo(() => new Animated.Value(0), []);
   const dayScale = useMemo(() => new Animated.Value(0.86), []);
@@ -143,7 +170,7 @@ export function DayCompleteMoment({ onClose }: Props) {
             <Text style={styles.milestone}>{milestone}</Text>
 
             <PressableScale style={styles.shareBtn} onPress={() => setShowShare(true)}>
-              <Text style={styles.shareText}>Share streak</Text>
+              <Text style={styles.shareText}>Share results</Text>
             </PressableScale>
             <Pressable style={styles.continueBtn} onPress={onClose}>
               <Text style={styles.continueText}>Continue</Text>
@@ -153,11 +180,13 @@ export function DayCompleteMoment({ onClose }: Props) {
       </View>
 
       {showShare && (
-        <ShareSheet
-          message={`Day ${streak.currentDay} streak on axend`}
-          onClose={() => setShowShare(false)}
-        >
-          <StreakShareCard day={streak.currentDay} weeks={streak.heatmap} />
+        <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
+          <ScoreShareCard
+            overall={overallScore}
+            overallDelta={overallDelta}
+            rows={shareRows}
+            photoUri={latest.photoUri ?? frontPhoto ?? undefined}
+          />
         </ShareSheet>
       )}
     </>

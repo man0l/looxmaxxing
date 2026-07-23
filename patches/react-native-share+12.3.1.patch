@@ -1,0 +1,85 @@
+diff --git a/node_modules/react-native-share/android/src/main/java/cl/json/RNShareImpl.java b/node_modules/react-native-share/android/src/main/java/cl/json/RNShareImpl.java
+index 831d83c..5e8b8bf 100644
+--- a/node_modules/react-native-share/android/src/main/java/cl/json/RNShareImpl.java
++++ b/node_modules/react-native-share/android/src/main/java/cl/json/RNShareImpl.java
+@@ -35,6 +35,7 @@ import cl.json.social.MessengerShare;
+ import cl.json.social.LinkedinShare;
+ import cl.json.social.ViberShare;
+ import cl.json.social.DiscordShare;
++import cl.json.social.TikTokShare;
+ 
+ import java.util.HashMap;
+ import java.util.Locale;
+@@ -92,7 +93,8 @@ public class RNShareImpl implements ActivityEventListener {
+         linkedin,
+         telegram,
+         viber,
+-        discord;
++        discord,
++        tiktok;
+ 
+ 
+         public static ShareIntent getShareClass(String social, ReactApplicationContext reactContext) {
+@@ -136,6 +138,8 @@ public class RNShareImpl implements ActivityEventListener {
+                     return new ViberShare(reactContext);
+                 case discord:
+                     return new DiscordShare(reactContext);
++                case tiktok:
++                    return new TikTokShare(reactContext);
+                 default:
+                     return null;
+             }
+diff --git a/node_modules/react-native-share/android/src/main/java/cl/json/social/TikTokShare.java b/node_modules/react-native-share/android/src/main/java/cl/json/social/TikTokShare.java
+new file mode 100644
+index 0000000..12b45b1
+--- /dev/null
++++ b/node_modules/react-native-share/android/src/main/java/cl/json/social/TikTokShare.java
+@@ -0,0 +1,48 @@
++package cl.json.social;
++
++import android.content.ActivityNotFoundException;
++
++import com.facebook.react.bridge.ReactApplicationContext;
++import com.facebook.react.bridge.ReadableMap;
++
++/**
++ * Direct share to TikTok via package-targeted ACTION_SEND.
++ * TikTok still uses com.zhiliaoapp.musically (US/global) or
++ * com.ss.android.ugc.trill (some other regions).
++ */
++public class TikTokShare extends SingleShareIntent {
++
++    private static final String PACKAGE_GLOBAL = "com.zhiliaoapp.musically";
++    private static final String PACKAGE_REGIONAL = "com.ss.android.ugc.trill";
++
++    public TikTokShare(ReactApplicationContext reactContext) {
++        super(reactContext);
++    }
++
++    @Override
++    public void open(ReadableMap options) throws ActivityNotFoundException {
++        super.open(options);
++        this.openIntentChooser();
++    }
++
++    @Override
++    protected String getPackage() {
++        if (ShareIntent.isPackageInstalled(PACKAGE_GLOBAL, this.reactContext)) {
++            return PACKAGE_GLOBAL;
++        }
++        if (ShareIntent.isPackageInstalled(PACKAGE_REGIONAL, this.reactContext)) {
++            return PACKAGE_REGIONAL;
++        }
++        return PACKAGE_GLOBAL;
++    }
++
++    @Override
++    protected String getDefaultWebLink() {
++        return null;
++    }
++
++    @Override
++    protected String getPlayStoreLink() {
++        return "https://play.google.com/store/apps/details?id=com.zhiliaoapp.musically";
++    }
++}
