@@ -6,6 +6,7 @@ import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { useTabRootReset } from '../hooks/useTabRootReset';
 import { CaptureFab } from '../components/CaptureFab';
+import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
@@ -94,7 +95,10 @@ export function RatingsScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.header}>Ratings</Text>
+            <View style={styles.titleRow}>
+              <BrandMark variant="monogram" height={18} />
+              <Text style={styles.header}>Ratings</Text>
+            </View>
             <Text style={styles.sub}>Every scan you’ve taken.</Text>
           </View>
           {scans.length >= 2 && (
@@ -201,6 +205,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sub: {
     ...typography.bodySm,

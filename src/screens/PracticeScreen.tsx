@@ -5,6 +5,7 @@ import { getScores, topPercentLabel } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { usePractice } from '../store/PracticeContext';
 import { ConcernGlyph } from '../components/icons/OnboardingIcons';
+import { BrandMark } from '../components/BrandMark';
 import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
 import { useTabRootReset } from '../hooks/useTabRootReset';
@@ -81,7 +82,10 @@ export function PracticeScreen() {
   return (
     <ScreenShell>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Practice</Text>
+        <View style={styles.headerRow}>
+          <BrandMark variant="monogram" height={18} />
+          <Text style={styles.header}>Practice</Text>
+        </View>
 
         {planItems.length > 0 && (
           <>
@@ -110,7 +114,8 @@ export function PracticeScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { paddingHorizontal: spacing.xl, paddingTop: 60, paddingBottom: 110, gap: spacing.sm },
-  header: { ...typography.display, fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  header: { ...typography.display, fontSize: 24, color: colors.textPrimary },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.md },
   group: { gap: spacing.sm },
   card: {
