@@ -235,10 +235,22 @@ export async function presentCustomerCenter(): Promise<void> {
 export function perWeekLabel(pkg: PurchasesPackage): string | null {
   try {
     const perWeek = pkg.product.price / 52;
-    return new Intl.NumberFormat(undefined, {
+    const formatted = new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency: pkg.product.currencyCode,
     }).format(perWeek);
+    return `${formatted} / week`;
+  } catch {
+    return null;
+  }
+}
+
+export function formatMoney(amount: number, currencyCode: string): string | null {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount);
   } catch {
     return null;
   }

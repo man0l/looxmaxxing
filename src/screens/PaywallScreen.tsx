@@ -18,7 +18,7 @@ import { ScreenShell } from '../components/ScreenShell';
 import { PressableScale } from '../components/PressableScale';
 import { BronzeMetal } from '../components/BronzeMetal';
 import { CelestialOrnament } from '../components/CelestialOrnament';
-import { packageForPlan, perWeekLabel } from '../services/purchases';
+import { formatMoney, packageForPlan, perWeekLabel } from '../services/purchases';
 import { colors, spacing, radii, typography } from '../theme';
 
 const CONCERN_LABELS: Record<string, string> = {
@@ -36,9 +36,11 @@ function savedPerYear(
   annualPkg: ReturnType<typeof packageForPlan>,
 ): string | null {
   if (!weeklyPkg || !annualPkg) return null;
-  const saved = Math.round(weeklyPkg.product.price * 52 - annualPkg.product.price);
+  const saved = weeklyPkg.product.price * 52 - annualPkg.product.price;
   if (saved <= 0) return null;
-  return `Save $${saved}`;
+  const formatted = formatMoney(saved, annualPkg.product.currencyCode);
+  if (!formatted) return null;
+  return `Save ${formatted}`;
 }
 
 export function PaywallScreen() {
