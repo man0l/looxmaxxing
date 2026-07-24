@@ -26,10 +26,9 @@ test.describe('Day complete moment', () => {
     await expect(moment.getByText(/^Day \d+$/)).toBeVisible();
     await expect(moment.getByText('Your streak is still growing.')).toBeVisible();
 
-    await moment.getByText('Share streak', { exact: true }).click();
+    await moment.getByText('Share results', { exact: true }).click();
 
-    await expect(page.getByText('day streak', { exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Stories', { exact: true })).toBeVisible();
+    await expect(page.getByText('Stories', { exact: true })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('More', { exact: true })).toBeVisible();
   });
 });

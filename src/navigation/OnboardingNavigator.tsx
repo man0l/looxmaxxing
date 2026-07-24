@@ -111,18 +111,12 @@ export function OnboardingNavigator({ onComplete }: Props) {
         return <CommitmentScreen onContinue={() => goTo('capture')} />;
 
       case 'capture': {
-        const captureStep = state.frontPhoto ? 'profile' : 'front';
         return (
           <GuidedCaptureScreen
-            step={captureStep}
-            onboardingStep={captureStep === 'front' ? 9 : 10}
+            onboardingStep={9}
             onCapture={(uri) => {
-              if (captureStep === 'front') {
-                dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
-              } else {
-                dispatch({ type: 'SET_PROFILE_PHOTO', payload: uri });
-                goTo('analyzing');
-              }
+              dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
+              goTo('analyzing');
             }}
           />
         );

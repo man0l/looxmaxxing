@@ -21,16 +21,11 @@ import { CameraIcon, GalleryIcon, HeadSilhouette, RetakeIcon } from '../../compo
 
 const FRONT_GOOD_EXAMPLE = require('../../../assets/images/onboarding-flow-image1-optimized.png');
 const FRONT_BAD_EXAMPLE = require('../../../assets/images/capture-bad-example-optimized.png');
-const PROFILE_GOOD_EXAMPLE = require('../../../assets/images/onboarding-profile-example-optimized.png');
-const PROFILE_BAD_EXAMPLE = require('../../../assets/images/profile-bad-example-optimized.png');
 
 const CLOSE_DISTANCE = 120;
 const CLOSE_VELOCITY = 0.8;
 
-type CaptureStep = 'front' | 'profile';
-
 interface Props {
-  step: CaptureStep;
   onCapture: (uri: string) => void;
   stepLabel?: string;
   onboardingStep?: number;
@@ -38,13 +33,11 @@ interface Props {
 }
 
 export function GuidedCaptureScreen({
-  step,
   onCapture,
   stepLabel,
   onboardingStep,
   onCancel,
 }: Props) {
-  const isFront = step === 'front';
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('front');
@@ -108,13 +101,13 @@ export function GuidedCaptureScreen({
   const toggleFacing = () => setFacing((f) => (f === 'front' ? 'back' : 'front'));
 
   const handleE2ePhoto = async () => {
-    const uri = await resolveDevTestPhotoUri(isFront ? 'front' : 'profile');
+    const uri = await resolveDevTestPhotoUri('front');
     onCapture(uri);
   };
 
   const showE2eCapture = (isE2E && Platform.OS === 'web') || __DEV__;
-  const goodExample = isFront ? FRONT_GOOD_EXAMPLE : PROFILE_GOOD_EXAMPLE;
-  const badExample = isFront ? FRONT_BAD_EXAMPLE : PROFILE_BAD_EXAMPLE;
+  const goodExample = FRONT_GOOD_EXAMPLE;
+  const badExample = FRONT_BAD_EXAMPLE;
   const dismissible = Boolean(onCancel);
 
   return (
@@ -136,12 +129,8 @@ export function GuidedCaptureScreen({
           </View>
         ) : null}
         {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
-        <Text style={styles.title}>{isFront ? 'Front photo first' : 'Now your profile'}</Text>
-        <Text style={styles.subtitle}>
-          {isFront
-            ? 'Face the camera, fill the oval, even lighting.'
-            : 'Turn to your side — keep your face in the oval.'}
-        </Text>
+        <Text style={styles.title}>Front photo</Text>
+        <Text style={styles.subtitle}>Face the camera, fill the oval, even lighting.</Text>
 
         <View style={styles.examplesRow}>
           <View style={styles.exampleItem}>
@@ -176,11 +165,6 @@ export function GuidedCaptureScreen({
           )}
 
           <View style={styles.oval} pointerEvents="none" />
-
-          <View style={styles.angleToggle} pointerEvents="none">
-            <Text style={[styles.angleLabel, isFront && styles.angleLabelActive]}>● Front</Text>
-            <Text style={[styles.angleLabel, !isFront && styles.angleLabelActive]}>○ Profile</Text>
-          </View>
 
           {granted && lightingLive === true && (
             <View style={styles.lightingChip} pointerEvents="none">
@@ -369,24 +353,6 @@ const styles = StyleSheet.create({
     borderColor: colors.tertiary,
     borderRadius: 999,
     opacity: 0.75,
-  },
-  angleToggle: {
-    position: 'absolute',
-    top: spacing.md,
-    flexDirection: 'row',
-    gap: 14,
-    backgroundColor: 'rgba(21, 16, 11, 0.55)',
-    borderRadius: radii.full,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  angleLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  angleLabelActive: {
-    color: colors.textPrimary,
-    fontWeight: '600',
   },
   lightingChip: {
     position: 'absolute',

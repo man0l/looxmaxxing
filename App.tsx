@@ -28,7 +28,7 @@ function Root() {
   const [onboarded, setOnboarded] = useState(false);
   const [storageReady, setStorageReady] = useState(false);
   const { paywallVisible, openPaywall, subscribed, ready: entitlementReady } = useSubscription();
-  const { frontPhoto, profilePhoto } = useOnboarding();
+  const { frontPhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
   const firstScanTriggered = useRef(false);
 
@@ -60,13 +60,12 @@ function Root() {
       onboarded &&
       !hasRealScan &&
       !firstScanTriggered.current &&
-      frontPhoto &&
-      profilePhoto
+      frontPhoto
     ) {
       firstScanTriggered.current = true;
-      runScan({ frontUri: frontPhoto, profileUri: profilePhoto }).catch(() => {});
+      runScan({ frontUri: frontPhoto }).catch(() => {});
     }
-  }, [subscribed, onboarded, hasRealScan, frontPhoto, profilePhoto, runScan]);
+  }, [subscribed, onboarded, hasRealScan, frontPhoto, runScan]);
 
   // Wait for onboarded flag + entitlement hydrate so Pro users never flash the
   // locked Results unlock banner before RevenueCat (or local cache) resolves.

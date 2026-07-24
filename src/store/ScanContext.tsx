@@ -25,7 +25,7 @@ interface ScanValue {
   scanning: boolean;
   scanError: string | null;
   hasRealScan: boolean;
-  runScan: (photos: { frontUri: string; profileUri: string }) => Promise<void>;
+  runScan: (photos: { frontUri: string; profileUri?: string }) => Promise<void>;
 }
 
 const ScanContext = createContext<ScanValue | null>(null);
@@ -94,7 +94,7 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const runScan = useCallback(
-    async ({ frontUri, profileUri }: { frontUri: string; profileUri: string }) => {
+    async ({ frontUri, profileUri }: { frontUri: string; profileUri?: string }) => {
       setScanning(true);
       setScanError(null);
       const controller = new AbortController();

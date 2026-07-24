@@ -159,7 +159,7 @@ async function putPhoto(
 export async function submitScan(opts: {
   appUserId: string;
   frontUri: string;
-  profileUri: string;
+  profileUri?: string;
   frontContentType?: string;
   profileContentType?: string;
   // Aborted if the app is backgrounded mid-scan — a suspended iOS process can
@@ -196,10 +196,15 @@ export async function submitScan(opts: {
   await assertOk(slotRes, 'mint upload slots');
   const { scanId, uploads } = (await slotRes.json()) as ScanUploadsResponse;
 
-  await Promise.all([
+  const photoUploads: Promise<void>[] = [
     putPhoto(uploads.front.uploadUrl, opts.frontUri, opts.frontContentType ?? 'image/jpeg', signal),
-    putPhoto(uploads.profile.uploadUrl, opts.profileUri, opts.profileContentType ?? 'image/jpeg', signal),
-  ]);
+  ];
+  if (opts.profileUri) {
+    photoUploads.push(
+      putPhoto(uploads.profile.uploadUrl, opts.profileUri, opts.profileContentType ?? 'image/jpeg', signal),
+    );
+  }
+  await Promise.all(photoUploads);
 
   assertNotAborted(signal);
   const scanRes = await fetchWithTimeout(

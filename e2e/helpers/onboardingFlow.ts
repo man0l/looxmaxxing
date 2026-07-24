@@ -29,10 +29,7 @@ export async function runOnboardingToPaywall(page: Page) {
 
   await page.getByText("I'm in — let's go").click();
 
-  await expect(page.getByText('Front photo first')).toBeVisible();
-  await page.getByTestId('e2e-use-test-photo').click();
-
-  await expect(page.getByText('Now your profile')).toBeVisible();
+  await expect(page.getByText('Front photo')).toBeVisible();
   await page.getByTestId('e2e-use-test-photo').click();
 
   await expect(page.getByText('Analyzing Your Face')).toBeVisible({ timeout: 15_000 });

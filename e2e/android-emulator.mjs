@@ -198,11 +198,7 @@ waitForText('Most guys land between 4 and 7');
 tapBy('Got it');
 sleep(600);
 
-waitForText('Front photo first');
-tapBy('Use test photo');
-sleep(800);
-
-waitForText('Now your profile');
+waitForText('Front photo');
 tapBy('Use test photo');
 sleep(1200);
 

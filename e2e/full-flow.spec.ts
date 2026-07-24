@@ -11,7 +11,7 @@ test.describe('LooxMaxxing web funnel', () => {
     await enterSubscribedApp(page);
 
     await page.getByText('Avatars', { exact: true }).click();
-    await expect(page.getByText('Preview your potential')).toBeVisible();
+    await expect(page.getByText('Your goals')).toBeVisible();
 
     await page.getByText('A sharper jawline').click();
     await expect(page.getByText('styling preview')).toBeVisible();

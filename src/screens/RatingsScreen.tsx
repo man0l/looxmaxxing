@@ -80,7 +80,6 @@ export function RatingsScreen() {
   } else if (rescanStep) {
     body = (
       <GuidedCaptureScreen
-        step={rescanStep}
         stepLabel="New scan"
         onCapture={onCapture}
         onCancel={cancelRescan}

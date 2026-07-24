@@ -42,7 +42,7 @@ import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
 
 export function ResultsScreen() {
-  const { concerns, frontPhoto, profilePhoto } = useOnboarding();
+  const { concerns, frontPhoto } = useOnboarding();
   const { subscribed, ready: entitlementReady, openPaywall } = useSubscription();
   const streak = useStreak();
   const navigation = useNavigation();
@@ -113,8 +113,8 @@ export function ResultsScreen() {
             <PressableScale
               style={styles.retryBtn}
               onPress={() => {
-                if (frontPhoto && profilePhoto) {
-                  runScan({ frontUri: frontPhoto, profileUri: profilePhoto }).catch(() => {});
+                if (frontPhoto) {
+                  runScan({ frontUri: frontPhoto }).catch(() => {});
                 }
               }}
             >
@@ -147,7 +147,6 @@ export function ResultsScreen() {
   } else if (rescanStep) {
     body = (
       <GuidedCaptureScreen
-        step={rescanStep}
         stepLabel="New scan"
         onCapture={onCapture}
         onCancel={cancelRescan}
