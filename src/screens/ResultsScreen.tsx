@@ -226,7 +226,7 @@ export function ResultsScreen() {
               <View style={styles.ringBadge}>
                 <RingGauge
                   percentile={overallPct}
-                  size={92}
+                  size={56}
                   centerLabel={overallScore}
                   delayMs={0}
                 />
@@ -235,7 +235,7 @@ export function ResultsScreen() {
             <Text style={styles.overallPercentile}>
               {topPercentLabel(overallPct)} of men
             </Text>
-            {overallDelta != null && (
+            {overallDelta != null && overallDelta !== 'No change' && (
               <View
                 style={[
                   styles.deltaChip,
