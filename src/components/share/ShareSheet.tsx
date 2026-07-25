@@ -44,6 +44,9 @@ export function ShareSheet({ message, children, onClose }: Props) {
 
   const [pan] = useState(() =>
     PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx),
       onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_, g) => {
         if (g.dy > 0) translateY.setValue(g.dy);
@@ -83,8 +86,11 @@ export function ShareSheet({ message, children, onClose }: Props) {
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-        <View style={styles.header} {...pan.panHandlers}>
+      <Animated.View
+        style={[styles.sheet, { transform: [{ translateY }] }]}
+        {...pan.panHandlers}
+      >
+        <View style={styles.header}>
           <View style={styles.grabber} />
           <Pressable style={styles.closeButton} onPress={onClose} hitSlop={10}>
             <Text style={styles.closeX}>✕</Text>

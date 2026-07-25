@@ -68,7 +68,7 @@ export function ScoreShareCard({
         <View style={styles.ringBadge}>
           <RingGauge
             percentile={overallPercentile}
-            size={80}
+            size={56}
             centerLabel={overallScore}
             animate={false}
           />
