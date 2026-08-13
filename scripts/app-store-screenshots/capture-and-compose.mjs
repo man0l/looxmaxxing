@@ -7,6 +7,7 @@
  */
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -22,7 +23,9 @@ const PORT = 19006;
 const BASE = `http://localhost:${PORT}`;
 const W = 1242;
 const H = 2688;
-const SCALE_69 = 1320 / 1242;
+// Apple's required 6.9" portrait size — exact, not derived from the 6.5" aspect.
+const W_69 = 1320;
+const H_69 = 2868;
 
 function loadDotEnv() {
   const envPath = path.join(ROOT, '.env');
@@ -82,13 +85,21 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function portOpen(port) {
-  try {
-    const res = await fetch(`http://localhost:${port}`, { signal: AbortSignal.timeout(1500) });
-    return res.ok || res.status === 404;
-  } catch {
-    return false;
-  }
+// Real TCP connect against 127.0.0.1. An HTTP probe here is unreliable: a system
+// proxy can answer for an unbound port (404 read as "open"), which made the script
+// skip starting Expo and then fail on the first navigation.
+function portOpen(port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ port, host: '127.0.0.1' });
+    const done = (open) => {
+      socket.destroy();
+      resolve(open);
+    };
+    socket.setTimeout(1500);
+    socket.once('connect', () => done(true));
+    socket.once('timeout', () => done(false));
+    socket.once('error', () => done(false));
+  });
 }
 
 async function ensureExpo() {
@@ -126,17 +137,35 @@ async function ensureExpo() {
   throw new Error('Expo web failed to start within 3 minutes');
 }
 
+// The bottom tab bar is position:fixed and intercepts pointer events for anything
+// underneath it, so a plain click can hang on actionability. Scroll into view, then
+// fall back to a forced click.
+async function safeClick(locator, timeout = 15_000) {
+  const target = locator.first();
+  await target.waitFor({ state: 'attached', timeout });
+  await target.scrollIntoViewIfNeeded({ timeout }).catch(() => {});
+  try {
+    await target.click({ timeout });
+  } catch {
+    await target.click({ force: true, timeout });
+  }
+}
+
 async function resetApp(page, userId) {
-  await page.addInitScript(
+  // Clear explicitly rather than via addInitScript: init scripts persist for the
+  // life of the page and accumulate across resetApp calls, so a later reload
+  // (seedSecondScan) would wipe state the script had just seeded.
+  // Expo web keeps a websocket open — never use networkidle.
+  await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.evaluate(
     ([id, keys]) => {
-      sessionStorage.setItem('e2e_app_user_id', id);
       localStorage.clear();
       for (const key of keys) localStorage.removeItem(key);
+      sessionStorage.setItem('e2e_app_user_id', id);
     },
     [userId, STORAGE_KEYS],
   );
-  // Expo web keeps a websocket open — never use networkidle.
-  await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await page.getByText('Scan my face').waitFor({ timeout: 60_000 });
 }
 
@@ -170,16 +199,12 @@ async function runOnboardingToPaywall(page, { skin = false } = {}) {
 
   await page.getByText("I'm in — let's go").click();
 
-  await page.getByText('Front photo first').waitFor();
-  await page.getByTestId('e2e-use-test-photo').click();
-  await page.getByText('Now your profile').waitFor();
+  await page.getByText('Front photo', { exact: true }).waitFor();
   await page.getByTestId('e2e-use-test-photo').click();
 
   await page.getByText('Analyzing Your Face').waitFor({ timeout: 20_000 });
-  await page.getByText('This app changed my life').waitFor({ timeout: 20_000 });
-  await page.getByText('Continue', { exact: true }).click();
 
-  await page.getByText('Share your progress, your way').waitFor();
+  await page.getByText('Share your progress, your way').waitFor({ timeout: 30_000 });
   await page.getByText('Continue', { exact: true }).click();
 
   await page.getByText(/analysis is ready/i).waitFor();
@@ -550,10 +575,11 @@ async function renderHtmlToPng(browser, html, outPath, { width = W, height = H }
   console.log('wrote', outPath);
 }
 
-async function scalePngWithCss(browser, srcPath, outPath, scale) {
+// Target dimensions are explicit, not a uniform scale factor: App Store Connect
+// requires exact pixel sizes, and scaling 1242x2688 by 1320/1242 yields 1320x2857,
+// which is 11px short of the required 6.9" height and is rejected on upload.
+async function scalePngWithCss(browser, srcPath, outPath, w, h) {
   const dataUrl = await fileToDataUrl(srcPath);
-  const w = Math.round(W * scale);
-  const h = Math.round(H * scale);
   const html = `<!DOCTYPE html><html><body style="margin:0;background:#000">
     <img src="${dataUrl}" style="width:${w}px;height:${h}px;display:block" />
   </body></html>`;
@@ -602,14 +628,12 @@ async function captureAll(browser) {
 
   // Practice → Jawline workout (04)
   console.log('flow: plan');
-  await page.getByText('Practice', { exact: true }).click();
+  await safeClick(page.getByText('Practice', { exact: true }));
   await page.getByText(/Jawline/i).first().waitFor({ timeout: 15_000 });
-  const jawCard = page.getByText('Jawline workout').first();
-  if (await jawCard.isVisible().catch(() => false)) {
-    await jawCard.click();
-  } else {
-    await page.getByText(/Jawline/).first().click();
-  }
+  // Card renders a PressableScale with accessibilityRole="button"; the inner Text
+  // node is not the press handler, so target the button ancestor.
+  const jawCard = page.getByRole('button').filter({ hasText: 'Jawline workout' });
+  await safeClick(jawCard);
   await page.getByText(/Mark session complete|Session complete/i).waitFor({ timeout: 20_000 });
   await sleep(1500);
   await captureViewport(page, '04-plan');
@@ -617,9 +641,9 @@ async function captureAll(browser) {
 
   // Ratings → Compare (03)
   console.log('flow: compare');
-  await page.getByText('Ratings', { exact: true }).click();
+  await safeClick(page.getByText('Ratings', { exact: true }));
   await page.getByText('Every scan').waitFor({ timeout: 15_000 });
-  await page.getByText('Compare', { exact: true }).click();
+  await safeClick(page.getByText('Compare', { exact: true }));
   await page.getByText('By trait').waitFor({ timeout: 20_000 });
   await sleep(800);
   await captureViewport(page, '03-progress');
@@ -713,7 +737,7 @@ async function composeAll(browser) {
   for (const id of Object.keys(COPY)) {
     const src = path.join(OUT_65, `${id}.png`);
     if (!existsSync(src)) continue;
-    await scalePngWithCss(browser, src, path.join(OUT_69, `${id}.png`), SCALE_69);
+    await scalePngWithCss(browser, src, path.join(OUT_69, `${id}.png`), W_69, H_69);
   }
 }
 
