@@ -19,6 +19,20 @@ function getAppsFlyer(): AppsFlyerModule | null {
 
 let initialized = false;
 
+async function requestAttPermission(): Promise<void> {
+  if (Platform.OS !== 'ios') return;
+  try {
+    const { getTrackingPermissionsAsync, requestTrackingPermissionsAsync } =
+      require('expo-tracking-transparency') as typeof import('expo-tracking-transparency');
+    const current = await getTrackingPermissionsAsync();
+    if (current.status === 'undetermined' && current.canAskAgain) {
+      await requestTrackingPermissionsAsync();
+    }
+  } catch (e) {
+    console.warn('[appsflyer] ATT request failed', e);
+  }
+}
+
 export async function initAppsFlyer(): Promise<boolean> {
   const appsFlyer = getAppsFlyer();
   if (!appsFlyer) return false;
@@ -31,6 +45,8 @@ export async function initAppsFlyer(): Promise<boolean> {
     console.warn('[appsflyer] no iOS app ID configured — skipping init on iOS');
     return false;
   }
+
+  await requestAttPermission();
 
   return new Promise((resolve) => {
     appsFlyer.onInstallConversionData(() => {});

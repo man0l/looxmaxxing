@@ -56,7 +56,7 @@ export function PaywallScreen() {
   const weeklyPkg = offering ? packageForPlan(offering, 'weekly') : null;
 
   const annualPerWeek = annualPkg ? perWeekLabel(annualPkg) : '$0.96/week';
-  const annualTotal = annualPkg ? annualPkg.product.priceString : '$49.99/year';
+  const annualTotal = annualPkg ? annualPkg.product.priceString : '$49.99';
   const weeklyPrice = weeklyPkg ? weeklyPkg.product.priceString : '$4.99';
   const savings = savedPerYear(weeklyPkg, annualPkg) ?? 'Save $469';
 
@@ -145,9 +145,9 @@ export function PaywallScreen() {
               >
                 <View style={styles.planRow}>
                   <View style={styles.annualLeft}>
-                    <Text style={styles.annualPriceOnMetal}>{annualPerWeek}</Text>
+                    <Text style={styles.annualPriceOnMetal}>{annualTotal}</Text>
                     <Text style={styles.annualBilledOnMetal}>
-                      billed {annualTotal} once a year
+                      billed once a year · {annualPerWeek}
                     </Text>
                     <Text style={styles.bestValue}>Best value</Text>
                   </View>
@@ -163,8 +163,8 @@ export function PaywallScreen() {
                   style={styles.planOrnament}
                 />
                 <View style={styles.annualLeft}>
-                  <Text style={styles.annualPrice}>{annualPerWeek}</Text>
-                  <Text style={styles.annualBilled}>billed {annualTotal} once a year</Text>
+                  <Text style={styles.annualPrice}>{annualTotal}</Text>
+                  <Text style={styles.annualBilled}>billed once a year · {annualPerWeek}</Text>
                 </View>
                 <Text style={styles.planCheck}>○</Text>
               </View>

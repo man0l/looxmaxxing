@@ -15,7 +15,6 @@ import { GoalLevelScreen } from '../screens/onboarding/GoalLevelScreen';
 import { CommitmentScreen } from '../screens/onboarding/CommitmentScreen';
 import { GuidedCaptureScreen } from '../screens/onboarding/GuidedCaptureScreen';
 import { AnalyzingScreen } from '../screens/onboarding/AnalyzingScreen';
-import { RatingScreen } from '../screens/onboarding/RatingScreen';
 import { ShareMotivationScreen } from '../screens/onboarding/ShareMotivationScreen';
 
 type Step =
@@ -30,7 +29,6 @@ type Step =
   | 'commitment'
   | 'capture'
   | 'analyzing'
-  | 'rating'
   | 'share';
 
 interface Props {
@@ -123,10 +121,7 @@ export function OnboardingNavigator({ onComplete }: Props) {
       }
 
       case 'analyzing':
-        return <AnalyzingScreen onComplete={() => goTo('rating')} />;
-
-      case 'rating':
-        return <RatingScreen onContinue={() => goTo('share')} />;
+        return <AnalyzingScreen onComplete={() => goTo('share')} />;
 
       case 'share':
         return <ShareMotivationScreen onContinue={onComplete} />;
