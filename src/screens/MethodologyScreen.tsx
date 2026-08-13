@@ -25,6 +25,10 @@ const SECTIONS = [
     title: 'How to move your scores',
     body: 'Each trait maps to one workout or routine. Work the plan, keep your streak, and re-rate when you want to check progress. Structure changes slowly — the percentile is there to show momentum, not to grade you.',
   },
+  {
+    title: 'What this is not',
+    body: 'Axend is a cosmetic self-improvement tool, not a medical or diagnostic service. Scores reflect aesthetic convention, not health, and they are estimates — lighting, angle, and expression all move them. Results vary from person to person, and nothing here is a guarantee of a particular outcome. For anything concerning your skin, hair, or health, talk to a qualified professional.',
+  },
 ];
 
 export function MethodologyScreen({ onClose }: Props) {

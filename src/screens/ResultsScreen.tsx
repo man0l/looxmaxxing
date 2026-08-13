@@ -286,6 +286,11 @@ export function ResultsScreen() {
               </Text>
             </Card>
           )}
+
+          <Text style={styles.methodologyNote}>
+            Cosmetic estimates, not a medical assessment. Scores shift with lighting and angle, and
+            individual results vary.
+          </Text>
         </ScrollView>
         <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
@@ -496,6 +501,14 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  methodologyNote: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    lineHeight: 15,
   },
   analyzingOverlay: {
     position: 'absolute',
