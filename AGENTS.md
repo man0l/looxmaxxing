@@ -51,7 +51,8 @@ No scored trait dead-ends. No workout without a score feeding it.
 1. **Always read `docs/PRD.md` and `docs/DESIGN.md` before making UI/UX decisions.** These are the source of truth.
 2. **Design system is "Celestial Ember"** — warm candlelit dark UI. Follow every color, spacing, radius, and typography spec from `docs/DESIGN.md` exactly.
 3. **Never introduce features excluded in the PRD** (§6): no community feed, no push notifications, no free scan tier.
-4. **Respect guardrails** (§2): age gate 17+, concerns are user-selected (never asserted), percentile framing only, no shame/verdict copy.
+4. **Respect guardrails** (§2): age gate 17+, concerns are user-selected (never asserted), no shame/verdict copy.
+5. **Never rank the user against other people.** Version 1.0 was rejected under App Store guideline 1.1.1 ("content likely to humiliate") for exactly this. Scores are a personal baseline: show the trait's own `0-10` score via `scoreOutOfTen()` and a descriptive `bandLabel()`, plus change over time. The internal `percentile` field is a 0-100 data value only — never surface it as a rank, a "Top X%", or any comparison to other men. This applies to in-app copy, share cards, screenshots, the preview video, and App Store metadata.
 5. **Trait-workout mapping is locked** — never create a workout that isn't fed by a scored trait, and never show a trait without its mapped plan.
 6. **TypeScript only.** This is a TypeScript project. No `.js` files.
 7. **Use Expo APIs** where possible before reaching for third-party packages. Check `https://docs.expo.dev/versions/v56.0.0/` for current API availability.

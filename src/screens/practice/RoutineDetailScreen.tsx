@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, routineTaskId } from '../../types/practice';
-import { getScores, topPercentLabel } from '../../services/scoring';
+import { getScores, scoreOutOfTen } from '../../services/scoring';
 import { DayCompleteMoment } from '../../components/DayCompleteMoment';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { TaskCheckbox } from '../../components/TaskCheckbox';
@@ -17,7 +17,7 @@ interface Props {
 
 const targetLabel = (traitId: string) => {
   const score = getScores().find((s) => s.traitId === traitId);
-  return score ? topPercentLabel(score.percentile) : '';
+  return score ? scoreOutOfTen(score.percentile) : '';
 };
 
 function ChecklistSection({

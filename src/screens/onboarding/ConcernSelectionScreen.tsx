@@ -19,7 +19,7 @@ export function ConcernSelectionScreen({ selected, onToggle, onContinue }: Props
     >
       <OnboardingProgressBar current={3} />
       <Text style={styles.title}>What would you like to work on?</Text>
-      <Text style={styles.subtitle}>Most guys pick 2–3. This shapes your plan.</Text>
+      <Text style={styles.subtitle}>Pick 2–3. This shapes your plan.</Text>
 
       <View style={styles.grid}>
         {CONCERNS.map((concern) => {

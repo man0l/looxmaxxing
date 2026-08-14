@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { getAvatarPreview } from '../../types/avatars';
 import { TRAITS } from '../../types/traits';
-import { topPercentLabel } from '../../services/scoring';
+import { scoreOutOfTen } from '../../services/scoring';
 import { useScans } from '../../store/ScanContext';
 import { useOnboarding } from '../../store/OnboardingContext';
 import { AvatarRender } from '../../components/AvatarRender';
@@ -190,7 +190,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
         </Text>
 
         {percentile != null && (
-          <Text style={styles.today}>Today: {topPercentLabel(percentile)} of men</Text>
+          <Text style={styles.today}>Today: {scoreOutOfTen(percentile)}</Text>
         )}
 
         <Pressable style={styles.cta} onPress={onStartPlan}>

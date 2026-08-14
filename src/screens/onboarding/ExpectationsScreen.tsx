@@ -27,9 +27,9 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       keyboardShouldPersistTaps="handled"
     >
       <OnboardingProgressBar current={5} />
-      <Text style={styles.title}>Most guys land between 4 and 7</Text>
+      <Text style={styles.title}>Scores usually start between 4 and 7</Text>
       <Text style={styles.subtitle}>
-        You&apos;ll get percentiles, not verdicts — and every trait comes with a plan.
+        Your first scan is a starting point, not a verdict — and every area comes with a plan.
       </Text>
 
       <View style={styles.chartCard}>
@@ -50,7 +50,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
         </View>
         <View style={styles.chartLabels}>
           <Text style={styles.chartLabelEdge}>1</Text>
-          <Text style={styles.chartLabelCenter}>4–7 · most men</Text>
+          <Text style={styles.chartLabelCenter}>4–7 · common start</Text>
           <Text style={styles.chartLabelEdge}>10</Text>
         </View>
       </View>
@@ -58,7 +58,7 @@ export function ExpectationsScreen({ onGotIt }: Props) {
       <View style={styles.tip}>
         <Text style={styles.tipIcon}>↗</Text>
         <Text style={styles.tipText}>
-          A 5.7 means room to climb — re-rate every two weeks and watch the percentile move.
+          A 5.7 means room to grow — re-scan every two weeks and watch your own score move.
         </Text>
       </View>
 

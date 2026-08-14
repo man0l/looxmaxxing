@@ -3,11 +3,15 @@ import type { GoalLevel } from '../../types/onboarding';
 import { colors, spacing, radii, typography } from '../../theme';
 import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
-const OPTIONS: { value: GoalLevel; label: string }[] = [
-  { value: 'mtn', label: 'A noticeable step up' },
-  { value: 'htn', label: 'Top 30% of men' },
-  { value: 'chadlite', label: 'Top 10% of men' },
-  { value: 'chad', label: 'Top 1% of men' },
+// Effort levels, not rank tiers. These were "Top 30% / 10% / 1% of men", which
+// asked the user to pick a position relative to other people — the framing App
+// Review cited under guideline 1.1.1. The GoalLevel keys are unchanged so stored
+// onboarding state stays valid.
+const OPTIONS: { value: GoalLevel; label: string; detail: string }[] = [
+  { value: 'mtn', label: 'Keep it simple', detail: 'A few minutes, most days' },
+  { value: 'htn', label: 'Build a solid routine', detail: 'Daily basics, consistently' },
+  { value: 'chadlite', label: 'Go further', detail: 'Full routine plus workouts' },
+  { value: 'chad', label: 'All in', detail: 'Every session, every day' },
 ];
 
 interface Props {
@@ -24,8 +28,8 @@ export function GoalLevelScreen({ selected, onSelect, onContinue }: Props) {
       keyboardShouldPersistTaps="handled"
     >
       <OnboardingProgressBar current={7} />
-      <Text style={styles.title}>How far do you want to go?</Text>
-      <Text style={styles.subtitle}>This sets the target for your personalized plan.</Text>
+      <Text style={styles.title}>How much do you want to take on?</Text>
+      <Text style={styles.subtitle}>This sets how demanding your personalized plan is.</Text>
 
       <View style={styles.options}>
         {OPTIONS.map((opt) => {
@@ -36,9 +40,14 @@ export function GoalLevelScreen({ selected, onSelect, onContinue }: Props) {
               onPress={() => onSelect(opt.value)}
               style={[styles.pill, isActive ? styles.pillActive : styles.pillDefault]}
             >
-              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
-                {opt.label}
-              </Text>
+              <View style={styles.pillBody}>
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
+                  {opt.label}
+                </Text>
+                <Text style={[styles.pillDetail, isActive && styles.pillDetailActive]}>
+                  {opt.detail}
+                </Text>
+              </View>
               {isActive && <Text style={styles.check}>✓</Text>}
             </Pressable>
           );
@@ -100,6 +109,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.tertiary,
   },
+  pillBody: {
+    flex: 1,
+    gap: 2,
+  },
   pillText: {
     fontSize: 14,
     color: colors.textSecondary,
@@ -107,6 +120,14 @@ const styles = StyleSheet.create({
   pillTextActive: {
     color: colors.onTertiary,
     fontWeight: '600',
+  },
+  pillDetail: {
+    ...typography.caption,
+    color: colors.textTertiary,
+  },
+  pillDetailActive: {
+    color: colors.onTertiary,
+    opacity: 0.7,
   },
   check: {
     fontSize: 16,

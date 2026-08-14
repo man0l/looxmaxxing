@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { TRAITS } from '../types/traits';
 import { useScans } from '../store/ScanContext';
-import { topPercentLabel, scoreLabel } from '../services/scoring';
+import { bandLabel, scoreLabel, scoreOutOfTen } from '../services/scoring';
 import { RingGauge } from '../components/RingGauge';
 import { ScoreTimeline, type TimelinePoint } from '../components/ScoreTimeline';
 import { BackHeader, NestedScreen } from '../components/BackHeader';
@@ -35,7 +35,7 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: P
           <RingGauge percentile={latestPct} size={100} centerLabel={scoreLabel(latestPct)} />
           <View style={styles.heroInfo}>
             <Text style={styles.title}>{trait?.label ?? traitId}</Text>
-            <Text style={styles.percentile}>{topPercentLabel(latestPct)} of men</Text>
+            <Text style={styles.percentile}>{scoreOutOfTen(latestPct)} · {bandLabel(latestPct)}</Text>
           </View>
         </View>
 
@@ -46,8 +46,8 @@ export function TraitDetailScreen({ traitId, onClose, onOpenPlan, onPreview }: P
             <Text style={styles.breakdownVal}>{scoreLabel(latestPct)} / 10</Text>
           </View>
           <View style={styles.breakdownRow}>
-            <Text style={styles.breakdownKey}>Percentile</Text>
-            <Text style={styles.breakdownVal}>{topPercentLabel(latestPct)}</Text>
+            <Text style={styles.breakdownKey}>Status</Text>
+            <Text style={styles.breakdownVal}>{bandLabel(latestPct)}</Text>
           </View>
           <View style={[styles.breakdownRow, styles.breakdownRowLast]}>
             <Text style={styles.breakdownKey}>Scans</Text>

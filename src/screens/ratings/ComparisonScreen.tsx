@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { TRAITS } from '../../types/traits';
 import type { Scan } from '../../types/scan';
-import { topPercentLabel, scoreLabel, deltaLabel } from '../../services/scoring';
+import { bandLabel, scoreLabel, deltaLabel } from '../../services/scoring';
 import { RingGauge } from '../../components/RingGauge';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { colors, spacing, radii, typography } from '../../theme';
@@ -39,7 +39,7 @@ export function ComparisonScreen({ before, after, onClose }: Props) {
         <View style={styles.overallCard}>
           <View style={styles.overallSide}>
             <RingGauge percentile={beforeOverall} size={64} centerLabel={scoreLabel(beforeOverall)} />
-            <Text style={styles.overallLabel}>{topPercentLabel(beforeOverall)}</Text>
+            <Text style={styles.overallLabel}>{bandLabel(beforeOverall)}</Text>
             <Text style={styles.overallDate}>{formatDate(before.date)}</Text>
           </View>
           <View style={styles.overallDelta}>
@@ -47,7 +47,7 @@ export function ComparisonScreen({ before, after, onClose }: Props) {
           </View>
           <View style={styles.overallSide}>
             <RingGauge percentile={afterOverall} size={64} centerLabel={scoreLabel(afterOverall)} />
-            <Text style={styles.overallLabel}>{topPercentLabel(afterOverall)}</Text>
+            <Text style={styles.overallLabel}>{bandLabel(afterOverall)}</Text>
             <Text style={styles.overallDate}>{formatDate(after.date)}</Text>
           </View>
         </View>

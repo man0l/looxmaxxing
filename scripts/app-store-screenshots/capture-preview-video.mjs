@@ -137,15 +137,15 @@ async function runOnboardingToPaywall(page) {
   await page.getByText("Didn't know where to start").click();
   await page.getByText('Continue', { exact: true }).click();
 
-  await page.getByText('Most guys land between 4 and 7').waitFor();
+  await page.getByText('Scores usually start between 4 and 7').waitFor();
   await page.getByText('Got it', { exact: true }).click();
 
   await page.getByText('When do you want to see your first results?').waitFor();
   await page.getByText('In 1 month').click();
   await page.getByText('Continue', { exact: true }).click();
 
-  await page.getByText('How far do you want to go?').waitFor();
-  await page.getByText('A noticeable step up').click();
+  await page.getByText('How much do you want to take on?').waitFor();
+  await page.getByText('Keep it simple').click();
   await page.getByText('Continue', { exact: true }).click();
 
   await page.getByText("I'm in — let's go").click();
@@ -166,7 +166,7 @@ async function unlockPaywall(page) {
   const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
   await testPurchase.waitFor({ timeout: 30_000 });
   await testPurchase.click();
-  await page.getByText(/Top \d+% of men/).first().waitFor({ timeout: 90_000 });
+  await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
 }
 
 async function seedSecondScan(page) {
@@ -222,7 +222,7 @@ async function hideScrollbars(page) {
 
 /** The recorded tour. Target ~27s so the encode lands inside Apple's 15-30s window. */
 async function runTour(page) {
-  await page.getByText(/Top \d+% of men/).first().waitFor({ timeout: 90_000 });
+  await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
   await hideScrollbars(page);
   await sleep(2200); // hero: overall ring + photo
 
@@ -320,7 +320,7 @@ async function main() {
   const page = await recCtx.newPage();
   page.setDefaultTimeout(45_000);
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120_000 });
-  await page.getByText(/Top \d+% of men/).first().waitFor({ timeout: 90_000 });
+  await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
   const leadInSec = (Date.now() - videoStart) / 1000;
   console.log(`lead-in to trim: ${leadInSec.toFixed(2)}s`);
 

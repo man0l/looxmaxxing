@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { type PlanItem, workoutSessionId } from '../../types/practice';
-import { getScores, topPercentLabel } from '../../services/scoring';
+import { getScores, scoreOutOfTen } from '../../services/scoring';
 import { DayCompleteMoment } from '../../components/DayCompleteMoment';
 import { PracticeAnimation } from '../../components/PracticeAnimation';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
@@ -17,7 +17,7 @@ interface Props {
 
 const targetLabel = (traitId: string) => {
   const score = getScores().find((s) => s.traitId === traitId);
-  return score ? topPercentLabel(score.percentile) : '';
+  return score ? scoreOutOfTen(score.percentile) : '';
 };
 
 export function WorkoutDetailScreen({ item, onClose }: Props) {

@@ -21,16 +21,16 @@ export function WelcomeScreen({ onStart }: Props) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Get an honest read on your face</Text>
+        <Text style={styles.title}>Build a grooming routine that sticks</Text>
         <Text style={styles.subtitle}>
-          Scored against other men. A plan for every trait. Your scan takes 60 seconds.
+          A plan for every area you pick. Your scan takes 60 seconds.
         </Text>
 
         <Pressable accessibilityLabel="Scan my face" onPress={onStart} style={styles.cta}>
           <Text style={styles.ctaText}>Scan my face</Text>
         </Pressable>
 
-        <Text style={styles.trust}>Percentile-based · Photos stay private</Text>
+        <Text style={styles.trust}>Private · Photos stay on your device</Text>
       </View>
     </View>
   );

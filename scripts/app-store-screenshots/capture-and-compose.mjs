@@ -186,15 +186,15 @@ async function runOnboardingToPaywall(page, { skin = false } = {}) {
   await page.getByText("Didn't know where to start").click();
   await page.getByText('Continue', { exact: true }).click();
 
-  await page.getByText('Most guys land between 4 and 7').waitFor();
+  await page.getByText('Scores usually start between 4 and 7').waitFor();
   await page.getByText('Got it', { exact: true }).click();
 
   await page.getByText('When do you want to see your first results?').waitFor();
   await page.getByText('In 1 month').click();
   await page.getByText('Continue', { exact: true }).click();
 
-  await page.getByText('How far do you want to go?').waitFor();
-  await page.getByText('A noticeable step up').click();
+  await page.getByText('How much do you want to take on?').waitFor();
+  await page.getByText('Keep it simple').click();
   await page.getByText('Continue', { exact: true }).click();
 
   await page.getByText("I'm in — let's go").click();
@@ -217,7 +217,7 @@ async function unlockPaywall(page) {
   const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
   await testPurchase.waitFor({ timeout: 30_000 });
   await testPurchase.click();
-  await page.getByText(/Top \d+% of men/).first().waitFor({ timeout: 90_000 });
+  await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
 }
 
 /** Swap visible scan photos to the marketing hero (no reload — keeps entitlement). */
@@ -310,7 +310,7 @@ async function seedSecondScan(page) {
     await waiting.click();
     await unlockPaywall(page);
   } else {
-    await page.getByText(/Top \d+% of men|Day \d+/).first().waitFor({ timeout: 60_000 });
+    await page.getByText(/Your baseline|Day \d+/).first().waitFor({ timeout: 60_000 });
   }
   // Re-apply hero photo after reload (storage already has URI)
   await injectHeroPhoto(page);
@@ -624,7 +624,7 @@ async function captureAll(browser) {
   await sleep(800);
   await captureViewport(page, '05-streak');
   await page.getByText('‹ Back').click();
-  await page.getByText(/Top \d+% of men/).first().waitFor({ timeout: 15_000 });
+  await page.getByText(/Your baseline/).first().waitFor({ timeout: 15_000 });
 
   // Practice → Jawline workout (04)
   console.log('flow: plan');

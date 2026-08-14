@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { TRAITS, type TraitScore } from '../types/traits';
-import { orderByConcerns, topPercentLabel, scoreLabel } from '../services/scoring';
+import { orderByConcerns, bandLabel, scoreLabel, scoreOutOfTen } from '../services/scoring';
 import { colors, spacing, radii, typography } from '../theme';
 import { RingGauge } from './RingGauge';
 import { Card } from './Card';
@@ -50,7 +50,7 @@ export function TraitGrid({
                 <View style={styles.featuredInfo}>
                   <Text style={styles.featuredLabel}>{t?.label ?? s.traitId}</Text>
                   <Text style={styles.featuredPercentile}>
-                    {topPercentLabel(s.percentile)} of men
+                    {scoreOutOfTen(s.percentile)} · {bandLabel(s.percentile)}
                   </Text>
                   <Text style={styles.cta}>{t?.plan ?? 'View plan'} ›</Text>
                 </View>
@@ -87,7 +87,7 @@ export function TraitGrid({
                       delayMs={revealBaseMs + delayIndex * 80}
                     />
                     <Text style={styles.restLabel}>{t?.label ?? s.traitId}</Text>
-                    <Text style={styles.restPercentile}>{topPercentLabel(s.percentile)}</Text>
+                    <Text style={styles.restPercentile}>{bandLabel(s.percentile)}</Text>
                   </Card>
                 </StaggerIn>
               );

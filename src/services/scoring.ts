@@ -46,14 +46,29 @@ export function orderForShare(scores: TraitScore[]): TraitScore[] {
   return ordered;
 }
 
-export function topPercentLabel(percentile: number): string {
-  // Percentiles may be averages (e.g. overall) — always show a whole number.
-  const top = Math.max(1, Math.min(99, Math.round(100 - percentile)));
-  return `Top ${top}%`;
-}
-
 export function scoreLabel(percentile: number): string {
   return (percentile / 10).toFixed(1);
+}
+
+/**
+ * Primary user-facing metric: the trait's own 0-10 score.
+ *
+ * This replaced a "Top X% of men" ranking label. App Review rejected 1.0 under
+ * guideline 1.1.1 for content "likely to humiliate" — ranking a user's face
+ * against other people is what triggered it. Scores are presented as a personal
+ * baseline to track over time, never as a position relative to anyone else.
+ * Nothing in the UI may reintroduce an interpersonal comparison.
+ */
+export function scoreOutOfTen(percentile: number): string {
+  return `${scoreLabel(percentile)} / 10`;
+}
+
+/** Descriptive, self-referential band. Never a rank, never a verdict. */
+export function bandLabel(percentile: number): string {
+  if (percentile < 40) return 'Focus area';
+  if (percentile < 60) return 'Developing';
+  if (percentile < 80) return 'Solid';
+  return 'Strong';
 }
 
 export function improveScores(prev: TraitScore[]): TraitScore[] {

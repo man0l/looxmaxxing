@@ -113,7 +113,7 @@ export function PaywallScreen() {
         )}
 
         <Text style={styles.unlockLabel}>
-          Scored against other men — unlock to see where you stand and the plan for every trait.
+          Unlock your full baseline and the daily plan for every area you picked.
         </Text>
 
         <BlurredTraitGrid concerns={concerns} />
