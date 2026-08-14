@@ -524,11 +524,11 @@ function heroPhoneInner(heroDataUrl) {
           </div>
           <div>
             <div style="font-family:'Nunito Sans',sans-serif;font-size:22px;color:rgba(239,230,216,0.65);font-weight:600;margin-bottom:4px;">Overall</div>
-            <div style="font-family:'Nunito Sans',sans-serif;font-size:40px;font-weight:800;color:#fff;line-height:1.1;">Top 45%<br/>of men</div>
+            <div style="font-family:'Nunito Sans',sans-serif;font-size:40px;font-weight:800;color:#fff;line-height:1.1;">Your baseline<br/>5.5 / 10</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          ${['Jawline · Top 39%', 'Hair · Top 28%', 'Smile · Top 36%']
+          ${['Jawline · 6.1 / 10', 'Hair · 7.2 / 10', 'Smile · 6.4 / 10']
             .map(
               (t) =>
                 `<span style="background:rgba(36,27,18,0.85);border:1px solid #3A2F21;color:#EFE6D8;font-family:'Nunito Sans',sans-serif;font-size:20px;font-weight:600;padding:12px 18px;border-radius:999px;">${t}</span>`,
@@ -658,6 +658,20 @@ async function composeAll(browser) {
 
   const heroPath = path.join(ROOT, 'assets/images/onboarding-face-scan-image1-upscaled.jpg');
   const heroDataUrl = await fileToDataUrl(heroPath);
+
+  // 01-hero is hand-composed HTML, not a live app capture, so regenerating the
+  // app does NOT update it. It previously carried hardcoded "Top 45% of men"
+  // copy that survived the in-app reframe. Fail loudly rather than ship a
+  // screenshot that reintroduces the guideline 1.1.1 framing.
+  {
+    const heroMarkup = heroPhoneInner('') + JSON.stringify(COPY);
+    const banned = heroMarkup.match(/of men|Top \d+%|how hot|honest (face )?rating/gi);
+    if (banned) {
+      throw new Error(
+        `Composed screenshot copy still ranks the user against other people: ${[...new Set(banned)].join(', ')}`,
+      );
+    }
+  }
 
   // 01 hero — custom full-bleed composite
   {
