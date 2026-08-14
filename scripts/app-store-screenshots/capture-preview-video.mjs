@@ -346,7 +346,15 @@ async function main() {
     '-t', String(MAX_SECONDS),
     // Lanczos upscale from the design-width capture, with light unsharp to
     // recover edge definition on text.
-    '-vf', `scale=${OUT_W}:${OUT_H}:flags=lanczos,unsharp=5:5:0.6:5:5:0.0,fps=30,format=yuv420p`,
+    //
+    // setsar=1 is required. Playwright rounds the recording width down (a 443
+    // viewport records at 442), so scaling to 886x1920 changes the aspect very
+    // slightly and ffmpeg preserves the original DAR by emitting a non-square
+    // SAR (442:443) instead. The coded frame then reads as 886x1920 but the
+    // DISPLAY size computes to ~884x1920, and App Store Connect rejects the
+    // upload as the wrong dimensions. Forcing square pixels costs a 0.2%
+    // horizontal stretch, which is imperceptible.
+    '-vf', `scale=${OUT_W}:${OUT_H}:flags=lanczos,setsar=1,unsharp=5:5:0.6:5:5:0.0,fps=30,format=yuv420p`,
     '-c:v', 'libx264', '-profile:v', 'high', '-level:v', '4.0',
     '-b:v', '11M', '-maxrate', '12M', '-bufsize', '24M',
     '-c:a', 'aac', '-b:a', '256k', '-ar', '44100', '-ac', '2',
@@ -357,7 +365,8 @@ async function main() {
   const probe = spawnSync(
     'ffprobe',
     ['-v', 'error', '-select_streams', 'v:0', '-show_entries',
-     'stream=width,height,r_frame_rate,codec_name:format=duration,size', '-of', 'default=nw=1', out],
+     'stream=width,height,sample_aspect_ratio,r_frame_rate,codec_name:format=duration,size',
+     '-of', 'default=nw=1', out],
     { encoding: 'utf8' },
   );
   const info = (probe.stdout || '').trim();
@@ -366,8 +375,14 @@ async function main() {
   const dur = Number(/duration=([\d.]+)/.exec(info)?.[1] ?? 0);
   const w = Number(/width=(\d+)/.exec(info)?.[1] ?? 0);
   const h = Number(/height=(\d+)/.exec(info)?.[1] ?? 0);
+  const sar = /sample_aspect_ratio=(\S+)/.exec(info)?.[1] ?? '';
   const problems = [];
   if (w !== OUT_W || h !== OUT_H) problems.push(`expected ${OUT_W}x${OUT_H}, got ${w}x${h}`);
+  // A non-square SAR makes the DISPLAY size differ from the coded size, which
+  // App Store Connect rejects even though width/height look correct.
+  if (!['1:1', 'N/A', ''].includes(sar)) {
+    problems.push(`sample aspect ratio ${sar} is not square — display size will not be ${OUT_W}x${OUT_H}`);
+  }
   if (dur < 15 || dur > 30) problems.push(`duration ${dur}s outside Apple's 15-30s window`);
 
   // Guard against the page being letterboxed inside a larger frame: sample the
