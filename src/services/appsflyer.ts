@@ -19,17 +19,24 @@ function getAppsFlyer(): AppsFlyerModule | null {
 
 let initialized = false;
 
-async function requestAttPermission(): Promise<void> {
-  if (Platform.OS !== 'ios') return;
+/**
+ * AppsFlyer runs WITHOUT the advertising identifier.
+ *
+ * The published App Privacy label declares no "Data Used to Track You", so the
+ * app must not track. IDFA is disabled before init, NSPrivacyTracking is false,
+ * and no ATT prompt is shown — showing one would be pointless anyway, since
+ * authorization only matters if the IDFA is read.
+ *
+ * Install attribution still works; it just cannot use IDFA-based matching. To
+ * enable tracking instead, this call must be removed AND the App Privacy label
+ * must declare Device ID under "Data Used to Track You", AND an ATT prompt must
+ * be shown before init. Apple cross-checks the label against the manifest.
+ */
+function disableAdvertisingIdentifier(appsFlyer: AppsFlyerModule): void {
   try {
-    const { getTrackingPermissionsAsync, requestTrackingPermissionsAsync } =
-      require('expo-tracking-transparency') as typeof import('expo-tracking-transparency');
-    const current = await getTrackingPermissionsAsync();
-    if (current.status === 'undetermined' && current.canAskAgain) {
-      await requestTrackingPermissionsAsync();
-    }
+    appsFlyer.disableAdvertisingIdentifier(true);
   } catch (e) {
-    console.warn('[appsflyer] ATT request failed', e);
+    console.warn('[appsflyer] could not disable advertising identifier', e);
   }
 }
 
@@ -46,7 +53,7 @@ export async function initAppsFlyer(): Promise<boolean> {
     return false;
   }
 
-  await requestAttPermission();
+  disableAdvertisingIdentifier(appsFlyer);
 
   return new Promise((resolve) => {
     appsFlyer.onInstallConversionData(() => {});
@@ -57,7 +64,6 @@ export async function initAppsFlyer(): Promise<boolean> {
         appId: Platform.OS === 'ios' ? IOS_APP_ID : undefined,
         onInstallConversionDataListener: true,
         onDeepLinkListener: true,
-        timeToWaitForATTUserAuthorization: Platform.OS === 'ios' ? 10 : undefined,
       },
       () => {
         initialized = true;
