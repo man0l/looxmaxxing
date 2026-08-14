@@ -18,7 +18,7 @@ import { ComparisonScreen } from './ratings/ComparisonScreen';
 import { ScanDetailScreen } from './ratings/ScanDetailScreen';
 import { ShareIcon, CompareIcon } from '../components/icons/ActionIcons';
 import { TRAITS, type TraitScore } from '../types/traits';
-import { topPercentLabel, scoreLabel, deltaLabel, orderForShare } from '../services/scoring';
+import { scoreOutOfTen, scoreLabel, deltaLabel, orderForShare } from '../services/scoring';
 import type { Scan } from '../types/scan';
 import { colors, spacing, radii, typography } from '../theme';
 
@@ -132,7 +132,7 @@ export function RatingsScreen() {
                       )}
                     </View>
                     <View style={styles.overallRow}>
-                      <Text style={styles.overall}>{topPercentLabel(overall)} of men</Text>
+                      <Text style={styles.overall}>{scoreOutOfTen(overall)}</Text>
                       {delta ? (
                         <View
                           style={[

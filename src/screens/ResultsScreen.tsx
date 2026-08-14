@@ -36,7 +36,7 @@ import {
   orderForShare,
   scoreLabel,
   deltaLabel,
-  topPercentLabel,
+  scoreOutOfTen,
 } from '../services/scoring';
 import { TRAITS } from '../types/traits';
 import { colors, spacing, radii, typography } from '../theme';
@@ -233,7 +233,7 @@ export function ResultsScreen() {
               </View>
             </View>
             <Text style={styles.overallPercentile}>
-              {topPercentLabel(overallPct)} of men
+              Your baseline · {scoreOutOfTen(overallPct)}
             </Text>
             {overallDelta != null && overallDelta !== 'No change' && (
               <View

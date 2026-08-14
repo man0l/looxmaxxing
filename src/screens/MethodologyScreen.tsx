@@ -14,8 +14,8 @@ const SECTIONS = [
     body: 'Your scan looks at seven structural traits — jawline, cheekbones, skin, hair, masculine presence, smile, and eye area. We read proportion and structure from your two photos. We never judge identity, ethnicity, or worth.',
   },
   {
-    title: 'What a percentile means',
-    body: '"Top 39%" means you score higher than most men on that trait, compared to a large reference set. It is a relative position, not a verdict — and every trait comes with a plan to move it.',
+    title: 'What the score means',
+    body: 'Each area gets a 0-10 score describing what the photos show for that feature — a 6.1 jawline means moderate definition, nothing more. It is your own starting point, not a ranking against other people, and every area comes with a plan to move it.',
   },
   {
     title: 'Why lighting and angles matter',
@@ -23,7 +23,7 @@ const SECTIONS = [
   },
   {
     title: 'How to move your scores',
-    body: 'Each trait maps to one workout or routine. Work the plan, keep your streak, and re-rate when you want to check progress. Structure changes slowly — the percentile is there to show momentum, not to grade you.',
+    body: 'Each area maps to one workout or routine. Work the plan, keep your streak, and re-scan when you want to check progress. Change comes slowly — the score is there to show your own momentum, not to grade you.',
   },
   {
     title: 'What this is not',

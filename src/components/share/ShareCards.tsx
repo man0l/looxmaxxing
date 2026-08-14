@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import { StreakHeatmap } from '../StreakHeatmap';
 import { RingGauge } from '../RingGauge';
 import { BrandMark } from '../BrandMark';
-import { scoreLabel, topPercentLabel } from '../../services/scoring';
+import { scoreLabel, bandLabel, scoreOutOfTen } from '../../services/scoring';
 import type { HeatCell } from '../../services/streak';
 import { colors, spacing, radii, typography } from '../../theme';
 
@@ -75,7 +75,7 @@ export function ScoreShareCard({
         </View>
       </View>
 
-      <Text style={styles.overallPercentile}>{topPercentLabel(overallPercentile)} of men</Text>
+      <Text style={styles.overallPercentile}>My baseline · {scoreOutOfTen(overallPercentile)}</Text>
       {overallDelta ? (
         <View
           style={[
@@ -106,7 +106,7 @@ export function ScoreShareCard({
               animate={false}
             />
             <Text style={styles.gridLabel}>{r.label}</Text>
-            <Text style={styles.gridTop}>{topPercentLabel(r.percentile)}</Text>
+            <Text style={styles.gridTop}>{bandLabel(r.percentile)}</Text>
             {r.delta ? (
               <Text
                 style={[

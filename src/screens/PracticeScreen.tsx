@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { PRACTICE_PLAN, getPlanItem, type PlanItem, workoutSessionId } from '../types/practice';
-import { getScores, topPercentLabel } from '../services/scoring';
+import { getScores, scoreOutOfTen } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { usePractice } from '../store/PracticeContext';
 import { ConcernGlyph } from '../components/icons/OnboardingIcons';
@@ -16,7 +16,7 @@ import { colors, spacing, radii, typography } from '../theme';
 
 const targetLabel = (traitId: string) => {
   const score = getScores().find((s) => s.traitId === traitId);
-  return score ? topPercentLabel(score.percentile) : '';
+  return score ? scoreOutOfTen(score.percentile) : '';
 };
 
 function PlanCard({ item, onPress }: { item: PlanItem; onPress: () => void }) {

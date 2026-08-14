@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AVATAR_PREVIEWS, type AvatarPreview } from '../types/avatars';
 import { TRAITS } from '../types/traits';
-import { topPercentLabel } from '../services/scoring';
+import { scoreOutOfTen } from '../services/scoring';
 import { useOnboarding } from '../store/OnboardingContext';
 import { useScans } from '../store/ScanContext';
 import { AvatarRender } from '../components/AvatarRender';
@@ -29,7 +29,7 @@ function PreviewCard({ preview, onPress }: { preview: AvatarPreview; onPress: ()
         <Text style={styles.cardTitle}>{preview.headline}</Text>
         <Text style={styles.cardMeta}>
           {trait?.label}
-          {percentile != null ? ` · ${topPercentLabel(percentile)} today` : ''}
+          {percentile != null ? ` · ${scoreOutOfTen(percentile)} today` : ''}
         </Text>
       </View>
       <Text style={styles.chevron}>›</Text>

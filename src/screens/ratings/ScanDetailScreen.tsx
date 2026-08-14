@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { TRAITS } from '../../types/traits';
 import type { Scan } from '../../types/scan';
-import { topPercentLabel, scoreLabel } from '../../services/scoring';
+import { bandLabel, scoreLabel, scoreOutOfTen } from '../../services/scoring';
 import { RingGauge } from '../../components/RingGauge';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { colors, spacing, radii, typography } from '../../theme';
@@ -36,7 +36,7 @@ export function ScanDetailScreen({ scan, isFirst, onClose }: Props) {
         <View style={styles.overallCard}>
           <RingGauge percentile={overall} size={72} centerLabel={scoreLabel(overall)} />
           <View style={styles.overallInfo}>
-            <Text style={styles.overallTop}>{topPercentLabel(overall)} of men</Text>
+            <Text style={styles.overallTop}>Baseline · {scoreOutOfTen(overall)}</Text>
             <Text style={styles.overallNote}>
               {isFirst
                 ? 'Your starting point — re-scan to track progress.'
@@ -53,7 +53,7 @@ export function ScanDetailScreen({ scan, isFirst, onClose }: Props) {
               <View key={t.id} style={styles.row}>
                 <Text style={styles.rowLabel}>{t.label}</Text>
                 <Text style={styles.rowScore}>{scoreLabel(p)}</Text>
-                <Text style={styles.rowTop}>{topPercentLabel(p)}</Text>
+                <Text style={styles.rowTop}>{bandLabel(p)}</Text>
               </View>
             );
           })}

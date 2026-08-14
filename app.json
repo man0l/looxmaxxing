@@ -19,16 +19,10 @@
           "snssdk1233"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserTrackingUsageDescription": "Axend uses this to measure which ads brought you here, so we can stop paying for ones that don't work. Your scan photos and scores are never used for advertising.",
         "NSMotionUsageDescription": "Axend reads the ambient light sensor while the camera is open so it can tell you when the lighting is too dark for an accurate scan."
       },
       "privacyManifests": {
-        "NSPrivacyTracking": true,
-        "NSPrivacyTrackingDomains": [
-          "launches.appsflyer.com",
-          "conversions.appsflyersdk.com",
-          "onelink.me"
-        ],
+        "NSPrivacyTracking": false,
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
@@ -66,7 +60,7 @@
           },
           {
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory",
-            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeLinked": true,
             "NSPrivacyCollectedDataTypeTracking": false,
             "NSPrivacyCollectedDataTypePurposes": [
               "NSPrivacyCollectedDataTypePurposeAppFunctionality"
@@ -74,20 +68,10 @@
           },
           {
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeDeviceID",
-            "NSPrivacyCollectedDataTypeLinked": false,
-            "NSPrivacyCollectedDataTypeTracking": true,
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
             "NSPrivacyCollectedDataTypePurposes": [
-              "NSPrivacyCollectedDataTypePurposeDeveloperAdvertising",
-              "NSPrivacyCollectedDataTypePurposeAnalytics"
-            ]
-          },
-          {
-            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeProductInteraction",
-            "NSPrivacyCollectedDataTypeLinked": false,
-            "NSPrivacyCollectedDataTypeTracking": true,
-            "NSPrivacyCollectedDataTypePurposes": [
-              "NSPrivacyCollectedDataTypePurposeAnalytics",
-              "NSPrivacyCollectedDataTypePurposeDeveloperAdvertising"
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
             ]
           }
         ]
@@ -142,13 +126,7 @@
           "photosPermission": "Axend accesses your photos so you can pick an existing selfie for your scan."
         }
       ],
-      "expo-font",
-      [
-        "expo-tracking-transparency",
-        {
-          "userTrackingPermission": "Axend uses this to measure which ads brought you here, so we can stop paying for ones that don't work. Your scan photos and scores are never used for advertising."
-        }
-      ]
+      "expo-font"
     ],
     "extra": {
       "eas": {

@@ -71,8 +71,10 @@ Set to `https://balkanbit.app/axend/privacy-policy`. I verified live: `/axend/pr
 ### 4. Screenshots still need regenerating and re-uploading
 The captions are fixed in the repo script, but the six live PNGs on the listing still say "How hot are you, really?". Re-run the capture script and upload. This is the single most visible 1.1.1 asset.
 
-### 5. The binary still ranks users against other people
-Apple asked for a revised binary, and the app still reports "Top 39% **of men**" throughout Results, TraitGrid, share cards, and Avatars. The new store copy deliberately avoids ranking language — if the app keeps it, the listing and the app now disagree, which is its own 2.3.1 exposure. Deciding how to reframe percentiles in-app (personal baseline vs. population ranking) is the main remaining product work.
+### 5. ~~The binary still ranks users against other people~~ — RESOLVED
+The app reported "Top 39% **of men**" throughout Results, TraitGrid, share cards, Ratings, and Avatars, and asked users to pick a rank tier ("Top 1% of men") as a goal. All interpersonal comparison is now removed: scores present as a personal baseline (`scoreOutOfTen()` → "6.1 / 10") plus a descriptive, self-referential `bandLabel()` ("Solid", "Focus area"), with change over time as the progress signal. `topPercentLabel()` is deleted; the `percentile` field remains internal data only.
+
+Screenshots and the preview video were regenerated against the reframed UI, so the app, the assets, and the store copy now agree. The guardrail in `AGENTS.md` and `CLAUDE.md` previously mandated "percentile framing only" — the framing that caused the rejection — and has been rewritten to forbid ranking.
 
 ---
 
