@@ -135,13 +135,25 @@ jobs:
           </plist>
           EOF
 
+      # expo prebuild names the Xcode project after expo.name in app.json, so
+      # renaming the app renames the workspace and scheme. Derive them from what
+      # was actually generated instead of hardcoding, or a rename silently breaks
+      # the archive step.
+      - name: Resolve Xcode workspace and scheme
+        run: |
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          echo "Using workspace: $WORKSPACE (scheme: $SCHEME)"
+          echo "IOS_WORKSPACE=$WORKSPACE" >> "$GITHUB_ENV"
+          echo "IOS_SCHEME=$SCHEME" >> "$GITHUB_ENV"
+
       - name: Archive
         run: |
           xcodebuild archive \
-            -workspace ios/looxmaxxing.xcworkspace \
-            -scheme looxmaxxing \
+            -workspace "$IOS_WORKSPACE" \
+            -scheme "$IOS_SCHEME" \
             -configuration Release \
-            -archivePath build/looxmaxxing.xcarchive \
+            -archivePath "build/$IOS_SCHEME.xcarchive" \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=UTVHQM5W5U \
@@ -151,15 +163,20 @@ jobs:
       - name: Export .ipa
         run: |
           xcodebuild -exportArchive \
-            -archivePath build/looxmaxxing.xcarchive \
+            -archivePath "build/$IOS_SCHEME.xcarchive" \
             -exportPath build \
             -exportOptionsPlist exportOptions.plist
+          # exportArchive names the .ipa after the scheme; normalise it so the
+          # upload steps do not depend on the app name.
+          IPA=$(ls build/*.ipa | head -1)
+          echo "Exported: $IPA"
+          echo "IOS_IPA=$IPA" >> "$GITHUB_ENV"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: looxmaxxing-ipa
-          path: build/looxmaxxing.ipa
+          name: axend-ipa
+          path: build/*.ipa
 
       - name: Upload to TestFlight
         env:
@@ -171,7 +188,7 @@ jobs:
           echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
           xcrun altool --upload-app \
             --type ios \
-            --file build/looxmaxxing.ipa \
+            --file "$IOS_IPA" \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
 
