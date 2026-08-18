@@ -33,8 +33,8 @@ test.describe('Delete all my data', () => {
     await page.getByText('Delete all data', { exact: true }).click();
 
     await expect(page.getByText('All data deleted.')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Get an honest read on your face')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Top \d+% of men/)).toHaveCount(0);
+    await expect(page.getByText('Build a grooming routine that sticks')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/\d\.\d \/ 10/)).toHaveCount(0);
 
     const after = await readAppStorage(page);
 

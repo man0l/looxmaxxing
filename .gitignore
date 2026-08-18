@@ -51,6 +51,10 @@ ios-certs/
 .playwright-mcp
 test-results/
 playwright-report/
+
+# generated screenshot intermediates
+docs/app-store-screenshots/_raw/
+docs/app-store-screenshots/_work/
 e2e/android-runs/
 e2e/android-ui.xml
 e2e/android-screen.png

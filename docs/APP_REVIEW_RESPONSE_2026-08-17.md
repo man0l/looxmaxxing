@@ -60,6 +60,15 @@ where the app treated a real person as something to be rated.
   explicitly forbids ranking against other people, rating overall attractiveness or
   desirability, and rating the person rather than the feature.
 
+- **The "Masculinity" trait is now labelled "Presence".**
+  (`src/types/traits.ts`, and the concern, paywall, depth-question and methodology copy) The
+  trait's plan has always been the Posture workout and its avatar preview has always read
+  "Stronger presence" — the score describes posture and bearing. Presenting it as a score for how
+  masculine a person is went beyond what it measures and read as rating the person rather than a
+  feature. The underlying trait id is unchanged, so existing scans keep working, and the scoring
+  prompt now explicitly scopes that id to presence and forbids rating how masculine or feminine
+  the person is.
+
 - **Scans are stated to be self-only, at the point of capture.**
   (`src/screens/onboarding/GuidedCaptureScreen.tsx`) The Terms of Use already require that "You
   may only submit photos of yourself"; that rule is now visible in the app where it matters. The
@@ -137,7 +146,7 @@ face data is ever used to identify, authenticate or re-identify anyone, and no d
 a face is retained after a scan.
 
 What is retained is the output: seven integers (0–100), one per cosmetic trait — jawline,
-cheekbones, skin, hair, masculine presence, smile, eye area. Those integers are stored **only on
+cheekbones, skin, hair, presence and posture, smile, eye area. Those integers are stored **only on
 the user's own device**.
 
 ### Q2. Planned use, sharing, retention, deletion and storage of the collected face data
@@ -261,11 +270,40 @@ From **Section 9, "Security"**:
 
 ---
 
+## 5. App Store screenshot that no longer matches the app
+
+`docs/app-store-screenshots/en-US/06-tease.png` (and its 6.9" twin) shows the locked results grid
+with a trait labelled **"Masculinity"**. The app now labels it **"Presence"**, so the current
+store screenshot misrepresents the UI — the kind of mismatch that draws a 2.3.3 flag.
+
+**This has to be regenerated on a machine that has `public/e2e/hero-model.jpg`.** That asset is
+not in the repository (only `e2e-front.jpg` and `e2e-profile.jpg` are), and the compose step
+fails without it. Everything else in the pipeline runs:
+
+```
+node scripts/app-store-screenshots/capture-and-compose.mjs
+```
+
+Two fixes were made to that script so it runs unattended: it tolerates the RevenueCat sandbox
+purchase button being absent under stub billing, and it honours `PW_CHROMIUM_PATH` when the
+Playwright browser lives outside the default location.
+
+The raw capture was verified with the new label in place — the grid reads
+"Cheekbones · Hair · Presence · Smile · Eyes" — so only the marketing composite needs rebuilding.
+
+---
+
 ## Checklist before resubmitting
 
 - [ ] Ship a new build containing the binary changes above.
 - [ ] Deploy the `looxmaxxing-api` scoring-prompt change — the 1.2 fix is only complete once the
       server no longer ranks users against other people.
+- [ ] Regenerate `06-tease.png` (both sizes) so the store screenshot shows "Presence" (section 5).
 - [ ] Decide Route A or Route B for the Age Rating "Age Assurance" field (section 3).
 - [ ] Paste the section 4 answers into the Resolution Center reply.
 - [ ] Confirm the Privacy Policy URL is still set on the App Privacy page.
+
+## Regression cover
+
+`e2e/app-store-guardrails.spec.ts` asserts each of these fixes and runs in CI via
+`.github/workflows/e2e.yml`. If one of those five tests fails, the build is not submittable.

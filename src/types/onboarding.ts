@@ -11,7 +11,7 @@ export const CONCERNS: Concern[] = [
   { id: 'cheekbones', label: 'Defined cheekbones', icon: 'sparkles' },
   { id: 'skin', label: 'Better skin', icon: 'droplet' },
   { id: 'hair', label: 'Fuller-looking hair', icon: 'scissors' },
-  { id: 'masculinity', label: 'Masculine presence', icon: 'barbell' },
+  { id: 'masculinity', label: 'Presence and posture', icon: 'barbell' },
   { id: 'smile', label: 'Attractive smile', icon: 'smile' },
   { id: 'eyes', label: 'Eye area', icon: 'eye' },
 ];

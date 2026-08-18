@@ -46,9 +46,13 @@ export async function unlockPaywall(page: Page) {
   await expect(unlock).toBeEnabled();
   await unlock.click();
 
+  // RevenueCat's Web Billing sandbox shows a "Test valid purchase" button. It
+  // only appears when the suite runs with a RevenueCat key configured; without
+  // one the app falls back to stub billing and the purchase resolves inline.
   const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
-  await expect(testPurchase).toBeVisible({ timeout: 30_000 });
-  await testPurchase.click();
+  if (await testPurchase.isVisible({ timeout: 10_000 }).catch(() => false)) {
+    await testPurchase.click();
+  }
 }
 
 /**

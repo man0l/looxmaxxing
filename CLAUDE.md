@@ -36,6 +36,9 @@ This is a **warm candlelit dark UI**. Critical rules:
 - **Never build excluded features:** no community feed, no push notifications, no free scan tier.
 - **Respect guardrails:** age 17+ gate, user-selected concerns only, no verdict/shame copy.
 - **Never rank the user against other people** — no "Top X%", no "of men", no comparison to anyone else. v1.0 was rejected under App Store guideline 1.1.1 for this. Use `scoreOutOfTen()` + `bandLabel()` from `src/services/scoring.ts`; `percentile` is internal data only. See AGENTS.md §Agent behavior rules.
+- **Don't label the `masculinity` trait "Masculinity"** — it is surfaced as **Presence**. The
+  trait scores posture and bearing; rating how masculine a real person is reads as objectifying
+  them (guideline 1.2). The id stays `masculinity` for stored scans and the API contract.
 - **Never put a face photo on a shareable card** — `ScoreShareCard` is deliberately photo-free. A
   card pairing someone's face with appearance scores, shared off-device, was rejected under App
   Store guideline 1.2 as objectifying a real person. In-app screens may show the user their own

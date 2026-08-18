@@ -11,7 +11,7 @@ interface Props {
 const SECTIONS = [
   {
     title: 'What we evaluate',
-    body: 'Your scan looks at seven structural traits — jawline, cheekbones, skin, hair, masculine presence, smile, and eye area. We read proportion and structure from your two photos. We never judge identity, ethnicity, or worth.',
+    body: 'Your scan looks at seven structural traits — jawline, cheekbones, skin, hair, presence and posture, smile, and eye area. We read proportion and structure from your two photos. We never judge identity, ethnicity, or worth.',
   },
   {
     title: 'What the score means',

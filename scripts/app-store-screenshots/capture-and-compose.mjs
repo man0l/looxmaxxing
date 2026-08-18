@@ -214,9 +214,16 @@ async function unlockPaywall(page) {
   const unlock = page.getByTestId('paywall-unlock');
   await unlock.waitFor({ timeout: 60_000 });
   await unlock.click();
+  // RevenueCat's Web Billing sandbox button only appears when a RevenueCat key
+  // is configured. Without one the web build falls back to stub billing and the
+  // purchase resolves inline, so this step is skipped rather than timing out.
   const testPurchase = page.getByRole('button', { name: 'Test valid purchase' });
-  await testPurchase.waitFor({ timeout: 30_000 });
-  await testPurchase.click();
+  try {
+    await testPurchase.waitFor({ timeout: 10_000 });
+    await testPurchase.click();
+  } catch {
+    /* stub billing — nothing to click */
+  }
   await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
 }
 
@@ -762,7 +769,7 @@ async function main() {
     // Give metro a moment after port opens
     await sleep(3000);
 
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({ headless: true, executablePath: process.env.PW_CHROMIUM_PATH || undefined });
     console.log('Capturing app screens…');
     await captureAll(browser);
     console.log('Compositing marketing frames…');
