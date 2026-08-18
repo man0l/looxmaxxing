@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { StreakHeatmap } from '../StreakHeatmap';
 import { RingGauge } from '../RingGauge';
 import { BrandMark } from '../BrandMark';
@@ -33,7 +33,6 @@ interface ScoreRow {
 interface ScoreCardProps {
   overallPercentile: number;
   rows: ScoreRow[];
-  photoUri?: string;
   overallDelta?: string;
 }
 
@@ -45,10 +44,13 @@ function isDown(delta?: string): boolean {
   return Boolean(delta && delta.startsWith('-'));
 }
 
+// Deliberately photo-free. A shareable card that pairs somebody's face with
+// appearance scores reads as rating a real person, which App Review flagged
+// under guideline 1.2. The card shares progress on the user's own baseline and
+// nothing that identifies them — do not reintroduce a photo here.
 export function ScoreShareCard({
   overallPercentile,
   rows,
-  photoUri,
   overallDelta,
 }: ScoreCardProps) {
   const overallScore = scoreLabel(overallPercentile);
@@ -60,22 +62,16 @@ export function ScoreShareCard({
       <BrandMark variant="wordmark" height={22} style={styles.brand} />
 
       <View style={styles.overallVisual}>
-        {photoUri ? (
-          <Image source={{ uri: photoUri }} style={styles.heroPhoto} resizeMode="cover" />
-        ) : (
-          <View style={[styles.heroPhoto, styles.heroPhotoEmpty]} />
-        )}
-        <View style={styles.ringBadge}>
-          <RingGauge
-            percentile={overallPercentile}
-            size={56}
-            centerLabel={overallScore}
-            animate={false}
-          />
-        </View>
+        <RingGauge
+          percentile={overallPercentile}
+          size={132}
+          centerLabel={overallScore}
+          animate={false}
+        />
       </View>
 
       <Text style={styles.overallPercentile}>My baseline · {scoreOutOfTen(overallPercentile)}</Text>
+      <Text style={styles.overallCaption}>Tracking my own progress with Axend</Text>
       {overallDelta ? (
         <View
           style={[
@@ -126,8 +122,6 @@ export function ScoreShareCard({
   );
 }
 
-const PHOTO_SIZE = 168;
-
 const styles = StyleSheet.create({
   card: {
     width: 300,
@@ -143,32 +137,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   overallVisual: {
-    position: 'relative',
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
     marginBottom: spacing.md,
     alignSelf: 'center',
-  },
-  heroPhoto: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceInset,
-  },
-  heroPhotoEmpty: {
-    borderStyle: 'dashed',
-  },
-  ringBadge: {
-    position: 'absolute',
-    right: -12,
-    bottom: -12,
-    borderRadius: radii.full,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 4,
-    borderColor: colors.background,
-    padding: 3,
   },
   overallPercentile: {
     ...typography.display,
@@ -177,6 +147,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  overallCaption: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   deltaChip: {
     alignSelf: 'center',

@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useStreak } from '../store/StreakContext';
 import { useScans } from '../store/ScanContext';
-import { useOnboarding } from '../store/OnboardingContext';
 import { ShareSheet } from './share/ShareSheet';
 import { ScoreShareCard } from './share/ShareCards';
 import { PressableScale } from './PressableScale';
@@ -24,7 +23,6 @@ interface Props {
 export function DayCompleteMoment({ onClose }: Props) {
   const streak = useStreak();
   const { scans, latest } = useScans();
-  const { frontPhoto } = useOnboarding();
   const [showShare, setShowShare] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -183,12 +181,11 @@ export function DayCompleteMoment({ onClose }: Props) {
       </View>
 
       {showShare && (
-        <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
+        <ShareSheet message="My Axend progress" onClose={() => setShowShare(false)}>
           <ScoreShareCard
             overallPercentile={overallPct}
             overallDelta={overallDelta}
             rows={shareRows}
-            photoUri={latest.photoUri ?? frontPhoto ?? undefined}
           />
         </ShareSheet>
       )}

@@ -32,6 +32,15 @@ export async function wipeLocalAppData(): Promise<void> {
   await clearAllAppData();
 }
 
+/**
+ * Sends the app back through the onboarding flow without wiping stored data.
+ * Used when a user re-declares an ineligible age from Profile — they have to
+ * pass the age gate again before they can get back into the app.
+ */
+export function returnToOnboarding(): void {
+  appLifecycleReset?.();
+}
+
 export function runPostDeletionReset(): void {
   subscriptionReset?.();
   appLifecycleReset?.();

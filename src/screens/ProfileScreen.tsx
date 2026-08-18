@@ -14,6 +14,9 @@ import { PRIVACY_POLICY_URL } from '../config/legal';
 import { useSubscription } from '../store/SubscriptionContext';
 import { useToast } from '../store/ToastContext';
 import { deleteAllUserData } from '../services/deleteAllData';
+import { returnToOnboarding } from '../services/dataDeletion';
+import { AgeGateScreen } from './onboarding/AgeGateScreen';
+import { BackHeader, NestedScreen } from '../components/BackHeader';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
 import { ScreenShell } from '../components/ScreenShell';
@@ -52,14 +55,23 @@ function Row({ label, value, onPress, tone = 'default', disabled, first }: RowPr
   );
 }
 
+const AGE_RANGE_LABEL: Record<string, string> = {
+  under17: 'Under 17',
+  '18-24': '17–24',
+  '25-34': '25–34',
+  '35-44': '35–44',
+  '45+': '45+',
+};
+
 export function ProfileScreen() {
-  const { frontPhoto, profilePhoto } = useOnboarding();
+  const { frontPhoto, profilePhoto, ageRange } = useOnboarding();
   const dispatch = useOnboardingDispatch();
   const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
   const { showToast } = useToast();
 
   const [showMethodology, setShowMethodology] = useState(false);
+  const [showAgeGate, setShowAgeGate] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
@@ -69,17 +81,39 @@ export function ProfileScreen() {
 
   const popNested = useCallback(() => {
     setShowMethodology(false);
+    setShowAgeGate(false);
     setConfirmDelete(false);
     setConfirmDeleteAll(false);
   }, []);
 
   useTabRootReset(popNested);
 
-  const isNested = showMethodology || confirmDelete || confirmDeleteAll;
+  const isNested = showMethodology || showAgeGate || confirmDelete || confirmDeleteAll;
 
   let body: ReactNode;
   if (showMethodology) {
     body = <MethodologyScreen onClose={() => setShowMethodology(false)} />;
+  } else if (showAgeGate) {
+    body = (
+      <NestedScreen onClose={() => setShowAgeGate(false)}>
+        <ScreenShell>
+          <BackHeader onClose={() => setShowAgeGate(false)} />
+          <AgeGateScreen
+            embedded
+            ctaLabel="Save"
+            selected={ageRange}
+            onSelect={(age) => dispatch({ type: 'SET_AGE', payload: age })}
+            onContinue={() => setShowAgeGate(false)}
+            // Re-declaring an ineligible age puts the user back through the age
+            // gate instead of silently leaving them inside the app.
+            onUnder17={() => {
+              setShowAgeGate(false);
+              returnToOnboarding();
+            }}
+          />
+        </ScreenShell>
+      </NestedScreen>
+    );
   } else {
     body = (
       <ScreenShell>
@@ -104,6 +138,16 @@ export function ProfileScreen() {
               <Row label="Unlock your results" tone="action" onPress={openPaywall} />
             )}
             <Row label="Restore purchases" tone="action" onPress={restore} />
+          </Card>
+
+          <Text style={styles.sectionLabel}>Age</Text>
+          <Card role="quiet" style={styles.card}>
+            <Row label="Minimum age" value="17+" first />
+            <Row
+              label="Your age range"
+              value={ageRange ? AGE_RANGE_LABEL[ageRange] : 'Not set'}
+            />
+            <Row label="Change age range" tone="action" onPress={() => setShowAgeGate(true)} />
           </Card>
 
           <Text style={styles.sectionLabel}>About</Text>

@@ -8,6 +8,7 @@ import {
   Platform,
   Animated,
   PanResponder,
+  Linking,
 } from 'react-native';
 import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -44,6 +45,10 @@ export function GuidedCaptureScreen({
   const [busy, setBusy] = useState(false);
   const [translateY] = useState(() => new Animated.Value(0));
   const granted = permission?.granted ?? false;
+  // iOS only shows its system prompt once. After that requestPermission() is a
+  // silent no-op, so the pre-prompt has to send the user to Settings instead of
+  // offering a button that does nothing.
+  const blocked = Boolean(permission && !permission.granted && !permission.canAskAgain);
   const lightingLive = useLightingOk(granted);
 
   const dismiss = () => {
@@ -77,7 +82,11 @@ export function GuidedCaptureScreen({
 
   const handleCapture = async () => {
     if (!granted) {
-      requestPermission();
+      if (blocked) {
+        void Linking.openSettings();
+      } else {
+        requestPermission();
+      }
       return;
     }
     if (!cameraRef.current || busy) return;
@@ -130,7 +139,9 @@ export function GuidedCaptureScreen({
         ) : null}
         {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
         <Text style={styles.title}>Front photo</Text>
-        <Text style={styles.subtitle}>Face the camera, fill the oval, even lighting.</Text>
+        <Text style={styles.subtitle}>
+          A photo of you — face the camera, fill the oval, even lighting.
+        </Text>
 
         <View style={styles.examplesRow}>
           <View style={styles.exampleItem}>
@@ -154,11 +165,20 @@ export function GuidedCaptureScreen({
             <View style={styles.permissionPrompt}>
               <HeadSilhouette size={56} color={colors.textTertiary} />
               <Text style={styles.permissionText}>
-                {permission ? 'Allow camera access to take your photo.' : 'Preparing camera…'}
+                {!permission
+                  ? 'Preparing camera…'
+                  : blocked
+                    ? 'Camera access is turned off for Axend. You can turn it back on in Settings, or pick a photo from your library instead.'
+                    : 'Axend uses the camera to take the front photo your scores are read from.'}
               </Text>
               {permission && !permission.granted && (
-                <Pressable style={styles.permissionBtn} onPress={requestPermission}>
-                  <Text style={styles.permissionBtnText}>Allow camera</Text>
+                <Pressable
+                  style={styles.permissionBtn}
+                  onPress={blocked ? () => void Linking.openSettings() : requestPermission}
+                >
+                  <Text style={styles.permissionBtnText}>
+                    {blocked ? 'Open Settings' : 'Continue'}
+                  </Text>
                 </Pressable>
               )}
             </View>
@@ -203,7 +223,8 @@ export function GuidedCaptureScreen({
         )}
 
         <Text style={styles.privacy}>
-          Photos are processed to generate your scores. Delete them anytime in Profile.
+          Scan your own face only. Photos are processed to generate your scores, then deleted from
+          our servers straight after. Delete them from this device anytime in Profile.
         </Text>
       </Animated.View>
     </ScreenShell>

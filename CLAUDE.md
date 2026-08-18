@@ -36,6 +36,13 @@ This is a **warm candlelit dark UI**. Critical rules:
 - **Never build excluded features:** no community feed, no push notifications, no free scan tier.
 - **Respect guardrails:** age 17+ gate, user-selected concerns only, no verdict/shame copy.
 - **Never rank the user against other people** — no "Top X%", no "of men", no comparison to anyone else. v1.0 was rejected under App Store guideline 1.1.1 for this. Use `scoreOutOfTen()` + `bandLabel()` from `src/services/scoring.ts`; `percentile` is internal data only. See AGENTS.md §Agent behavior rules.
+- **Never put a face photo on a shareable card** — `ScoreShareCard` is deliberately photo-free. A
+  card pairing someone's face with appearance scores, shared off-device, was rejected under App
+  Store guideline 1.2 as objectifying a real person. In-app screens may show the user their own
+  photo; anything that leaves the app may not.
+- **Never ask a permission with a custom "Allow …" button** — pre-permission screens explain the
+  purpose and use a neutral CTA ("Continue"). Rejected under guideline 5.1.1(iv). When the OS will
+  not re-prompt (`canAskAgain === false`), link to Settings instead of showing a dead button.
 - **iOS first** — test and optimize for iOS before Android.
 
 ## Lint and typecheck

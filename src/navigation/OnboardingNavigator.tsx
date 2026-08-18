@@ -36,12 +36,20 @@ interface Props {
 }
 
 export function OnboardingNavigator({ onComplete }: Props) {
-  const [step, setStep] = useState<Step>('welcome');
+  const [rawStep, setStep] = useState<Step>('welcome');
   const state = useOnboarding();
   const dispatch = useOnboardingDispatch();
   const insets = useSafeAreaInsets();
 
   const goTo = useCallback((next: Step) => setStep(next), []);
+
+  // The declared age is persisted, so an under-17 answer has to survive a
+  // relaunch — otherwise the gate is bypassed by force-quitting on the
+  // ineligible screen. Derived rather than stored so a late hydrate still
+  // lands, and only 'welcome' is redirected so the user can go back to 'age'
+  // and correct a mis-tap.
+  const step =
+    state.ageRange === 'under17' && rawStep === 'welcome' ? 'ineligible' : rawStep;
 
   const renderStep = () => {
     switch (step) {
