@@ -248,7 +248,7 @@ async function runTour(page) {
   await sleep(600);
 
   // Ratings → before/after compare, held as the closing beat
-  await safeClick(page.getByText('Ratings', { exact: true }));
+  await safeClick(page.getByText('Progress', { exact: true }));
   await sleep(1400);
   await safeClick(page.getByText('Compare', { exact: true }));
   await sleep(2600);

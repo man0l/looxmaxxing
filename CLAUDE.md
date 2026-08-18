@@ -35,7 +35,7 @@ This is a **warm candlelit dark UI**. Critical rules:
 - **Component names** must match the design system: `Card`, `BannerPremium`, `PillSegment`, `BadgeUrgency`, `InputInset`, `NavBar`, etc.
 - **Never build excluded features:** no community feed, no push notifications, no free scan tier.
 - **Respect guardrails:** age 17+ gate, user-selected concerns only, no verdict/shame copy.
-- **Never rank the user against other people** — no "Top X%", no "of men", no comparison to anyone else. v1.0 was rejected under App Store guideline 1.1.1 for this. Use `scoreOutOfTen()` + `bandLabel()` from `src/services/scoring.ts`; `percentile` is internal data only. See AGENTS.md §Agent behavior rules.
+- **Never rank the user against other people** — no "Top X%", no "of men", no comparison to anyone else. v1.0 was rejected under App Store guideline 1.1.1 for this. Use `scoreOutOfTen()` + `bandLabel()` from `src/services/scoring.ts`; `percentile` is internal data only and must never render as a raw `%` (v1.0 build 27 was rejected again under 1.2 with the blurred grid showing "72%"). See AGENTS.md §Agent behavior rules.
 - **iOS first** — test and optimize for iOS before Android.
 
 ## Lint and typecheck

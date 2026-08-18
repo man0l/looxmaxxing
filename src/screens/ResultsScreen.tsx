@@ -206,7 +206,7 @@ export function ResultsScreen() {
 
           {justRescanned && (
             <Card role="inset" style={styles.doneBanner}>
-              <Text style={styles.doneText}>✓ New scan saved — your percentiles updated</Text>
+              <Text style={styles.doneText}>✓ New scan saved — your scores updated</Text>
             </Card>
           )}
 
@@ -280,9 +280,9 @@ export function ResultsScreen() {
 
           {hasRealScan && (
             <Card role="inset" onPress={startRescan} style={styles.rescanCardActive}>
-              <Text style={styles.rescanTitleActive}>Re-rate now ›</Text>
+              <Text style={styles.rescanTitleActive}>Start a new scan ›</Text>
               <Text style={styles.rescanCaption}>
-                Capture a new scan anytime to see how your percentiles moved.
+                Capture a new scan anytime to see how your own scores moved.
               </Text>
             </Card>
           )}

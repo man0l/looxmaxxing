@@ -641,7 +641,7 @@ async function captureAll(browser) {
 
   // Ratings → Compare (03)
   console.log('flow: compare');
-  await safeClick(page.getByText('Ratings', { exact: true }));
+  await safeClick(page.getByText('Progress', { exact: true }));
   await page.getByText('Every scan').waitFor({ timeout: 15_000 });
   await safeClick(page.getByText('Compare', { exact: true }));
   await page.getByText('By trait').waitFor({ timeout: 20_000 });

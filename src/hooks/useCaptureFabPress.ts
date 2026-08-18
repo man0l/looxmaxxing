@@ -11,7 +11,7 @@ export function useCaptureFabPress(startRescan: () => void) {
       startRescan();
       return;
     }
-    showToast('Complete your first scan to unlock re-rating.', 'info');
+    showToast('Complete your first scan to unlock new scans.', 'info');
   }, [canRescan, startRescan, showToast]);
 
   return { onCaptureFabPress, canRescan };

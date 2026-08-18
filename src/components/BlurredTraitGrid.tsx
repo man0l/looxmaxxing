@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { TRAITS } from '../types/traits';
-import { getScores, orderByConcerns } from '../services/scoring';
+import { getScores, orderByConcerns, scoreLabel } from '../services/scoring';
 import { colors, spacing, radii, typography } from '../theme';
 import { RingGauge } from './RingGauge';
 
@@ -20,7 +20,13 @@ export function BlurredTraitGrid({ concerns }: Props) {
       <View style={styles.featuredRow}>
         {featured.map((s) => (
           <View key={s.traitId} style={styles.featuredItem}>
-            <RingGauge percentile={s.percentile} size={88} obscured animate={false} />
+            <RingGauge
+              percentile={s.percentile}
+              size={88}
+              obscured
+              animate={false}
+              centerLabel={scoreLabel(s.percentile)}
+            />
             <Text style={styles.featuredLabel}>{traitLabel(s.traitId)}</Text>
           </View>
         ))}
@@ -28,7 +34,13 @@ export function BlurredTraitGrid({ concerns }: Props) {
       <View style={styles.restRow}>
         {rest.map((s) => (
           <View key={s.traitId} style={styles.restItem}>
-            <RingGauge percentile={s.percentile} size={48} obscured animate={false} />
+            <RingGauge
+              percentile={s.percentile}
+              size={48}
+              obscured
+              animate={false}
+              centerLabel={scoreLabel(s.percentile)}
+            />
             <Text style={styles.restLabel}>{traitLabel(s.traitId)}</Text>
           </View>
         ))}

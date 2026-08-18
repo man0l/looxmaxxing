@@ -6,12 +6,12 @@ import { HeadSilhouette } from '../../components/icons/OnboardingIcons';
 import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const STEPS = [
-  'Detecting facial features',
-  'Measuring proportions',
-  'Analyzing skin quality',
-  'Checking symmetry',
-  'Calculating scores',
-  'Finalizing results',
+  'Checking photo quality',
+  'Reading lighting and angle',
+  'Looking at skin and hair',
+  'Matching your selected concerns',
+  'Building your baseline',
+  'Preparing your plan',
 ];
 
 const STEP_DURATION = 950;
@@ -76,7 +76,7 @@ export function AnalyzingScreen({ onComplete }: Props) {
         )}
         <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
       </View>
-      <Text style={styles.title}>Analyzing Your Face</Text>
+      <Text style={styles.title}>Analyzing your photo</Text>
 
       <View style={styles.steps}>
         {STEPS.map((label, i) => {

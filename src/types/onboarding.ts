@@ -12,7 +12,7 @@ export const CONCERNS: Concern[] = [
   { id: 'skin', label: 'Better skin', icon: 'droplet' },
   { id: 'hair', label: 'Fuller-looking hair', icon: 'scissors' },
   { id: 'masculinity', label: 'Masculine presence', icon: 'barbell' },
-  { id: 'smile', label: 'Attractive smile', icon: 'smile' },
+  { id: 'smile', label: 'Confident smile', icon: 'smile' },
   { id: 'eyes', label: 'Eye area', icon: 'eye' },
 ];
 

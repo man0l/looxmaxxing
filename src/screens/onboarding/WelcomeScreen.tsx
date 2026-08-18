@@ -30,7 +30,7 @@ export function WelcomeScreen({ onStart }: Props) {
           <Text style={styles.ctaText}>Scan my face</Text>
         </Pressable>
 
-        <Text style={styles.trust}>Private · Photos stay on your device</Text>
+        <Text style={styles.trust}>Private · Photos are deleted after scoring</Text>
       </View>
     </View>
   );

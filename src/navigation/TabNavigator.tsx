@@ -26,12 +26,12 @@ interface IconProps {
   color: string;
 }
 
-const TAB_CONFIG: { name: TabName; icon: ComponentType<IconProps> }[] = [
-  { name: 'Results', icon: ResultsIcon },
-  { name: 'Practice', icon: PracticeIcon },
-  { name: 'Avatars', icon: AvatarsIcon },
-  { name: 'Ratings', icon: RatingsIcon },
-  { name: 'Profile', icon: ProfileIcon },
+const TAB_CONFIG: { name: TabName; label: string; icon: ComponentType<IconProps> }[] = [
+  { name: 'Results', label: 'Results', icon: ResultsIcon },
+  { name: 'Practice', label: 'Practice', icon: PracticeIcon },
+  { name: 'Avatars', label: 'Avatars', icon: AvatarsIcon },
+  { name: 'Ratings', label: 'Progress', icon: RatingsIcon },
+  { name: 'Profile', label: 'Profile', icon: ProfileIcon },
 ];
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -74,7 +74,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 { color: isFocused ? colors.textPrimary : colors.textSecondary },
               ]}
             >
-              {tab.name}
+              {tab.label}
             </Text>
           </Pressable>
         );

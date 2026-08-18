@@ -92,7 +92,7 @@ export function RatingsScreen() {
           <BrandMark style={styles.brand} />
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.header}>Ratings</Text>
+              <Text style={styles.header}>Progress</Text>
               <Text style={styles.sub}>Every scan you’ve taken.</Text>
             </View>
             {scans.length >= 2 && (

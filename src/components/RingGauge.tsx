@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { colors, typography } from '../theme';
+import { scoreLabel } from '../services/scoring';
 
 // RN Animated + react-native-svg Circle is unreliable on web (AnimatedCircle
 // throws). Native keeps the draw-in animation; web renders the final ring.
@@ -179,7 +180,7 @@ export function RingGauge({
             obscured && styles.valueObscured,
           ]}
         >
-          {centerLabel ?? `${percentile}%`}
+          {centerLabel ?? scoreLabel(percentile)}
         </Text>
       </View>
     </View>

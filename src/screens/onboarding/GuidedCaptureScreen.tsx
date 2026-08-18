@@ -8,6 +8,7 @@ import {
   Platform,
   Animated,
   PanResponder,
+  Linking,
 } from 'react-native';
 import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -44,7 +45,12 @@ export function GuidedCaptureScreen({
   const [busy, setBusy] = useState(false);
   const [translateY] = useState(() => new Animated.Value(0));
   const granted = permission?.granted ?? false;
+  const blocked = Boolean(permission) && !granted && permission?.canAskAgain === false;
   const lightingLive = useLightingOk(granted);
+
+  const openSettings = () => {
+    Linking.openSettings().catch(() => {});
+  };
 
   const dismiss = () => {
     if (!onCancel) return;
@@ -77,7 +83,8 @@ export function GuidedCaptureScreen({
 
   const handleCapture = async () => {
     if (!granted) {
-      requestPermission();
+      if (blocked) openSettings();
+      else requestPermission();
       return;
     }
     if (!cameraRef.current || busy) return;
@@ -130,7 +137,10 @@ export function GuidedCaptureScreen({
         ) : null}
         {!onboardingStep && stepLabel ? <Text style={styles.step}>{stepLabel}</Text> : null}
         <Text style={styles.title}>Front photo</Text>
-        <Text style={styles.subtitle}>Face the camera, fill the oval, even lighting.</Text>
+        <Text style={styles.subtitle}>
+          Face the camera, fill the oval, even lighting. Use your own face — Axend only analyzes
+          photos of the person using it.
+        </Text>
 
         <View style={styles.examplesRow}>
           <View style={styles.exampleItem}>
@@ -154,11 +164,20 @@ export function GuidedCaptureScreen({
             <View style={styles.permissionPrompt}>
               <HeadSilhouette size={56} color={colors.textTertiary} />
               <Text style={styles.permissionText}>
-                {permission ? 'Allow camera access to take your photo.' : 'Preparing camera…'}
+                {!permission
+                  ? 'Preparing camera…'
+                  : blocked
+                    ? 'Camera access is off for Axend, so the scan cannot take your photo. You can turn it on in Settings, or pick an existing selfie from your library instead.'
+                    : 'Your scan uses a front and profile photo of your own face.'}
               </Text>
               {permission && !permission.granted && (
-                <Pressable style={styles.permissionBtn} onPress={requestPermission}>
-                  <Text style={styles.permissionBtnText}>Allow camera</Text>
+                <Pressable
+                  style={styles.permissionBtn}
+                  onPress={blocked ? openSettings : requestPermission}
+                >
+                  <Text style={styles.permissionBtnText}>
+                    {blocked ? 'Open Settings' : 'Continue'}
+                  </Text>
                 </Pressable>
               )}
             </View>
@@ -203,7 +222,8 @@ export function GuidedCaptureScreen({
         )}
 
         <Text style={styles.privacy}>
-          Photos are processed to generate your scores. Delete them anytime in Profile.
+          Photos are processed to generate your own scores, then deleted from our servers. Delete
+          them from this device anytime in Profile.
         </Text>
       </Animated.View>
     </ScreenShell>
