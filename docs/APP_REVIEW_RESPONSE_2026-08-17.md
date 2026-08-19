@@ -7,8 +7,14 @@ This document holds (a) what changed in the binary and (b) the metadata changes 
 in App Store Connect by hand. It is written for us, not for Apple — do not paste it into the
 Resolution Center.
 
-**The message to actually send is `RESOLUTION_CENTER_REPLY.md`**, a single paste-ready block
-covering all four items.
+Two things get sent to Apple, into two different fields:
+
+- **`APP_REVIEW_NOTES.md`** → App Review Information → Notes. Short; travels with the build and is
+  the first thing the reviewer reads.
+- **`RESOLUTION_CENTER_REPLY.md`** → the Resolution Center thread. Long; carries the six face-data
+  answers, which do not fit in the Notes field.
+
+Send both.
 
 ---
 
@@ -309,6 +315,7 @@ silently rebuild the marketing frames with the plain e2e test face.
       server no longer ranks users against other people.
 - [x] `06-tease.png` regenerated in both sizes so the store screenshot shows "Presence" (section 5).
 - [ ] Decide Route A or Route B for the Age Rating "Age Assurance" field (section 3).
+- [ ] Paste `APP_REVIEW_NOTES.md` into App Review Information → Notes before submitting.
 - [ ] Send `RESOLUTION_CENTER_REPLY.md` in the Resolution Center (adjust it if you pick Route B).
 - [ ] Confirm the Privacy Policy URL is still set on the App Privacy page.
 
