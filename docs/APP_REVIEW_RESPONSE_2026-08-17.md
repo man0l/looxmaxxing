@@ -270,26 +270,32 @@ From **Section 9, "Security"**:
 
 ---
 
-## 5. App Store screenshot that no longer matches the app
+## 5. App Store screenshot updated for the "Presence" relabel
 
-`docs/app-store-screenshots/en-US/06-tease.png` (and its 6.9" twin) shows the locked results grid
-with a trait labelled **"Masculinity"**. The app now labels it **"Presence"**, so the current
-store screenshot misrepresents the UI — the kind of mismatch that draws a 2.3.3 flag.
+`06-tease.png` (both 1242×2688 and 1320×2868) showed the locked results grid with a trait
+labelled **"Masculinity"**. The app now labels it **"Presence"**, so the store screenshot no
+longer matched the UI — the kind of mismatch that draws a 2.3.3 flag. It is the same screen
+Apple's own rejection screenshot shows.
 
-**This has to be regenerated on a machine that has `public/e2e/hero-model.jpg`.** That asset is
-not in the repository (only `e2e-front.jpg` and `e2e-profile.jpg` are), and the compose step
-fails without it. Everything else in the pipeline runs:
+**Both sizes have been regenerated** and now read "Cheekbones · Hair · Presence · Smile · Eyes".
+No other screenshot contains that label, and none of the others were touched.
 
-```
-node scripts/app-store-screenshots/capture-and-compose.mjs
-```
+Three fixes went into `scripts/app-store-screenshots/capture-and-compose.mjs` so this is
+repeatable:
 
-Two fixes were made to that script so it runs unattended: it tolerates the RevenueCat sandbox
-purchase button being absent under stub billing, and it honours `PW_CHROMIUM_PATH` when the
-Playwright browser lives outside the default location.
+- It tolerates RevenueCat's sandbox purchase button being absent under stub billing, instead of
+  timing out after 30s.
+- It honours `PW_CHROMIUM_PATH` when the Playwright browser is not in the default cache.
+- New `--compose-only` mode rebuilds the marketing composites from the captures already in
+  `_raw/`, rewriting only the shots that have a raw. This is what made it possible to rebuild
+  `06-tease` alone without disturbing the other five.
 
-The raw capture was verified with the new label in place — the grid reads
-"Cheekbones · Hair · Presence · Smile · Eyes" — so only the marketing composite needs rebuilding.
+One thing to know about a **full** capture run: it needs `public/e2e/hero-model.jpg`, a licensed
+model photo that is deliberately not committed. It is only used for the four screenshots that
+show a face (02, 03, 04, 05) — `01-hero` is composed from a committed asset, and `06-tease` is
+captured before the swap happens. The script now fails with an explicit message naming the file
+rather than an opaque `page.evaluate: Event`, and failing is intentional: continuing would
+silently rebuild the marketing frames with the plain e2e test face.
 
 ---
 
@@ -298,7 +304,7 @@ The raw capture was verified with the new label in place — the grid reads
 - [ ] Ship a new build containing the binary changes above.
 - [ ] Deploy the `looxmaxxing-api` scoring-prompt change — the 1.2 fix is only complete once the
       server no longer ranks users against other people.
-- [ ] Regenerate `06-tease.png` (both sizes) so the store screenshot shows "Presence" (section 5).
+- [x] `06-tease.png` regenerated in both sizes so the store screenshot shows "Presence" (section 5).
 - [ ] Decide Route A or Route B for the Age Rating "Age Assurance" field (section 3).
 - [ ] Paste the section 4 answers into the Resolution Center reply.
 - [ ] Confirm the Privacy Policy URL is still set on the App Privacy page.

@@ -4,6 +4,13 @@
  *
  * Usage (from repo root, with Expo web already running on :19006 OR let this start it):
  *   node scripts/app-store-screenshots/capture-and-compose.mjs
+ *
+ * Rebuild the composites from existing captures in _raw/ without driving the app
+ * (only the shots that have a raw are rewritten):
+ *   node scripts/app-store-screenshots/capture-and-compose.mjs --compose-only
+ *
+ * Set PW_CHROMIUM_PATH if the Playwright browser lives outside the default cache.
+ * A full capture also needs public/e2e/hero-model.jpg — see injectHeroPhoto().
  */
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
@@ -227,9 +234,27 @@ async function unlockPaywall(page) {
   await page.getByText(/Your baseline/).first().waitFor({ timeout: 90_000 });
 }
 
-/** Swap visible scan photos to the marketing hero (no reload — keeps entitlement). */
+/**
+ * Swap visible scan photos to the marketing hero (no reload — keeps entitlement).
+ *
+ * Needs `public/e2e/hero-model.jpg`, a licensed model photo that is deliberately
+ * NOT committed. It only affects the four screenshots that show a face
+ * (02-traits, 03-progress, 04-plan, 05-streak) — 01-hero is composed from a
+ * committed asset and 06-tease is captured before this runs. Failing loudly is
+ * intentional: continuing would silently rebuild the marketing frames with the
+ * plain e2e test face.
+ */
 async function injectHeroPhoto(page) {
   const heroUrl = `${BASE}/e2e/hero-model.jpg`;
+  const heroFile = path.join(ROOT, 'public/e2e/hero-model.jpg');
+  if (!existsSync(heroFile)) {
+    throw new Error(
+      `Missing ${heroFile}.\n` +
+        'This is the licensed marketing model photo used for the face-bearing\n' +
+        'screenshots (02, 03, 04, 05). It is intentionally not in git — copy it in,\n' +
+        'or run with --compose-only to rebuild frames from existing captures.',
+    );
+  }
   // Warm cache so the swap is instant
   await page.evaluate(async (url) => {
     await new Promise((resolve, reject) => {
@@ -763,15 +788,27 @@ async function composeAll(browser) {
 }
 
 async function main() {
+  // --compose-only rebuilds the marketing frames from the captures already in
+  // _raw/ without driving the app. Useful when iterating on the composite, and
+  // when only some screens need rebuilding — shots with no raw are left alone.
+  const composeOnly = process.argv.includes('--compose-only');
   let expoChild = null;
   try {
-    expoChild = await ensureExpo();
-    // Give metro a moment after port opens
-    await sleep(3000);
+    const browser = await chromium.launch({
+      headless: true,
+      executablePath: process.env.PW_CHROMIUM_PATH || undefined,
+    });
 
-    const browser = await chromium.launch({ headless: true, executablePath: process.env.PW_CHROMIUM_PATH || undefined });
-    console.log('Capturing app screens…');
-    await captureAll(browser);
+    if (!composeOnly) {
+      expoChild = await ensureExpo();
+      // Give metro a moment after port opens
+      await sleep(3000);
+      console.log('Capturing app screens…');
+      await captureAll(browser);
+    } else {
+      console.log('Compose-only: reusing captures in', RAW);
+    }
+
     console.log('Compositing marketing frames…');
     await composeAll(browser);
     await browser.close();
