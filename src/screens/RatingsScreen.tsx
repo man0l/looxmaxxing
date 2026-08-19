@@ -1,7 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useScans } from '../store/ScanContext';
-import { useOnboarding } from '../store/OnboardingContext';
 import { useRescanFlow } from '../hooks/useRescanFlow';
 import { useCaptureFabPress } from '../hooks/useCaptureFabPress';
 import { useTabRootReset } from '../hooks/useTabRootReset';
@@ -46,7 +45,6 @@ function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
 
 export function RatingsScreen() {
   const { scans } = useScans();
-  const { frontPhoto } = useOnboarding();
   const { canRescan, rescanStep, startRescan, cancelRescan, onCapture } = useRescanFlow();
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const [shareScan, setShareScan] = useState<Scan | null>(null);
@@ -179,14 +177,13 @@ export function RatingsScreen() {
             const prev = idx >= 0 ? scans[idx + 1] : undefined;
             const curOverall = overallPercentile(shareScan.scores);
             return (
-              <ShareSheet message="My axend scan" onClose={() => setShareScan(null)}>
+              <ShareSheet message="My Axend progress" onClose={() => setShareScan(null)}>
                 <ScoreShareCard
                   overallPercentile={curOverall}
                   overallDelta={
                     prev ? deltaLabel(overallPercentile(prev.scores), curOverall) : undefined
                   }
                   rows={shareRows(shareScan.scores, prev?.scores)}
-                  photoUri={shareScan.photoUri ?? frontPhoto ?? undefined}
                 />
               </ShareSheet>
             );

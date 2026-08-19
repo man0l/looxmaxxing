@@ -12,7 +12,7 @@ import type {
   PurchasesPackage,
 } from 'react-native-purchases';
 import type { PlanId } from '../types/traits';
-import { e2eAppUserId, resolveE2eAppUserId } from '../config/e2e';
+import { isE2E, e2eAppUserId, resolveE2eAppUserId } from '../config/e2e';
 
 export const ENTITLEMENT_ID = 'Looksmaxxing Pro';
 
@@ -20,6 +20,48 @@ const PLATFORM_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_KEY ?? '';
 const TEST_STORE_REVENUECAT_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY ?? '';
 const REVENUECAT_API_KEY =
   __DEV__ && TEST_STORE_REVENUECAT_KEY ? TEST_STORE_REVENUECAT_KEY : PLATFORM_REVENUECAT_KEY;
+
+// Web-only, and only when the Playwright suite runs without RevenueCat
+// credentials: the funnel specs need to get past the paywall to reach the
+// screens they actually assert on. With a key present the real Web Billing
+// sandbox is used exactly as before, so CI with secrets still exercises the
+// genuine purchase path. This file is never bundled into the iOS or Android
+// binary — native builds use purchases.ts.
+const useStubBilling = isE2E && !REVENUECAT_API_KEY;
+
+const STUB_OFFERING = {
+  identifier: 'e2e-stub',
+  serverDescription: 'E2E stub offering',
+  availablePackages: [
+    {
+      identifier: '$rc_weekly',
+      packageType: 'WEEKLY',
+      product: {
+        identifier: 'e2e_weekly',
+        priceString: '$6.99',
+        price: 6.99,
+        currencyCode: 'USD',
+      },
+    },
+    {
+      identifier: '$rc_annual',
+      packageType: 'ANNUAL',
+      product: {
+        identifier: 'e2e_annual',
+        priceString: '$59.99',
+        price: 59.99,
+        currencyCode: 'USD',
+      },
+    },
+  ],
+  lifetime: null,
+  sixMonth: null,
+  threeMonth: null,
+  twoMonth: null,
+  monthly: null,
+} as unknown as PurchasesOffering;
+
+let stubPro = false;
 
 type ShimPackage = PurchasesPackage & { __webPkg?: WebPackage };
 
@@ -98,6 +140,11 @@ function asCustomerInfo(info: WebCustomerInfo): CustomerInfo {
 
 export async function configurePurchases(): Promise<boolean> {
   if (configured) return true;
+  if (useStubBilling) {
+    currentAppUserId = resolveE2eAppUserId() || 'e2e-stub-user';
+    configured = true;
+    return true;
+  }
   if (!REVENUECAT_API_KEY) {
     console.warn('[purchases.web] no RevenueCat key configured');
     return false;
@@ -118,6 +165,7 @@ export function isProActive(info: CustomerInfo | null): boolean {
 }
 
 export async function getCustomerInfo(): Promise<CustomerInfo | null> {
+  if (useStubBilling) return stubCustomerInfo();
   if (!configured) return null;
   try {
     const info = await Purchases.getSharedInstance().getCustomerInfo();
@@ -134,6 +182,7 @@ export interface OfferingResult {
 }
 
 export async function getCurrentOffering(): Promise<OfferingResult> {
+  if (useStubBilling) return { offering: STUB_OFFERING, error: null };
   if (!configured) return { offering: null, error: null };
   try {
     const offerings = await Purchases.getSharedInstance().getOfferings();
@@ -191,6 +240,10 @@ async function withBillingGuard(run: () => Promise<PurchaseResult>): Promise<Pur
 
 export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
   return withBillingGuard(async () => {
+    if (useStubBilling) {
+      stubPro = true;
+      return { pro: true, cancelled: false, error: null };
+    }
     if (!configured) {
       return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
     }
@@ -219,6 +272,11 @@ export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseRe
 
 export async function restorePurchases(): Promise<PurchaseResult> {
   return withBillingGuard(async () => {
+    if (useStubBilling) {
+      return stubPro
+        ? { pro: true, cancelled: false, error: null }
+        : { pro: false, cancelled: false, error: 'No active subscription found for this account.' };
+    }
     if (!configured) {
       return { pro: false, cancelled: false, error: 'Purchases are not available on this platform.' };
     }
@@ -236,7 +294,14 @@ export async function restorePurchases(): Promise<PurchaseResult> {
   });
 }
 
+function stubCustomerInfo(): CustomerInfo {
+  return {
+    entitlements: { active: stubPro ? { [ENTITLEMENT_ID]: { isActive: true } } : {} },
+  } as unknown as CustomerInfo;
+}
+
 export async function getAppUserID(): Promise<string> {
+  if (useStubBilling) return currentAppUserId || resolveE2eAppUserId() || 'e2e-stub-user';
   if (!configured) return e2eAppUserId;
   try {
     return Purchases.getSharedInstance().getAppUserId();
@@ -246,6 +311,12 @@ export async function getAppUserID(): Promise<string> {
 }
 
 export async function logOutPurchases(): Promise<void> {
+  if (useStubBilling) {
+    stubPro = false;
+    currentAppUserId = '';
+    configured = false;
+    return;
+  }
   if (!configured) return;
   try {
     currentAppUserId = '';

@@ -1,0 +1,39 @@
+name: E2E
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # No RevenueCat key is set here on purpose: without one the web build
+      # falls back to stub billing so the funnel specs can get past the paywall.
+      # Add EXPO_PUBLIC_REVENUECAT_TEST_STORE_KEY as a secret to exercise the
+      # real Web Billing sandbox instead.
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7

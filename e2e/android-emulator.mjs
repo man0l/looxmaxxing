@@ -161,7 +161,7 @@ sleep(400);
 tapBy('Continue');
 sleep(600);
 
-waitForText('Get an honest read on your face');
+waitForText('Build a grooming routine that sticks');
 sleep(1500);
 function tapWelcomeCta() {
   const xml = dumpUi('welcome-cta');
@@ -194,7 +194,7 @@ sleep(600);
 tapBy('Skip');
 sleep(600);
 
-waitForText('Most guys land between 4 and 7');
+waitForText('Scores usually start between 4 and 7');
 tapBy('Got it');
 sleep(600);
 

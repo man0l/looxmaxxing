@@ -295,12 +295,11 @@ export function ResultsScreen() {
         <CaptureFab onPress={onCaptureFabPress} disabled={!canRescan} />
 
         {showShare && (
-          <ShareSheet message="My axend scan" onClose={() => setShowShare(false)}>
+          <ShareSheet message="My Axend progress" onClose={() => setShowShare(false)}>
             <ScoreShareCard
               overallPercentile={overallPct}
               overallDelta={overallDelta}
               rows={shareRows}
-              photoUri={latest.photoUri ?? frontPhoto ?? undefined}
             />
           </ShareSheet>
         )}

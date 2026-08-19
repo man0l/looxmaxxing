@@ -5,7 +5,9 @@ import { OnboardingProgressBar } from '../../components/OnboardingProgressBar';
 
 const AGE_RANGES: { value: AgeRange; label: string }[] = [
   { value: 'under17', label: 'Under 17' },
-  { value: '18-24', label: '18–24' },
+  // The app is 17+, so the eligible bands have to start at 17 — otherwise a
+  // 17-year-old has no truthful option to pick.
+  { value: '18-24', label: '17–24' },
   { value: '25-34', label: '25–34' },
   { value: '35-44', label: '35–44' },
   { value: '45+', label: '45+' },
@@ -16,9 +18,19 @@ interface Props {
   onSelect: (age: AgeRange) => void;
   onContinue: () => void;
   onUnder17: () => void;
+  /** Rendered outside the onboarding flow (e.g. from Profile) — no step bar. */
+  embedded?: boolean;
+  ctaLabel?: string;
 }
 
-export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Props) {
+export function AgeGateScreen({
+  selected,
+  onSelect,
+  onContinue,
+  onUnder17,
+  embedded = false,
+  ctaLabel = 'Continue',
+}: Props) {
   const handleSelect = (age: AgeRange) => {
     onSelect(age);
     if (age === 'under17') {
@@ -33,9 +45,12 @@ export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Pro
       bounces={false}
       keyboardShouldPersistTaps="handled"
     >
-      <OnboardingProgressBar current={2} />
+      {!embedded && <OnboardingProgressBar current={2} />}
       <Text style={styles.title}>How old are you?</Text>
-      <Text style={styles.subtitle}>Used only to calibrate your plan.</Text>
+      <Text style={styles.subtitle}>
+        Axend is for ages 17 and up. Your answer stays on this device and is used to confirm
+        eligibility and calibrate your plan.
+      </Text>
 
       <View style={styles.options}>
         {AGE_RANGES.map((range) => {
@@ -63,7 +78,7 @@ export function AgeGateScreen({ selected, onSelect, onContinue, onUnder17 }: Pro
         style={[styles.cta, !selected && styles.ctaDisabled]}
         disabled={!selected}
       >
-        <Text style={styles.ctaText}>Continue</Text>
+        <Text style={styles.ctaText}>{ctaLabel}</Text>
       </Pressable>
     </ScrollView>
   );

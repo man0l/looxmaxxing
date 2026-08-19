@@ -26,7 +26,7 @@ const CONCERN_LABELS: Record<string, string> = {
   cheekbones: 'Cheekbones',
   skin: 'Skin',
   hair: 'Hair',
-  masculinity: 'Masculinity',
+  masculinity: 'Presence',
   smile: 'Smile',
   eyes: 'Eyes',
 };

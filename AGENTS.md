@@ -32,7 +32,7 @@ Every scored trait maps to exactly one workout/routine:
 
 - Jawline → Jawline workout
 - Face/Cheekbones → Cheekbones workout
-- Masculinity → Posture workout
+- Presence (trait id `masculinity`) → Posture workout
 - Smile → Smile workout
 - Skin → Skin routine
 - Hair → Hair routine
