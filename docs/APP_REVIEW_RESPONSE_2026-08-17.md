@@ -3,9 +3,12 @@
 Rejection received 2026-08-17 against version 1.0 (27), reviewed on iPad Air 11-inch (M3).
 Four items were raised: 5.1.1(iv), 2.3.6, 1.2 and a 2.1 information request.
 
-This document holds (a) what changed in the binary, (b) the metadata changes that must be made
-in App Store Connect by hand, and (c) the reply text to paste into the App Store Connect
+This document holds (a) what changed in the binary and (b) the metadata changes that must be made
+in App Store Connect by hand. It is written for us, not for Apple — do not paste it into the
 Resolution Center.
+
+**The message to actually send is `RESOLUTION_CENTER_REPLY.md`**, a single paste-ready block
+covering all four items.
 
 ---
 
@@ -306,7 +309,7 @@ silently rebuild the marketing frames with the plain e2e test face.
       server no longer ranks users against other people.
 - [x] `06-tease.png` regenerated in both sizes so the store screenshot shows "Presence" (section 5).
 - [ ] Decide Route A or Route B for the Age Rating "Age Assurance" field (section 3).
-- [ ] Paste the section 4 answers into the Resolution Center reply.
+- [ ] Send `RESOLUTION_CENTER_REPLY.md` in the Resolution Center (adjust it if you pick Route B).
 - [ ] Confirm the Privacy Policy URL is still set on the App Privacy page.
 
 ## Regression cover
