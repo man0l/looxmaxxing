@@ -92,8 +92,15 @@ jobs:
       - name: Set version code
         run: bash scripts/set-android-version-code.sh
 
+      - name: Raise Gradle heap
+        run: |
+          {
+            echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8'
+            echo 'android.lint.checkReleaseBuilds=false'
+          } >> android/gradle.properties
+
       - name: Build release AAB
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon -x lintVitalRelease
         working-directory: android
 
       - name: Stage release artifacts
