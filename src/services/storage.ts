@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   streak: 'streak-v1',
   onboarding: 'onboarding-v1',
   onboarded: 'app-onboarded-v1',
+  aiShareConsent: 'ai-share-consent-v1',
   /** Last-known Pro entitlement — avoids unlock→Pro flash on cold start. */
   entitlement: 'entitlement-v1',
 } as const;

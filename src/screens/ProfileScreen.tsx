@@ -16,6 +16,8 @@ import { useToast } from '../store/ToastContext';
 import { deleteAllUserData } from '../services/deleteAllData';
 import { returnToOnboarding } from '../services/dataDeletion';
 import { AgeGateScreen } from './onboarding/AgeGateScreen';
+import { AiShareConsentScreen } from './onboarding/AiShareConsentScreen';
+import { useAiShareConsent } from '../store/AiShareConsentContext';
 import { BackHeader, NestedScreen } from '../components/BackHeader';
 import { presentCustomerCenter } from '../services/purchases';
 import { MethodologyScreen } from './MethodologyScreen';
@@ -34,13 +36,15 @@ interface RowProps {
   tone?: 'default' | 'action' | 'danger';
   disabled?: boolean;
   first?: boolean;
+  testID?: string;
 }
 
-function Row({ label, value, onPress, tone = 'default', disabled, first }: RowProps) {
+function Row({ label, value, onPress, tone = 'default', disabled, first, testID }: RowProps) {
   const labelColor =
     tone === 'action' ? colors.primary : tone === 'danger' ? colors.danger : colors.textPrimary;
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled || !onPress}
       style={[styles.row, !first && styles.rowDivider, disabled && styles.rowDisabled]}
@@ -69,11 +73,14 @@ export function ProfileScreen() {
   const { scans } = useScans();
   const { subscribed, restore, openPaywall } = useSubscription();
   const { showToast } = useToast();
+  const { granted: aiShareGranted, withdraw: withdrawAiShare } = useAiShareConsent();
 
   const [showMethodology, setShowMethodology] = useState(false);
   const [showAgeGate, setShowAgeGate] = useState(false);
+  const [showAiConsent, setShowAiConsent] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmWithdrawAiShare, setConfirmWithdrawAiShare] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
   const hasPhotos = Boolean(
     frontPhoto || profilePhoto || scans.some((scan) => scan.photoUri),
@@ -82,13 +89,21 @@ export function ProfileScreen() {
   const popNested = useCallback(() => {
     setShowMethodology(false);
     setShowAgeGate(false);
+    setShowAiConsent(false);
     setConfirmDelete(false);
     setConfirmDeleteAll(false);
+    setConfirmWithdrawAiShare(false);
   }, []);
 
   useTabRootReset(popNested);
 
-  const isNested = showMethodology || showAgeGate || confirmDelete || confirmDeleteAll;
+  const isNested =
+    showMethodology ||
+    showAgeGate ||
+    showAiConsent ||
+    confirmDelete ||
+    confirmDeleteAll ||
+    confirmWithdrawAiShare;
 
   let body: ReactNode;
   if (showMethodology) {
@@ -110,6 +125,18 @@ export function ProfileScreen() {
               setShowAgeGate(false);
               returnToOnboarding();
             }}
+          />
+        </ScreenShell>
+      </NestedScreen>
+    );
+  } else if (showAiConsent) {
+    body = (
+      <NestedScreen onClose={() => setShowAiConsent(false)}>
+        <ScreenShell>
+          <AiShareConsentScreen
+            embedded
+            onAgree={() => setShowAiConsent(false)}
+            onDecline={() => setShowAiConsent(false)}
           />
         </ScreenShell>
       </NestedScreen>
@@ -158,11 +185,19 @@ export function ProfileScreen() {
           <Text style={styles.sectionLabel}>Privacy</Text>
           <Card role="quiet" style={styles.card}>
             <Row
+              testID="ai-share-consent-row"
+              label="Photo sharing with OpenAI"
+              value={aiShareGranted ? 'On' : 'Off'}
+              onPress={() =>
+                aiShareGranted ? setConfirmWithdrawAiShare(true) : setShowAiConsent(true)
+              }
+              first
+            />
+            <Row
               label={hasPhotos ? 'Delete my photos' : 'No photos stored'}
               tone={hasPhotos ? 'danger' : 'default'}
               onPress={hasPhotos ? () => setConfirmDelete(true) : undefined}
               disabled={!hasPhotos}
-              first
             />
             <Row
               label="Delete all my data"
@@ -176,6 +211,35 @@ export function ProfileScreen() {
             />
           </Card>
         </ScrollView>
+
+        {confirmWithdrawAiShare && (
+          <View style={styles.overlay}>
+            <Pressable style={styles.backdrop} onPress={() => setConfirmWithdrawAiShare(false)} />
+            <View style={styles.dialog}>
+              <Text style={styles.dialogTitle}>Stop sending photos to OpenAI?</Text>
+              <Text style={styles.dialogBody}>
+                Future scans and avatars will not send photos until you agree again. Photos already
+                processed were deleted from our servers after scoring.
+              </Text>
+              <PressableScale
+                testID="ai-share-withdraw"
+                style={styles.dialogDelete}
+                onPress={() => {
+                  withdrawAiShare();
+                  setConfirmWithdrawAiShare(false);
+                }}
+              >
+                <Text style={styles.dialogDeleteText}>Stop sending</Text>
+              </PressableScale>
+              <Pressable
+                style={styles.dialogCancel}
+                onPress={() => setConfirmWithdrawAiShare(false)}
+              >
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         {confirmDelete && (
           <View style={styles.overlay}>

@@ -1,35 +1,66 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useScans } from '../store/ScanContext';
+import { useAiShareConsent } from '../store/AiShareConsentContext';
+import { isAiShareConsentError } from '../services/aiShareConsent';
 
-export type RescanStep = 'front' | null;
+export type RescanStep = 'front' | 'consent' | null;
 
 export function useRescanFlow() {
   const { canRescan, rescan, runScan, scanning } = useScans();
+  const { granted } = useAiShareConsent();
   const [rescanStep, setRescanStep] = useState<RescanStep>(null);
   const [justRescanned, setJustRescanned] = useState(false);
+  const pendingUri = useRef<string | undefined>(undefined);
 
   const startRescan = useCallback(() => {
     setJustRescanned(false);
+    pendingUri.current = undefined;
     setRescanStep('front');
   }, []);
 
   const cancelRescan = useCallback(() => {
+    pendingUri.current = undefined;
     setRescanStep(null);
   }, []);
 
-  // After the front photo is captured, run a real scan through the API. On any
-  // failure (offline, 402, API not configured) fall back to the local mock so
-  // the flow always completes with a saved scan.
+  const finishScan = useCallback(
+    async (frontUri?: string) => {
+      setRescanStep(null);
+      try {
+        if (!frontUri) throw new Error('missing photo');
+        await runScan({ frontUri });
+      } catch (e) {
+        if (isAiShareConsentError(e)) return;
+        if (frontUri) rescan(frontUri);
+      }
+      setJustRescanned(true);
+    },
+    [rescan, runScan],
+  );
+
   const onCapture = async (frontUri?: string) => {
-    setRescanStep(null);
-    try {
-      if (!frontUri) throw new Error('missing photo');
-      await runScan({ frontUri });
-    } catch {
-      if (frontUri) rescan(frontUri);
+    if (!granted) {
+      pendingUri.current = frontUri;
+      setRescanStep('consent');
+      return;
     }
-    setJustRescanned(true);
+    await finishScan(frontUri);
   };
 
-  return { canRescan, rescanStep, startRescan, cancelRescan, onCapture, justRescanned, scanning };
+  const onConsentAgree = async () => {
+    const uri = pendingUri.current;
+    pendingUri.current = undefined;
+    await finishScan(uri);
+  };
+
+  return {
+    canRescan,
+    rescanStep,
+    startRescan,
+    cancelRescan,
+    onCapture,
+    onConsentAgree,
+    justRescanned,
+    scanning,
+  };
 }

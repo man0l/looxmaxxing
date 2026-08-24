@@ -6,6 +6,7 @@ import { submitScan } from '../services/api';
 import { getAppUserID } from '../services/purchases';
 import { registerLocalDataReset } from '../services/dataDeletion';
 import { registerScanPhotoClear, unregisterScanPhotoClear } from '../services/photoDeletion';
+import { isAiShareConsentError } from '../services/aiShareConsent';
 import { loadJson, saveJson, STORAGE_KEYS } from '../services/storage';
 
 interface ScanStore {
@@ -130,6 +131,10 @@ export function ScanProvider({ children }: { children: React.ReactNode }) {
           : e instanceof Error
             ? e.message
             : 'Scan failed';
+        if (isAiShareConsentError(e)) {
+          setScanError(e.message);
+          throw e;
+        }
         if (__DEV__) {
           rescan(frontUri);
           setScanError(null);

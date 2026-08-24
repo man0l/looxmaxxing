@@ -24,6 +24,8 @@ import { TabSwipeHost } from '../components/TabSwipeHost';
 import { StreakScreen } from './StreakScreen';
 import { TraitDetailScreen } from './TraitDetailScreen';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
+import { AiShareConsentScreen } from './onboarding/AiShareConsentScreen';
+import { useAiShareConsent } from '../store/AiShareConsentContext';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
 import { ShareIcon } from '../components/icons/ActionIcons';
@@ -50,8 +52,17 @@ export function ResultsScreen() {
   const [showShare, setShowShare] = useState(false);
   const [openTrait, setOpenTrait] = useState<string | null>(null);
   const { scans, latest, hasRealScan, scanError, runScan } = useScans();
-  const { canRescan, rescanStep, startRescan, cancelRescan, onCapture, justRescanned, scanning } =
-    useRescanFlow();
+  const { ready: consentReady, granted: consentGranted } = useAiShareConsent();
+  const {
+    canRescan,
+    rescanStep,
+    startRescan,
+    cancelRescan,
+    onCapture,
+    onConsentAgree,
+    justRescanned,
+    scanning,
+  } = useRescanFlow();
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const goToPractice = () => navigation.navigate('Practice' as never);
 
@@ -96,34 +107,46 @@ export function ResultsScreen() {
       </ScreenShell>
     );
   } else if (!hasRealScan) {
-    // First real scan runs right after payment (App.tsx). Show analyzing /
-    // retry until scores land — never leave the user stuck on seeded mocks.
-    body = (
-      <ScreenShell style={styles.analyzingRoot}>
-        {scanning ? (
-          <>
-            <ScanMotif size={132} />
-            <Text style={styles.analyzingTitle}>Analyzing your photos</Text>
-            <Text style={styles.analyzingSub}>Scoring your traits with AI…</Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.analyzingTitle}>Couldn’t finish your scan</Text>
-            <Text style={styles.analyzingSub}>{scanError ?? 'Something went wrong.'}</Text>
-            <PressableScale
-              style={styles.retryBtn}
-              onPress={() => {
-                if (frontPhoto) {
-                  runScan({ frontUri: frontPhoto }).catch(() => {});
-                }
-              }}
-            >
-              <Text style={styles.retryText}>Try again</Text>
-            </PressableScale>
-          </>
-        )}
-      </ScreenShell>
-    );
+    if (!consentReady) {
+      body = (
+        <ScreenShell style={styles.analyzingRoot}>
+          <View />
+        </ScreenShell>
+      );
+    } else if (!consentGranted) {
+      body = (
+        <ScreenShell>
+          <AiShareConsentScreen onAgree={() => {}} onDecline={() => {}} />
+        </ScreenShell>
+      );
+    } else {
+      body = (
+        <ScreenShell style={styles.analyzingRoot}>
+          {scanning ? (
+            <>
+              <ScanMotif size={132} />
+              <Text style={styles.analyzingTitle}>Analyzing your photos</Text>
+              <Text style={styles.analyzingSub}>Scoring your traits with AI…</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.analyzingTitle}>Couldn’t finish your scan</Text>
+              <Text style={styles.analyzingSub}>{scanError ?? 'Something went wrong.'}</Text>
+              <PressableScale
+                style={styles.retryBtn}
+                onPress={() => {
+                  if (frontPhoto) {
+                    runScan({ frontUri: frontPhoto }).catch(() => {});
+                  }
+                }}
+              >
+                <Text style={styles.retryText}>Try again</Text>
+              </PressableScale>
+            </>
+          )}
+        </ScreenShell>
+      );
+    }
   } else if (showStreak) {
     body = <StreakScreen onClose={() => setShowStreak(false)} />;
   } else if (openTrait) {
@@ -144,7 +167,13 @@ export function ResultsScreen() {
         }}
       />
     );
-  } else if (rescanStep) {
+  } else if (rescanStep === 'consent') {
+    body = (
+      <ScreenShell>
+        <AiShareConsentScreen onAgree={() => void onConsentAgree()} onDecline={cancelRescan} />
+      </ScreenShell>
+    );
+  } else if (rescanStep === 'front') {
     body = (
       <GuidedCaptureScreen
         stepLabel="New scan"

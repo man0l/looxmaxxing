@@ -61,5 +61,10 @@ test.describe('Delete all my data', () => {
       expect(onboarding.profilePhoto).toBeNull();
       expect(onboarding.concerns).toEqual([]);
     }
+
+    const consentRaw = after['ai-share-consent-v1'];
+    if (consentRaw) {
+      expect(JSON.parse(consentRaw).granted).not.toBe(true);
+    }
   });
 });

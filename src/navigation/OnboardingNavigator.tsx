@@ -14,6 +14,7 @@ import { GoalTimelineScreen } from '../screens/onboarding/GoalTimelineScreen';
 import { GoalLevelScreen } from '../screens/onboarding/GoalLevelScreen';
 import { CommitmentScreen } from '../screens/onboarding/CommitmentScreen';
 import { GuidedCaptureScreen } from '../screens/onboarding/GuidedCaptureScreen';
+import { AiShareConsentScreen } from '../screens/onboarding/AiShareConsentScreen';
 import { AnalyzingScreen } from '../screens/onboarding/AnalyzingScreen';
 import { ShareMotivationScreen } from '../screens/onboarding/ShareMotivationScreen';
 
@@ -28,6 +29,7 @@ type Step =
   | 'goal_level'
   | 'commitment'
   | 'capture'
+  | 'ai_consent'
   | 'analyzing'
   | 'share';
 
@@ -122,11 +124,19 @@ export function OnboardingNavigator({ onComplete }: Props) {
             onboardingStep={9}
             onCapture={(uri) => {
               dispatch({ type: 'SET_FRONT_PHOTO', payload: uri });
-              goTo('analyzing');
+              goTo('ai_consent');
             }}
           />
         );
       }
+
+      case 'ai_consent':
+        return (
+          <AiShareConsentScreen
+            onAgree={() => goTo('analyzing')}
+            onDecline={() => goTo('capture')}
+          />
+        );
 
       case 'analyzing':
         return <AnalyzingScreen onComplete={() => goTo('share')} />;

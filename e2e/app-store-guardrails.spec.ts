@@ -1,5 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
-import { enterSubscribedApp } from './helpers/onboardingFlow';
+import { test, expect } from '@playwright/test';
+import {
+  advanceToAiShareConsent,
+  advanceToCapture,
+  enterSubscribedApp,
+} from './helpers/onboardingFlow';
 import { resetWebApp } from './helpers/resetWebApp';
 
 /**
@@ -32,7 +36,56 @@ test.describe('App Store guardrails', () => {
   test('capture screen states scans are of your own face', async ({ page }) => {
     await advanceToCapture(page);
     await expect(page.getByText(/Scan your own face only/)).toBeVisible();
+    await expect(page.getByText(/sent to OpenAI/)).toBeVisible();
     await expect(page.getByText(/A photo of you/)).toBeVisible();
+  });
+
+  // Guideline 5.1.1(i) / 5.1.2(i) — before sending face photos to a third-party
+  // AI, the app must name the recipient, say what is sent, and get permission.
+  test('AI share consent names OpenAI and is required before analyzing', async ({ page }) => {
+    await advanceToAiShareConsent(page);
+
+    await expect(page.getByTestId('ai-share-consent')).toBeVisible();
+    await expect(page.getByText('We send your photos to OpenAI')).toBeVisible();
+    await expect(page.getByText(/front and profile photos of your face/i)).toBeVisible();
+    await expect(page.getByText('Agree and continue')).toBeVisible();
+    await expect(page.getByText("Don't send")).toBeVisible();
+    await expect(page.getByText('Allow camera')).toHaveCount(0);
+    await expect(page.getByText('Allow', { exact: true })).toHaveCount(0);
+
+    await page.getByTestId('ai-share-agree').click();
+    await expect(page.getByText('Analyzing Your Face')).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('declining AI share consent does not continue to analyzing', async ({ page }) => {
+    await advanceToAiShareConsent(page);
+    await page.getByTestId('ai-share-decline').click();
+
+    await expect(page.getByText('Analyzing Your Face')).toHaveCount(0);
+    await expect(page.getByText('We send your photos to OpenAI')).toHaveCount(0);
+    await expect(page.getByText('Front photo', { exact: true })).toBeVisible();
+  });
+
+  test('Profile can withdraw and restore OpenAI photo sharing', async ({ page }) => {
+    await enterSubscribedApp(page);
+
+    await page.getByText('Profile', { exact: true }).click();
+    await expect(page.getByTestId('ai-share-consent-row')).toBeVisible();
+    await expect(page.getByTestId('ai-share-consent-row').getByText('On', { exact: true })).toBeVisible();
+
+    await page.getByTestId('ai-share-consent-row').click();
+    await expect(page.getByText('Stop sending photos to OpenAI?')).toBeVisible();
+    await page.getByTestId('ai-share-withdraw').click();
+    await expect(page.getByTestId('ai-share-consent-row').getByText('Off', { exact: true })).toBeVisible();
+
+    await page.getByTestId('ai-share-consent-row').click();
+    await expect(page.getByText('We send your photos to OpenAI')).toBeVisible();
+    await page.getByTestId('ai-share-decline').click();
+    await expect(page.getByTestId('ai-share-consent-row').getByText('Off', { exact: true })).toBeVisible();
+
+    await page.getByTestId('ai-share-consent-row').click();
+    await page.getByTestId('ai-share-agree').click();
+    await expect(page.getByTestId('ai-share-consent-row').getByText('On', { exact: true })).toBeVisible();
   });
 
   // Guideline 1.2 — a card pairing a real face with appearance scores, shared
@@ -89,28 +142,3 @@ test.describe('App Store guardrails', () => {
     await relaunched.close();
   });
 });
-
-async function advanceToCapture(page: Page) {
-  await expect(page.getByText('Build a grooming routine that sticks')).toBeVisible();
-  await page.getByText('Scan my face').click();
-
-  await expect(page.getByText('How old are you?')).toBeVisible();
-  await page.getByText('25–34').click();
-  await page.getByText('Continue', { exact: true }).click();
-
-  await page.getByText('Sharper jawline').click();
-  await page.getByText('Continue', { exact: true }).click();
-
-  await page.getByText("Didn't know where to start").click();
-  await page.getByText('Continue', { exact: true }).click();
-
-  await page.getByText('Got it', { exact: true }).click();
-
-  await page.getByText('In 1 month').click();
-  await page.getByText('Continue', { exact: true }).click();
-
-  await page.getByText('Build a solid routine').click();
-  await page.getByText('Continue', { exact: true }).click();
-
-  await page.getByText("I'm in — let's go").click();
-}

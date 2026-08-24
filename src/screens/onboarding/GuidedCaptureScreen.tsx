@@ -223,8 +223,8 @@ export function GuidedCaptureScreen({
         )}
 
         <Text style={styles.privacy}>
-          Scan your own face only. Photos are processed to generate your scores, then deleted from
-          our servers straight after. Delete them from this device anytime in Profile.
+          Scan your own face only. Photos are sent to OpenAI to generate your scores, then deleted
+          from our servers straight after. Delete them from this device anytime in Profile.
         </Text>
       </Animated.View>
     </ScreenShell>
