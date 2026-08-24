@@ -5,6 +5,9 @@ import { TRAITS } from '../../types/traits';
 import { scoreOutOfTen } from '../../services/scoring';
 import { useScans } from '../../store/ScanContext';
 import { useOnboarding } from '../../store/OnboardingContext';
+import { useAiShareConsent } from '../../store/AiShareConsentContext';
+import { AiShareConsentScreen } from '../onboarding/AiShareConsentScreen';
+import { isAiShareConsentError } from '../../services/aiShareConsent';
 import { AvatarRender } from '../../components/AvatarRender';
 import { BackHeader, NestedScreen } from '../../components/BackHeader';
 import { submitRender, ScanApiError } from '../../services/api';
@@ -28,6 +31,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   const preview = getAvatarPreview(traitId);
   const { latest } = useScans();
   const { frontPhoto } = useOnboarding();
+  const { ready: consentReady, granted: consentGranted } = useAiShareConsent();
   const [selected, setSelected] = useState(preview?.styles[0]);
   const [debouncedStyle, setDebouncedStyle] = useState(preview?.styles[0]);
   const [renderUrl, setRenderUrl] = useState<string | null>(null);
@@ -66,6 +70,8 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   useEffect(() => {
     const style = debouncedStyle;
     if (!style) return;
+    if (!consentReady) return;
+    if (!consentGranted) return;
     const controller = new AbortController();
     (async () => {
       await hydrateRenderCache();
@@ -100,6 +106,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
         setRenderStyle(style);
       } catch (e) {
         if (controller.signal.aborted || isAbortError(e)) return;
+        if (isAiShareConsentError(e)) return;
         if (__DEV__ && Platform.OS === 'web') {
           const stub = 'https://placehold.co/232x232/3A2A1A/EFE6D8.png?text=Dev+Render';
           await setCachedRender(traitId, style, stub);
@@ -120,7 +127,7 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
       }
     })();
     return () => controller.abort();
-  }, [traitId, debouncedStyle, photoUri, retryNonce]);
+  }, [traitId, debouncedStyle, photoUri, retryNonce, consentReady, consentGranted]);
 
   const displayUrl = renderStyle === selected ? renderUrl : null;
   const showLoading = loading || selected !== debouncedStyle;
@@ -128,6 +135,18 @@ export function AvatarPreviewScreen({ traitId, onClose, onStartPlan }: Props) {
   if (!preview) return null;
   const trait = TRAITS.find((t) => t.id === traitId);
   const percentile = latest.scores.find((s) => s.traitId === traitId)?.percentile;
+
+  if (consentReady && !consentGranted) {
+    return (
+      <NestedScreen onClose={onClose} style={styles.root}>
+        <AiShareConsentScreen
+          embedded
+          onAgree={() => setRetryNonce((n) => n + 1)}
+          onDecline={onClose}
+        />
+      </NestedScreen>
+    );
+  }
 
   return (
     <NestedScreen onClose={onClose} style={styles.root}>

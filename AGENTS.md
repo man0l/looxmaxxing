@@ -187,6 +187,7 @@ Real services (not mocked) but not yet live / web-stubbed:
 
 ### Changelog
 
+- **Session 24 (2026-08-24):** App Review 5.1.1(i)/5.1.2(i) — in-app OpenAI consent before any photo upload. `AiShareConsentScreen` after capture (names OpenAI, what is sent, Agree and continue / Don't send); persisted in `AiShareConsentContext`; `submitScan`/`submitRender` refuse without it; Profile row to withdraw; capture line names OpenAI. Privacy policy §2/§4/§5 names OpenAI. E2E guardrails cover agree, decline, and Profile withdraw.
 - **Session 23 (2026-07-15):** Design Phase 4 paywall materials. `BronzeMetal` gradient+sheen+ornament; annual plan metal when selected; ember savings badge; CTA blue halo; photo cream glow; BannerPremium on metal; denser paywall fog; bronze benefit checks. Branch `feat/design-phase-4-paywall`.
 - **Session 22 (2026-07-15):** Design Phase 3 rituals. `ScanMotif` (monoline face + blue sweep) on Analyzing + Results scan states; DayCompleteMoment ceremony (radial glow, day spring, staged CTAs); StreakHeatmap ember→cream + today pulse; practice `TaskCheckbox` bounce + `SegmentedProgress`. Branch `feat/design-phase-3-rituals`.
 - **Session 21 (2026-07-15):** Design Phase 2 signature data. Thick animated `RingGauge` (draw-in, cream wash + halo, reduce-motion aware); Results overall hero (ring + Top X% + delta + photo) with compact streak chip; `StaggerIn` + delayed ring draw on TraitGrid. Branch `feat/design-phase-2-signature-data`. tsc + lint clean. Phase 3 rituals still open.

@@ -1,5 +1,6 @@
 import type { TraitScore } from '../types/traits';
 import { isE2eApiStub } from '../config/e2e';
+import { assertAiShareGranted } from './aiShareConsent';
 import { getScores } from './scoring';
 import { resolveCaptureUri } from './photoUri';
 
@@ -167,6 +168,7 @@ export async function submitScan(opts: {
   // otherwise shows as an endless "Analyzing your photos" screen on return.
   signal?: AbortSignal;
 }): Promise<ScanResult> {
+  assertAiShareGranted();
   if (isE2eApiStub || (__DEV__ && !API_BASE)) {
     await new Promise((r) => setTimeout(r, 400));
     return {
@@ -295,6 +297,7 @@ export async function submitRender(opts: {
 }): Promise<RenderResult> {
   const { signal, onPreview } = opts;
   assertNotAborted(signal);
+  assertAiShareGranted();
   if (isE2eApiStub || (__DEV__ && !API_BASE)) {
     await new Promise((r) => setTimeout(r, 300));
     assertNotAborted(signal);

@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-export async function runOnboardingToPaywall(page: Page) {
+export async function advanceToCapture(page: Page) {
   await expect(page.getByText('Build a grooming routine that sticks')).toBeVisible();
   await page.getByText('Scan my face').click();
 
@@ -28,9 +28,18 @@ export async function runOnboardingToPaywall(page: Page) {
   await page.getByText('Continue', { exact: true }).click();
 
   await page.getByText("I'm in — let's go").click();
+}
 
+export async function advanceToAiShareConsent(page: Page) {
+  await advanceToCapture(page);
   await expect(page.getByText('Front photo', { exact: true })).toBeVisible();
   await page.getByTestId('e2e-use-test-photo').click();
+  await expect(page.getByText('We send your photos to OpenAI')).toBeVisible();
+}
+
+export async function runOnboardingToPaywall(page: Page) {
+  await advanceToAiShareConsent(page);
+  await page.getByTestId('ai-share-agree').click();
 
   await expect(page.getByText('Analyzing Your Face')).toBeVisible({ timeout: 15_000 });
 

@@ -6,6 +6,7 @@ export const APP_STORAGE_KEYS = [
   'streak-v1',
   'onboarding-v1',
   'app-onboarded-v1',
+  'ai-share-consent-v1',
   'render-cache-v1',
 ] as const;
 

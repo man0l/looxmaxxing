@@ -10,6 +10,7 @@ import { Card } from '../components/Card';
 import { ScreenShell } from '../components/ScreenShell';
 import { TabSwipeHost } from '../components/TabSwipeHost';
 import { GuidedCaptureScreen } from './onboarding/GuidedCaptureScreen';
+import { AiShareConsentScreen } from './onboarding/AiShareConsentScreen';
 import { RingGauge } from '../components/RingGauge';
 import { ShareSheet } from '../components/share/ShareSheet';
 import { ScoreShareCard } from '../components/share/ShareCards';
@@ -45,7 +46,8 @@ function shareRows(scores: TraitScore[], prev?: TraitScore[]) {
 
 export function RatingsScreen() {
   const { scans } = useScans();
-  const { canRescan, rescanStep, startRescan, cancelRescan, onCapture } = useRescanFlow();
+  const { canRescan, rescanStep, startRescan, cancelRescan, onCapture, onConsentAgree } =
+    useRescanFlow();
   const { onCaptureFabPress } = useCaptureFabPress(startRescan);
   const [shareScan, setShareScan] = useState<Scan | null>(null);
   const [comparePair, setComparePair] = useState<[Scan, Scan] | null>(null);
@@ -75,7 +77,13 @@ export function RatingsScreen() {
     );
   } else if (detailScan) {
     body = <ScanDetailScreen scan={detailScan} isFirst onClose={() => setDetailScan(null)} />;
-  } else if (rescanStep) {
+  } else if (rescanStep === 'consent') {
+    body = (
+      <ScreenShell>
+        <AiShareConsentScreen onAgree={() => void onConsentAgree()} onDecline={cancelRescan} />
+      </ScreenShell>
+    );
+  } else if (rescanStep === 'front') {
     body = (
       <GuidedCaptureScreen
         stepLabel="New scan"

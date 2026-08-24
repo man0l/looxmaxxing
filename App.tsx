@@ -17,6 +17,7 @@ import { SubscriptionProvider, useSubscription } from './src/store/SubscriptionC
 import { PracticeProvider } from './src/store/PracticeContext';
 import { StreakProvider } from './src/store/StreakContext';
 import { ScanProvider, useScans } from './src/store/ScanContext';
+import { AiShareConsentProvider, useAiShareConsent } from './src/store/AiShareConsentContext';
 import { OnboardingNavigator } from './src/navigation/OnboardingNavigator';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { PaywallScreen } from './src/screens/PaywallScreen';
@@ -30,6 +31,7 @@ function Root() {
   const { paywallVisible, openPaywall, subscribed, ready: entitlementReady } = useSubscription();
   const { frontPhoto } = useOnboarding();
   const { runScan, hasRealScan } = useScans();
+  const { ready: consentReady, granted: consentGranted } = useAiShareConsent();
   const firstScanTriggered = useRef(false);
 
   useEffect(() => {
@@ -56,6 +58,8 @@ function Root() {
 
   useEffect(() => {
     if (
+      consentReady &&
+      consentGranted &&
       subscribed &&
       onboarded &&
       !hasRealScan &&
@@ -65,7 +69,7 @@ function Root() {
       firstScanTriggered.current = true;
       runScan({ frontUri: frontPhoto }).catch(() => {});
     }
-  }, [subscribed, onboarded, hasRealScan, frontPhoto, runScan]);
+  }, [consentReady, consentGranted, subscribed, onboarded, hasRealScan, frontPhoto, runScan]);
 
   // Wait for onboarded flag + entitlement hydrate so Pro users never flash the
   // locked Results unlock banner before RevenueCat (or local cache) resolves.
@@ -111,9 +115,11 @@ export default function App() {
             <SubscriptionProvider>
               <PracticeProvider>
                 <StreakProvider>
-                  <ScanProvider>
-                    <Root />
-                  </ScanProvider>
+                  <AiShareConsentProvider>
+                    <ScanProvider>
+                      <Root />
+                    </ScanProvider>
+                  </AiShareConsentProvider>
                 </StreakProvider>
               </PracticeProvider>
             </SubscriptionProvider>
