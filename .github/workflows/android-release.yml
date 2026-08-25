@@ -92,12 +92,15 @@ jobs:
       - name: Set version code
         run: bash scripts/set-android-version-code.sh
 
+      # prebuild writes gradle.properties WITHOUT a trailing newline, so
+      # blindly appending here glues the new line onto the last property
+      # and silently drops it (that's how the 4g heap was lost on run
+      # 32724796729). Replace jvmargs in place; guard any appends.
       - name: Raise Gradle heap
         run: |
-          {
-            echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8'
-            echo 'android.lint.checkReleaseBuilds=false'
-          } >> android/gradle.properties
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError/' android/gradle.properties
+          grep -q '^org.gradle.jvmargs=' android/gradle.properties || echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' >> android/gradle.properties
+          printf '\nandroid.lint.checkReleaseBuilds=false\n' >> android/gradle.properties
 
       - name: Build release AAB
         run: ./gradlew bundleRelease --no-daemon -x lintVitalRelease
