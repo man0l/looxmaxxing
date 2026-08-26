@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1024px; height: 500px; overflow: hidden; }
+  body {
+    font-family: "Nunito Sans", sans-serif;
+    background: linear-gradient(180deg, #15100B 0%, #0E0B07 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  /* faint ember glow, bottom-left */
+  .glow {
+    position: absolute; left: -160px; bottom: -220px; width: 560px; height: 560px;
+    background: radial-gradient(circle, rgba(242,84,48,0.16) 0%, rgba(242,84,48,0) 62%);
+  }
+  .glow2 {
+    position: absolute; right: -180px; top: -240px; width: 620px; height: 620px;
+    background: radial-gradient(circle, rgba(61,107,230,0.12) 0%, rgba(61,107,230,0) 60%);
+  }
+  .row { display: flex; align-items: center; gap: 44px; position: relative; }
+  .mark { width: 168px; height: auto; display: block; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .wordmark { height: 74px; width: auto; display: block; }
+  .tagline {
+    color: #9A9285; font-size: 30px; font-weight: 600; letter-spacing: 0.4px;
+  }
+  .tagline b { color: #EFE6D8; font-weight: 800; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="glow2"></div>
+  <div class="row">
+    <img class="mark" src="../../assets/images/brand-monogram.png" alt="">
+    <div class="stack">
+      <img class="wordmark" src="../../assets/images/brand-wordmark.png" alt="axend">
+      <div class="tagline">Your face, <b>your plan.</b></div>
+    </div>
+  </div>
+</body>
+</html>
