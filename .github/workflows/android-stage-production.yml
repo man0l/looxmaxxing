@@ -1,8 +1,10 @@
 name: Android Stage Production Draft
 
-# Stages an already-built AAB into the Production track as a DRAFT release
-# (nothing is published or sent for review). Use this when the Console UI
-# can't drive the release editor. Pick the release tag, e.g. android-152.
+# Stages an already-built versionCode into the Production track as a DRAFT
+# release (nothing is published or sent for review). References the AAB
+# already in Play's library — Play rejects duplicate versionCode uploads,
+# so this must not re-upload the bundle. Pick the release tag to resolve
+# its version code, e.g. android-152.
 
 concurrency:
   group: android-stage-production-${{ github.ref }}
@@ -12,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'GitHub release tag holding the .aab (e.g. android-152)'
+        description: 'GitHub release tag holding the build (e.g. android-152)'
         required: true
 
 permissions:
@@ -24,20 +26,26 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Download AAB + mapping from release
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Resolve version code from release tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download "${{ inputs.release_tag }}" \
-            --pattern '*.aab' --pattern 'mapping-*.txt' --clobber
-          ls -la *.aab mapping-*.txt
+          # tags look like android-<run_number>, and the release title carries
+          # the real Play versionCode as "(v<N>)"
+          title=$(gh release view "${{ inputs.release_tag }}" --json name --jq .name)
+          vc=$(echo "$title" | sed -n 's/.*(v\([0-9]*\)).*/\1/p')
+          if [ -z "$vc" ]; then echo "Could not parse version code from '$title'"; exit 1; fi
+          echo "VERSION_CODE=$vc" >> "$GITHUB_ENV"
 
-      - name: Stage as production draft
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.balkanbit.looxmaxxing
-          releaseFiles: '*.aab'
-          track: production
-          status: draft
-          mappingFile: mapping-*.txt
+      - name: Stage production draft via Play API
+        env:
+          ANDROID_PACKAGE_NAME: com.balkanbit.looxmaxxing
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          SOURCE_TRACK: internal
+          TARGET_TRACK: production
+          VERSION_CODE: ${{ env.VERSION_CODE }}
+        run: node scripts/stage-production-draft.mjs
