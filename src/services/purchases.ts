@@ -46,6 +46,11 @@ export async function configurePurchases(): Promise<boolean> {
     }
     Purchases.configure({ apiKey: REVENUECAT_API_KEY });
     configured = true;
+    if (Platform.OS === 'ios') {
+      Purchases.enableAdServicesAttributionTokenCollection().catch((e) =>
+        console.warn('[purchases] AdServices token collection failed', e),
+      );
+    }
   } catch (e) {
     console.warn('[purchases] configure failed', e);
   }
